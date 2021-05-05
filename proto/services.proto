@@ -1,0 +1,12 @@
+syntax = "proto3";
+option go_package = "github.com/markylaing/entity-recognition/gen/pb";
+
+import "types.proto";
+
+service Tokenizer {
+    rpc Tokenize (stream Snippet) returns (stream Snippet);
+}
+
+service Recognizer {
+    rpc Recognize (stream Snippet) returns (stream RecognizedEntity);
+}
