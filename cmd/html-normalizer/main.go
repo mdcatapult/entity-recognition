@@ -20,6 +20,7 @@ var disallowedNodes = map[string]struct{}{
 	"html":     {},
 	"link":     {},
 	"meta":     {},
+	"noscript": {},
 	"script":   {},
 	"source":   {},
 	"style":    {},
@@ -48,61 +49,95 @@ var linebreakNodes = map[string]struct{}{
 
 func main() {
 
-	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithInsecure())
-	opts = append(opts, grpc.WithBlock())
-	conn, err := grpc.Dial("localhost:50051", opts...)
+	var tokenizerOpts []grpc.DialOption
+	tokenizerOpts = append(tokenizerOpts, grpc.WithInsecure())
+	tokenizerOpts = append(tokenizerOpts, grpc.WithBlock())
+	tokenizerConn, err := grpc.Dial(":50051", tokenizerOpts...)
 	if err != nil {
 		panic(err)
 	}
 	defer func() {
-		if err := conn.Close(); err != nil {
+		if err := tokenizerConn.Close(); err != nil {
 			panic(err)
 		}
 	}()
-	client := pb.NewTokenizerClient(conn)
+	tokenizerClient := pb.NewTokenizerClient(tokenizerConn)
 
-	startHttpServer(client)
+	var dictionaryOpts []grpc.DialOption
+	dictionaryOpts = append(dictionaryOpts, grpc.WithInsecure())
+	dictionaryOpts = append(dictionaryOpts, grpc.WithBlock())
+	dictionaryConn, err := grpc.Dial(":50052", dictionaryOpts...)
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		if err := dictionaryConn.Close(); err != nil {
+			panic(err)
+		}
+	}()
+	dictionaryClient := pb.NewRecognizerClient(dictionaryConn)
+
+	startHttpServer(tokenizerClient, dictionaryClient)
 }
 
-func startHttpServer(client pb.TokenizerClient) {
+func startHttpServer(tokenizerClient pb.TokenizerClient, dictionaryClient pb.RecognizerClient) {
 	r := gin.Default()
 	r.POST("/", func(c *gin.Context) {
-		tokenizer, err := client.Tokenize(context.Background())
+		tokenizer, err := tokenizerClient.Tokenize(context.Background())
 		if err != nil {
 			_ = c.AbortWithError(500, err)
 			return
 		}
 
-		done := make(chan struct{})
-		var tokens []*pb.Snippet
+		dictionary, err := dictionaryClient.Recognize(context.Background())
+		if err != nil {
+			_ = c.AbortWithError(500, err)
+			return
+		}
+
+		tokenizerErrorChan := make(chan error)
 		go func() {
 			for {
 				token, err := tokenizer.Recv()
 				if err == io.EOF {
-					done <- struct{}{}
-					break
+					tokenizerErrorChan <- nil
+					return
 				} else if err != nil {
-					_ = c.AbortWithError(500, err)
+					tokenizerErrorChan <- err
 					return
 				}
-				tokens = append(tokens, token)
+
+				if err := dictionary.Send(token); err != nil {
+					tokenizerErrorChan <- err
+				}
 			}
 		}()
 
-		onSnippet := func(b []byte, position uint32) {
+		dictionaryErrorChan := make(chan error)
+		var entities []*pb.RecognizedEntity
+		go func() {
+			for {
+				entity, err := dictionary.Recv()
+				if err == io.EOF {
+					dictionaryErrorChan <- nil
+					return
+				} else if err != nil {
+					dictionaryErrorChan <- err
+					return
+				}
+				entities = append(entities, entity)
+			}
+		}()
+
+		onSnippet := func(b []byte, position uint32) error {
 			err := tokenizer.Send(&pb.Snippet{
 				Data:   string(b),
 				Offset: position,
 			})
-			if err != nil {
-				_ = c.AbortWithError(500, err)
-				return
-			}
+			return err
 		}
 
-		err = normalize(c.Request.Body, onSnippet)
-		if err != nil {
+		if err := normalize(c.Request.Body, onSnippet); err != nil {
 			_ = c.AbortWithError(500, err)
 			return
 		}
@@ -112,16 +147,31 @@ func startHttpServer(client pb.TokenizerClient) {
 			return
 		}
 
-		<-done
-		c.JSON(200, tokens)
+		if err = <-tokenizerErrorChan; err != nil {
+			_ = c.AbortWithError(500, err)
+			return
+		}
+
+		if err := dictionary.CloseSend(); err != nil {
+			_ = c.AbortWithError(500, err)
+			return
+		}
+
+		if err = <-dictionaryErrorChan; err != nil {
+			_ = c.AbortWithError(500, err)
+			return
+		}
+
+		c.JSON(200, entities)
 	})
+
 	r.POST("/text", func(c *gin.Context) {
 		var text []byte
-		onSnippet := func(b []byte, _ uint32) {
+		onSnippet := func(b []byte, _ uint32) error {
 			text = append(text, b...)
+			return nil
 		}
-		err := normalize(c.Request.Body, onSnippet)
-		if err != nil {
+		if err := normalize(c.Request.Body, onSnippet); err != nil {
 			_ = c.AbortWithError(500, err)
 			return
 		}
@@ -163,7 +213,7 @@ func (s *Stack) Pop() {
 	s.Remove(e)
 }
 
-func normalize(r io.Reader, onSnippet func([]byte, uint32)) error {
+func normalize(r io.Reader, onSnippet func([]byte, uint32) error) error {
 	tokenizer := html.NewTokenizer(r)
 	var position uint32
 	var stack Stack
@@ -197,7 +247,9 @@ Loop:
 				if err != nil && err != io.EOF {
 					return err
 				}
-				onSnippet(bufferBytes, stack.Top().start)
+				if err = onSnippet(bufferBytes, stack.Top().start); err != nil {
+					return err
+				}
 			}
 			position += uint32(len(html.UnescapeString(string(b))))
 			stack.Pop()
@@ -216,6 +268,5 @@ Loop:
 	if err := tokenizer.Err(); err != io.EOF {
 		return err
 	}
-
 	return nil
 }

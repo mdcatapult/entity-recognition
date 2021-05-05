@@ -14,12 +14,6 @@ type tokenizer struct {
 	pb.UnimplementedTokenizerServer
 }
 
-type utf8Token struct {
-	typ int
-	val []byte
-	pos uint32
-}
-
 func (t tokenizer) Tokenize(stream pb.Tokenizer_TokenizeServer) error {
 	for {
 		snippet, err := stream.Recv()
@@ -29,48 +23,72 @@ func (t tokenizer) Tokenize(stream pb.Tokenizer_TokenizeServer) error {
 			return err
 		}
 
-		segmenter := segment.NewWordSegmenterDirect([]byte(snippet.GetData()))
-		buf := bytes.NewBuffer([]byte{})
-		var currentToken []byte
-		var position uint32 = 0
-		for segmenter.Segment() {
-			tokenBytes := segmenter.Bytes()
-			tokenType := segmenter.Type()
+		err = tokenize(snippet, func(snippet *pb.Snippet) error {
+			return stream.Send(snippet)
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
-			switch tokenType {
-			case 0:
-				if tokenBytes[0] > 32 {
-					if _, err := buf.Write(tokenBytes); err != nil {
-						return err
-					}
-					break
-				}
-				var err error
-				currentToken, err = buf.ReadBytes(0)
-				if err != nil && err != io.EOF {
-					return err
-				}
+func tokenize(snippet *pb.Snippet, onToken func(*pb.Snippet) error) error {
+	segmenter := segment.NewWordSegmenterDirect([]byte(snippet.GetData()))
+	buf := bytes.NewBuffer([]byte{})
+	var currentToken []byte
+	var position uint32 = 0
+	for segmenter.Segment() {
+		tokenBytes := segmenter.Bytes()
+		tokenType := segmenter.Type()
 
-			default:
+		switch tokenType {
+		case 0:
+			if tokenBytes[0] > 32 {
 				if _, err := buf.Write(tokenBytes); err != nil {
 					return err
 				}
+				break
+			}
+			var err error
+			currentToken, err = buf.ReadBytes(0)
+			if err != nil && err != io.EOF {
+				return err
 			}
 
-			if len(currentToken) > 0 {
-				pbEntity := &pb.Snippet{
-					Data:   string(currentToken),
-					Offset: snippet.GetOffset() + position,
-				}
-				err := stream.Send(pbEntity)
-				if err != nil {
-					return err
-				}
-				position += uint32(len(tokenBytes) + len(currentToken))
-				currentToken = []byte{}
+		default:
+			if _, err := buf.Write(tokenBytes); err != nil {
+				return err
 			}
 		}
-		if err := segmenter.Err(); err != nil {
+
+		if len(currentToken) > 0 {
+			pbEntity := &pb.Snippet{
+				Data:   string(currentToken),
+				Offset: snippet.GetOffset() + position,
+			}
+			err := onToken(pbEntity)
+			if err != nil {
+				return err
+			}
+			position += uint32(len(tokenBytes) + len(currentToken))
+			currentToken = []byte{}
+		}
+	}
+	if err := segmenter.Err(); err != nil {
+		return err
+	}
+	currentToken, err := buf.ReadBytes(0)
+	if err != nil && err != io.EOF {
+		return err
+	}
+	if len(currentToken) > 0 {
+		pbEntity := &pb.Snippet{
+			Data:   string(currentToken),
+			Offset: snippet.GetOffset() + position,
+		}
+		err := onToken(pbEntity)
+		if err != nil {
 			return err
 		}
 	}
