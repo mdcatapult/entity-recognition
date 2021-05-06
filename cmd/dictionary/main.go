@@ -15,6 +15,8 @@ import (
 	"strings"
 )
 
+var CompoundTokenLength = 5
+
 type recogniser struct {
 	pb.UnimplementedRecognizerServer
 	redisClient *redis.Client
@@ -25,6 +27,9 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 	results := make(map[*pb.Snippet]*redis.StringCmd, 1000)
 	cacheMisses := make([]*pb.Snippet, 1000)
 	pipe := r.redisClient.Pipeline()
+	var tokenHistory []*pb.Snippet
+	var keyHistory []string
+
 	for {
 		token, err := stream.Recv()
 		if err == io.EOF {
@@ -39,26 +44,44 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 			return err
 		}
 
-		if lookup, ok := cache[token]; ok {
-			if lookup == nil {
-				continue
-			}
-			if lookup.Dictionary == "" {
-				cacheMisses = append(cacheMisses, token)
-				continue
-			}
-			entity := &pb.RecognizedEntity{
-				Entity:     string(token.GetData()),
-				Position:   token.GetOffset(),
-				Type:       lookup.Dictionary,
-				ResolvedTo: lookup.ResolvedEntity,
-			}
-			if err := stream.Send(entity); err != nil {
-				return err
-			}
+		if len(tokenHistory) < CompoundTokenLength {
+			tokenHistory = append(tokenHistory, token)
+			keyHistory = append(keyHistory, string(token.GetData()))
 		} else {
-			results[token] = pipe.Get(string(token.GetData()))
-			cache[token] = &Lookup{}
+			tokenHistory = append(tokenHistory[1:], token)
+			keyHistory = append(keyHistory[1:], string(token.GetData()))
+		}
+
+		queryTokens := make([]*pb.Snippet, len(tokenHistory))
+		for i, historicalToken := range tokenHistory {
+			queryTokens[i] = &pb.Snippet{
+				Data:   []byte(strings.Join(keyHistory[i:], " ")),
+				Offset: historicalToken.GetOffset(),
+			}
+		}
+
+		for _, compoundToken := range queryTokens {
+			if lookup, ok := cache[compoundToken]; ok {
+				if lookup == nil {
+					continue
+				}
+				if lookup.Dictionary == "" {
+					cacheMisses = append(cacheMisses, compoundToken)
+					continue
+				}
+				entity := &pb.RecognizedEntity{
+					Entity:     string(compoundToken.GetData()),
+					Position:   compoundToken.GetOffset(),
+					Type:       lookup.Dictionary,
+					ResolvedTo: lookup.ResolvedEntity,
+				}
+				if err := stream.Send(entity); err != nil {
+					return err
+				}
+			} else {
+				results[compoundToken] = pipe.Get(string(compoundToken.GetData()))
+				cache[compoundToken] = &Lookup{}
+			}
 		}
 
 		if len(results) > 1000 {
