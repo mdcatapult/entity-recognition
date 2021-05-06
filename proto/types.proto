@@ -2,7 +2,7 @@ syntax = "proto3";
 option go_package = "github.com/markylaing/entity-recognition/gen/pb";
 
 message Snippet {
-    string data = 1;
+    bytes data = 1;
     uint32 offset = 2;
 }
 

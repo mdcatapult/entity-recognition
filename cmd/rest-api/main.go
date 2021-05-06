@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"container/list"
 	"context"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/lib"
 	"io"
 
 	"github.com/gin-gonic/gin"
@@ -45,23 +46,18 @@ var linebreakNodes = map[string]struct{}{
 	"h5":    {},
 	"h6":    {},
 	"p":     {},
+	"section":     {},
+	"header":     {},
+	"article":     {},
+	"aside":     {},
+	"summary":     {},
+	"figure":     {},
+	"figcaption":     {},
+	"footer":     {},
+	"nav":     {},
 }
 
 func main() {
-
-	var tokenizerOpts []grpc.DialOption
-	tokenizerOpts = append(tokenizerOpts, grpc.WithInsecure())
-	tokenizerOpts = append(tokenizerOpts, grpc.WithBlock())
-	tokenizerConn, err := grpc.Dial(":50051", tokenizerOpts...)
-	if err != nil {
-		panic(err)
-	}
-	defer func() {
-		if err := tokenizerConn.Close(); err != nil {
-			panic(err)
-		}
-	}()
-	tokenizerClient := pb.NewTokenizerClient(tokenizerConn)
 
 	var dictionaryOpts []grpc.DialOption
 	dictionaryOpts = append(dictionaryOpts, grpc.WithInsecure())
@@ -77,41 +73,42 @@ func main() {
 	}()
 	dictionaryClient := pb.NewRecognizerClient(dictionaryConn)
 
-	startHttpServer(tokenizerClient, dictionaryClient)
+	startHttpServer(dictionaryClient)
 }
 
-func startHttpServer(tokenizerClient pb.TokenizerClient, dictionaryClient pb.RecognizerClient) {
+func startHttpServer(dictionaryClient pb.RecognizerClient) {
 	r := gin.Default()
-	r.POST("/", func(c *gin.Context) {
-		tokenizer, err := tokenizerClient.Tokenize(context.Background())
-		if err != nil {
+	r.POST("/html/tokens", func(c *gin.Context) {
+		type token struct{
+			Token string `json:"token"`
+			Offset uint32 `json:"offset"`
+		}
+		var tokens []token
+		onSnippet := func(snippet *pb.Snippet) error {
+			return lib.Tokenize(snippet, func(snippet *pb.Snippet) error {
+				tokens = append(tokens, token{
+					Token:  string(snippet.GetData()),
+					Offset: snippet.GetOffset(),
+				})
+				return nil
+			})
+		}
+
+		if err := HtmlToText(c.Request.Body, onSnippet); err != nil {
 			_ = c.AbortWithError(500, err)
 			return
 		}
+
+		c.JSON(200, tokens)
+	})
+
+	r.POST("/html/entities", func(c *gin.Context) {
 
 		dictionary, err := dictionaryClient.Recognize(context.Background())
 		if err != nil {
 			_ = c.AbortWithError(500, err)
 			return
 		}
-
-		tokenizerErrorChan := make(chan error)
-		go func() {
-			for {
-				token, err := tokenizer.Recv()
-				if err == io.EOF {
-					tokenizerErrorChan <- nil
-					return
-				} else if err != nil {
-					tokenizerErrorChan <- err
-					return
-				}
-
-				if err := dictionary.Send(token); err != nil {
-					tokenizerErrorChan <- err
-				}
-			}
-		}()
 
 		dictionaryErrorChan := make(chan error)
 		var entities []*pb.RecognizedEntity
@@ -129,25 +126,15 @@ func startHttpServer(tokenizerClient pb.TokenizerClient, dictionaryClient pb.Rec
 			}
 		}()
 
-		onSnippet := func(b []byte, position uint32) error {
-			err := tokenizer.Send(&pb.Snippet{
-				Data:   string(b),
-				Offset: position,
+		onSnippet := func(snippet *pb.Snippet) error {
+			err := lib.Tokenize(snippet, func(snippet *pb.Snippet) error {
+				return dictionary.Send(snippet)
 			})
+
 			return err
 		}
 
-		if err := normalize(c.Request.Body, onSnippet); err != nil {
-			_ = c.AbortWithError(500, err)
-			return
-		}
-
-		if err := tokenizer.CloseSend(); err != nil {
-			_ = c.AbortWithError(500, err)
-			return
-		}
-
-		if err = <-tokenizerErrorChan; err != nil {
+		if err := HtmlToText(c.Request.Body, onSnippet); err != nil {
 			_ = c.AbortWithError(500, err)
 			return
 		}
@@ -165,18 +152,18 @@ func startHttpServer(tokenizerClient pb.TokenizerClient, dictionaryClient pb.Rec
 		c.JSON(200, entities)
 	})
 
-	r.POST("/text", func(c *gin.Context) {
-		var text []byte
-		onSnippet := func(b []byte, _ uint32) error {
-			text = append(text, b...)
+	r.POST("/html/text", func(c *gin.Context) {
+		var data []byte
+		onSnippet := func(snippet *pb.Snippet) error {
+			data = append(data, snippet.GetData()...)
 			return nil
 		}
-		if err := normalize(c.Request.Body, onSnippet); err != nil {
+		if err := HtmlToText(c.Request.Body, onSnippet); err != nil {
 			_ = c.AbortWithError(500, err)
 			return
 		}
 
-		c.Data(200, "text/plain", text)
+		c.Data(200, "text/plain", data)
 	})
 	_ = r.Run(":8083")
 }
@@ -213,32 +200,32 @@ func (s *Stack) Pop() {
 	s.Remove(e)
 }
 
-func normalize(r io.Reader, onSnippet func([]byte, uint32) error) error {
-	tokenizer := html.NewTokenizer(r)
+func HtmlToText(r io.Reader, onSnippet func(snippet *pb.Snippet) error) error {
+	htmlTokenizer := html.NewTokenizer(r)
 	var position uint32
 	var stack Stack
 	buf := bytes.NewBuffer([]byte{})
 
 Loop:
 	for {
-		token := tokenizer.Next()
-		switch token {
+		htmlToken := htmlTokenizer.Next()
+		switch htmlToken {
 		case html.ErrorToken:
 			break Loop
 		case html.TextToken:
-			b := tokenizer.Text()
+			htmlTokenBytes := htmlTokenizer.Text()
 			if _, disallowed := disallowedNodes[stack.Top().name]; !disallowed {
-				buf.Write(b)
+				buf.Write(htmlTokenBytes)
 			}
-			position += uint32(len(b))
+			position += uint32(len(htmlTokenBytes))
 		case html.StartTagToken:
-			b := tokenizer.Raw()
-			tn, _ := tokenizer.TagName()
+			htmlTokenBytes := htmlTokenizer.Raw()
+			tn, _ := htmlTokenizer.TagName()
 			stack.Push(Tag{name: string(tn), start: position})
-			position += uint32(len(html.UnescapeString(string(b))))
+			position += uint32(len(html.UnescapeString(string(htmlTokenBytes))))
 		case html.EndTagToken:
-			b := tokenizer.Raw()
-			tn, _ := tokenizer.TagName()
+			htmlTokenBytes := htmlTokenizer.Raw()
+			tn, _ := htmlTokenizer.TagName()
 			if _, disallowed := disallowedNodes[stack.Top().name]; !disallowed && string(tn) == stack.Top().name {
 				if _, breakLine := linebreakNodes[stack.Top().name]; breakLine {
 					buf.Write([]byte{'\n'})
@@ -247,25 +234,28 @@ Loop:
 				if err != nil && err != io.EOF {
 					return err
 				}
-				if err = onSnippet(bufferBytes, stack.Top().start); err != nil {
+				if err = onSnippet(&pb.Snippet{
+					Data:   bufferBytes,
+					Offset: stack.Top().start,
+				}); err != nil {
 					return err
 				}
 			}
-			position += uint32(len(html.UnescapeString(string(b))))
+			position += uint32(len(html.UnescapeString(string(htmlTokenBytes))))
 			stack.Pop()
 		case html.SelfClosingTagToken:
-			b := tokenizer.Raw()
-			tn, _ := tokenizer.TagName()
+			htmlTokenBytes := htmlTokenizer.Raw()
+			tn, _ := htmlTokenizer.TagName()
 			if _, breakLine := linebreakNodes[string(tn)]; breakLine {
 				buf.Write([]byte{'\n'})
 			}
-			position += uint32(len(html.UnescapeString(string(b))))
+			position += uint32(len(html.UnescapeString(string(htmlTokenBytes))))
 		default:
-			b := tokenizer.Raw()
-			position += uint32(len(html.UnescapeString(string(b))))
+			htmlTokenBytes := htmlTokenizer.Raw()
+			position += uint32(len(html.UnescapeString(string(htmlTokenBytes))))
 		}
 	}
-	if err := tokenizer.Err(); err != io.EOF {
+	if err := htmlTokenizer.Err(); err != io.EOF {
 		return err
 	}
 	return nil
