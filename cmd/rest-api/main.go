@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"container/list"
 	"context"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/lib"
-	"io"
-
 	"github.com/gin-gonic/gin"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/gen/pb"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/lib"
 	"golang.org/x/net/html"
 	"google.golang.org/grpc"
+	"io"
+	"sync"
 )
 
 var disallowedNodes = map[string]struct{}{
@@ -73,10 +73,24 @@ func main() {
 	}()
 	dictionaryClient := pb.NewRecognizerClient(dictionaryConn)
 
-	startHttpServer(dictionaryClient)
+	var regexOpts []grpc.DialOption
+	regexOpts = append(regexOpts, grpc.WithInsecure())
+	regexOpts = append(regexOpts, grpc.WithBlock())
+	regexConn, err := grpc.Dial(":50053", regexOpts...)
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		if err := dictionaryConn.Close(); err != nil {
+			panic(err)
+		}
+	}()
+	regexClient := pb.NewRecognizerClient(regexConn)
+
+	startHttpServer(dictionaryClient, regexClient)
 }
 
-func startHttpServer(dictionaryClient pb.RecognizerClient) {
+func startHttpServer(clients ...pb.RecognizerClient) {
 	r := gin.Default()
 	r.POST("/html/tokens", func(c *gin.Context) {
 		type token struct{
@@ -104,34 +118,43 @@ func startHttpServer(dictionaryClient pb.RecognizerClient) {
 
 	r.POST("/html/entities", func(c *gin.Context) {
 
-		dictionary, err := dictionaryClient.Recognize(context.Background())
-		if err != nil {
-			_ = c.AbortWithError(500, err)
-			return
+		var err error
+		errChan := make(chan error, len(clients))
+		recognisers := make([]pb.Recognizer_RecognizeClient, len(clients))
+		for i, client := range clients {
+			recognisers[i], err = client.Recognize(context.Background())
 		}
 
-		dictionaryErrorChan := make(chan error)
+
 		var entities []*pb.RecognizedEntity
-		go func() {
-			for {
-				entity, err := dictionary.Recv()
-				if err == io.EOF {
-					dictionaryErrorChan <- nil
-					return
-				} else if err != nil {
-					dictionaryErrorChan <- err
-					return
+		var mut sync.Mutex
+		for _, recogniser := range recognisers {
+			go func(recogniser pb.Recognizer_RecognizeClient) {
+				for {
+					entity, err := recogniser.Recv()
+					if err == io.EOF {
+						errChan <- nil
+						return
+					} else if err != nil {
+						errChan <- err
+						return
+					}
+					mut.Lock()
+					entities = append(entities, entity)
+					mut.Unlock()
 				}
-				entities = append(entities, entity)
-			}
-		}()
+			}(recogniser)
+		}
 
 		onSnippet := func(snippet *pb.Snippet) error {
-			err := lib.Tokenize(snippet, func(snippet *pb.Snippet) error {
-				return dictionary.Send(snippet)
+			return lib.Tokenize(snippet, func(snippet *pb.Snippet) error {
+				for _, recogniser := range recognisers {
+					if err := recogniser.Send(snippet); err != nil {
+						return err
+					}
+				}
+				return nil
 			})
-
-			return err
 		}
 
 		if err := HtmlToText(c.Request.Body, onSnippet); err != nil {
@@ -139,14 +162,18 @@ func startHttpServer(dictionaryClient pb.RecognizerClient) {
 			return
 		}
 
-		if err := dictionary.CloseSend(); err != nil {
-			_ = c.AbortWithError(500, err)
-			return
+		for _, recogniser := range recognisers {
+			if err := recogniser.CloseSend(); err != nil {
+				_ = c.AbortWithError(500, err)
+				return
+			}
 		}
 
-		if err = <-dictionaryErrorChan; err != nil {
-			_ = c.AbortWithError(500, err)
-			return
+		for i := 0; i < len(recognisers); i++ {
+			if err = <-errChan; err != nil {
+				_ = c.AbortWithError(500, err)
+				return
+			}
 		}
 
 		c.JSON(200, entities)

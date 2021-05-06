@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/go-redis/redis"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/gen/pb"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/lib"
 	"google.golang.org/grpc"
 	"io"
 	"io/ioutil"
@@ -15,17 +16,17 @@ import (
 	"strings"
 )
 
-var CompoundTokenLength = 5
-
+var CompoundTokenLength = 10
+var PipelineSize = 10000
 type recogniser struct {
 	pb.UnimplementedRecognizerServer
 	redisClient *redis.Client
 }
 
 func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
-	cache := make(map[*pb.Snippet]*Lookup, 1000)
-	results := make(map[*pb.Snippet]*redis.StringCmd, 1000)
-	cacheMisses := make([]*pb.Snippet, 1000)
+	cache := make(map[*pb.Snippet]*Lookup, PipelineSize)
+	results := make(map[*pb.Snippet]*redis.StringCmd, PipelineSize)
+	cacheMisses := make([]*pb.Snippet, PipelineSize)
 	pipe := r.redisClient.Pipeline()
 	var tokenHistory []*pb.Snippet
 	var keyHistory []string
@@ -44,6 +45,10 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 			return err
 		}
 
+		if sentenceEnd := lib.Normalize(token); sentenceEnd {
+			tokenHistory = []*pb.Snippet{}
+			keyHistory = []string{}
+		}
 		if len(tokenHistory) < CompoundTokenLength {
 			tokenHistory = append(tokenHistory, token)
 			keyHistory = append(keyHistory, string(token.GetData()))
@@ -84,12 +89,12 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 			}
 		}
 
-		if len(results) > 1000 {
+		if len(results) > PipelineSize {
 			err := execPipe(pipe, results, cache, stream)
 			if err != nil {
 				return err
 			}
-			results = make(map[*pb.Snippet]*redis.StringCmd, 1000)
+			results = make(map[*pb.Snippet]*redis.StringCmd, PipelineSize)
 		}
 	}
 
