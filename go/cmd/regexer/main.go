@@ -17,6 +17,7 @@ import (
 	"runtime"
 )
 
+// config structure
 type conf struct {
 	LogLevel string `mapstructure:"log_level"`
 	Server struct{
@@ -24,11 +25,13 @@ type conf struct {
 	}
 }
 
+// global vars initialised on startup (should never be edited after that).
 var config conf
 var regexps map[string]*regexp.Regexp
 var regexpStringMap = make(map[string]string)
 
 func init() {
+	// Initialize config with default values
 	err := lib.InitializeConfig(map[string]interface{}{
 		"log_level": "info",
 		"server": map[string]interface{}{
@@ -39,6 +42,7 @@ func init() {
 		panic(err)
 	}
 
+	// unmarshal viper contents into our struct
 	err = viper.Unmarshal(&config)
 	if err != nil {
 		panic(err)
@@ -47,6 +51,7 @@ func init() {
 
 func main() {
 
+	// Reads the regexp.yml file and compiles them, populating the `regexp` map above.
 	compileRegexps()
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", config.Server.GrpcPort))
@@ -70,6 +75,7 @@ type recogniser struct {
 }
 
 func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
+	// listen for tokens
 	for {
 		token, err := stream.Recv()
 		if err == io.EOF {
@@ -77,8 +83,12 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 		} else if err != nil {
 			return err
 		}
+
+		// normalize the token (removes punctuation and enforces NFKC encoding on the utf8 characters).
+		lib.Normalize(token)
+
+		// For every regexp try to match the token and send the recognised entity if there is a match.
 		for name, re := range regexps {
-			lib.Normalize(token)
 			if re.Match(token.GetData()) {
 				err := stream.Send(&pb.RecognizedEntity{
 					Entity:     string(token.GetData()),

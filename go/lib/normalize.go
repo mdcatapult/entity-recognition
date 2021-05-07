@@ -45,6 +45,6 @@ func Normalize(snippet *pb.Snippet) bool {
 		sentenceEnd = true
 		snippet.Data = snippet.Data[:len(snippet.Data)-1]
 	}
-	snippet.Data = norm.NFKD.Bytes(snippet.Data)
+	snippet.Data = norm.NFKC.Bytes(snippet.Data)
 	return sentenceEnd
 }
