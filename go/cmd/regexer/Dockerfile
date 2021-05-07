@@ -1,8 +1,9 @@
 FROM golang AS builder
 
 WORKDIR /build
-COPY . .
-RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o regexer cmd/regexer/main.go
+COPY go.* .
+COPY go .
+RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o regexer go/cmd/regexer/main.go
 
 FROM golang:alpine
 
