@@ -3,16 +3,66 @@ package main
 import (
 	"fmt"
 	"github.com/go-redis/redis"
+	"github.com/spf13/viper"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/lib"
 	"google.golang.org/grpc"
+	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
 	"net"
+	"path"
+	"path/filepath"
 	"regexp"
-
-	"gopkg.in/yaml.v2"
+	"runtime"
 )
+
+type conf struct {
+	LogLevel string `mapstructure:"log_level"`
+	Server struct{
+		GrpcPort int `mapstructure:"grpc_port"`
+	}
+}
+
+var config conf
+var regexps map[string]*regexp.Regexp
+var regexpStringMap = make(map[string]string)
+
+func init() {
+	err := lib.InitializeConfig(map[string]interface{}{
+		"log_level": "info",
+		"server": map[string]interface{}{
+			"grpc_port": 50053,
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	err = viper.Unmarshal(&config)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func main() {
+
+	compileRegexps()
+
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", config.Server.GrpcPort))
+	if err != nil {
+		panic(err)
+	}
+	var opts []grpc.ServerOption
+	grpcServer := grpc.NewServer(opts...)
+	pb.RegisterRecognizerServer(grpcServer, recogniser{})
+	fmt.Println("Serving...")
+	err = grpcServer.Serve(lis)
+	if err != nil {
+		panic(err)
+	}
+
+}
 
 type recogniser struct {
 	pb.UnimplementedRecognizerServer
@@ -44,11 +94,10 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 	return nil
 }
 
-var regexps map[string]*regexp.Regexp
-var regexpStringMap = make(map[string]string)
-
-func init() {
-	b, err := ioutil.ReadFile("cmd/regexer/regexps.yml")
+func compileRegexps() {
+	_, thisFile, _, _ := runtime.Caller(0)
+	thisDirectory := path.Dir(thisFile)
+	b, err := ioutil.ReadFile(filepath.Join(thisDirectory, "regexps.yml"))
 	if err != nil {
 		panic(err)
 	}
@@ -61,21 +110,4 @@ func init() {
 	for name, uncompiledRegexp := range regexpStringMap {
 		regexps[name] = regexp.MustCompile(uncompiledRegexp)
 	}
-}
-
-func main() {
-
-	fmt.Println("Serving...")
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", 50053))
-	if err != nil {
-		panic(err)
-	}
-	var opts []grpc.ServerOption
-	grpcServer := grpc.NewServer(opts...)
-	pb.RegisterRecognizerServer(grpcServer, recogniser{})
-	err = grpcServer.Serve(lis)
-	if err != nil {
-		panic(err)
-	}
-
 }

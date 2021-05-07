@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-redis/redis"
+	"github.com/spf13/viper"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/lib"
 	"google.golang.org/grpc"
@@ -13,11 +14,81 @@ import (
 	"net"
 	"os"
 	"path"
+	"path/filepath"
+	"runtime"
 	"strings"
 )
 
 var CompoundTokenLength = 10
 var PipelineSize = 10000
+
+type Lookup struct {
+	Dictionary string `json:"dictionary"`
+	ResolvedEntity string `json:"resolvedEntity,omitempty"`
+}
+
+type conf struct {
+	LogLevel string `mapstructure:"log_level"`
+	Server struct{
+		GrpcPort int `mapstructure:"grpc_port"`
+	}
+	Redis struct {
+		Host string
+		Port int
+	}
+}
+
+var config conf
+
+func init() {
+	err := lib.InitializeConfig(map[string]interface{}{
+		"log_level": "info",
+		"server": map[string]interface{}{
+			"grpc_port": 50052,
+		},
+		"redis": map[string]interface{}{
+			"host": "localhost",
+			"port": 6379,
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	err = viper.Unmarshal(&config)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func main() {
+
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:               fmt.Sprintf("%s:%d", config.Redis.Host, config.Redis.Port),
+	})
+
+	err := uploadDictionaries(redisClient)
+	if err != nil {
+		panic(err)
+	}
+
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", config.Server.GrpcPort))
+	if err != nil {
+		panic(err)
+	}
+	var opts []grpc.ServerOption
+	grpcServer := grpc.NewServer(opts...)
+	pb.RegisterRecognizerServer(grpcServer, recogniser{
+		redisClient: redisClient,
+	})
+
+	fmt.Println("Serving...")
+	err = grpcServer.Serve(lis)
+	if err != nil {
+		panic(err)
+	}
+}
+
 type recogniser struct {
 	pb.UnimplementedRecognizerServer
 	redisClient *redis.Client
@@ -147,55 +218,34 @@ func execPipe(pipe redis.Pipeliner, results map[*pb.Snippet]*redis.StringCmd, ca
 	return nil
 }
 
-func main() {
-
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:               "localhost:6379",
-	})
-	dictionaryDirPath := "cmd/dictionary/dictionaries"
-	files, err := ioutil.ReadDir(dictionaryDirPath)
+func uploadDictionaries(redisClient *redis.Client) error {
+	_, thisFile, _, _ := runtime.Caller(0)
+	thisDirectory := path.Dir(thisFile)
+	dictionaryDir := filepath.Join(thisDirectory, "dictionaries")
+	files, err := ioutil.ReadDir(dictionaryDir)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	for _, f := range files {
-		values, err := parseDict(path.Join(dictionaryDirPath, f.Name()))
+		values, err := parseDict(path.Join(dictionaryDir, f.Name()))
 		if err != nil {
-			panic(err)
+			return err
 		}
 		pipe := redisClient.Pipeline()
 		for key, lookup := range values {
 			blob, err := json.Marshal(lookup)
 			if err != nil {
-				panic(err)
+				return err
 			}
 			pipe.Set(key, blob, 0)
 		}
 		_, err = pipe.Exec()
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
-
-	fmt.Println("Serving...")
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", 50052))
-	if err != nil {
-		panic(err)
-	}
-	var opts []grpc.ServerOption
-	grpcServer := grpc.NewServer(opts...)
-	pb.RegisterRecognizerServer(grpcServer, recogniser{
-		redisClient: redisClient,
-	})
-	err = grpcServer.Serve(lis)
-	if err != nil {
-		panic(err)
-	}
-}
-
-type Lookup struct {
-	Dictionary string `json:"dictionary"`
-	ResolvedEntity string `json:"resolvedEntity,omitempty"`
+	return nil
 }
 
 func parseDict(fileName string) (map[string]Lookup, error) {
