@@ -7,12 +7,11 @@ The intention of this work is to modernise chemical entity recognition via up to
 ## Run
 ```bash
 docker-compose up -d
-cd go
-go run cmd/regexer/main.go --config config.example.yml
+go run go/cmd/regexer/main.go --config config.example.yml
 # open another terminal in the same directory, then:
-go run cmd/dictionary/main.go --config config.example.yml
+go run go/cmd/dictionary/main.go --config config.example.yml
 # open another terminal in the same directory, then:
-go run cmd/rest-api/main.go --config config.example.yml
+go run go/cmd/rest-api/main.go --config config.example.yml
 ```
 
 ## Test

@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"github.com/blevesearch/segment"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/gen/pb"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"io"
 )
 

@@ -3,7 +3,7 @@ package lib
 import (
 	"bytes"
 	"container/list"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/gen/pb"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"golang.org/x/net/html"
 	"io"
 )

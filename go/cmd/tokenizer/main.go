@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/gen/pb"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/lib"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"google.golang.org/grpc"
 	"io"
 	"net"

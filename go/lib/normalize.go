@@ -1,7 +1,7 @@
 package lib
 
 import (
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/gen/pb"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"golang.org/x/text/unicode/norm"
 )
 
