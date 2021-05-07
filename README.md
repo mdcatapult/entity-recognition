@@ -4,6 +4,20 @@ This [*monorepo*](https://www.atlassian.com/git/tutorials/monorepos) contains al
 
 The intention of this work is to modernise chemical entity recognition via up to date architecture, state of the art models, and brute force.
 
+## Run
+```bash
+docker-compose up -d
+cd go
+go run cmd/regexer/main.go --config config.example.yml
+# open another terminal in the same directory, then:
+go run cmd/dictionary/main.go --config config.example.yml
+# open another terminal in the same directory, then:
+go run cmd/rest-api/main.go --config config.example.yml
+```
+
+## Test
+Grab some html from a website (ctrl+U in chrome). Make a post request to `localhost:8080/html/text`, `localhost:8080/html/tokens`, or `localhost:8080/html/entities` with the html in the body of the request.
+
 ## Generate protobufs
 Go:
 ```bash

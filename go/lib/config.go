@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+// InitializeConfig standardises config initialization across all apps.
 func InitializeConfig(defaults map[string]interface{}) error {
 	pflag.String("config", "config.yml", "The config file path.")
 	pflag.Parse()

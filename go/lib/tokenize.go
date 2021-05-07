@@ -1,13 +1,18 @@
 package lib
 
 import (
+	"bufio"
 	"bytes"
 	"github.com/blevesearch/segment"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/gen/pb"
 	"io"
 )
 
+// Tokenize delimits text by whitespace and executes a callback for every token it
+// finds.
 func Tokenize(snippet *pb.Snippet, onToken func(*pb.Snippet) error) error {
+	// segmenter is a utf8 word boundary segmenter. Instead of splitting on all
+	// word boundaries, we check first that the boundary is whitespace.
 	segmenter := segment.NewWordSegmenterDirect(snippet.GetData())
 	buf := bytes.NewBuffer([]byte{})
 	var currentToken []byte
@@ -18,12 +23,15 @@ func Tokenize(snippet *pb.Snippet, onToken func(*pb.Snippet) error) error {
 
 		switch tokenType {
 		case 0:
+			// word boundary character
 			if tokenBytes[0] > 32 {
+				// not whitespace
 				if _, err := buf.Write(tokenBytes); err != nil {
 					return err
 				}
 				break
 			}
+			// whitespace: read the contents of the buffer into currentToken
 			var err error
 			currentToken, err = buf.ReadBytes(0)
 			if err != nil && err != io.EOF {
@@ -31,21 +39,27 @@ func Tokenize(snippet *pb.Snippet, onToken func(*pb.Snippet) error) error {
 			}
 
 		default:
+			// anything but a word boundary (i.e. '-', 'hello')
+			// write to buffer
 			if _, err := buf.Write(tokenBytes); err != nil {
 				return err
 			}
 		}
 
+		// if currentToken has contents, create a snippet and execute the callback.
 		if len(currentToken) > 0 {
-			pbEntity := &pb.Snippet{
+			token := &pb.Snippet{
 				Data:   currentToken,
 				Offset: snippet.GetOffset() + position,
 			}
-			err := onToken(pbEntity)
+			err := onToken(token)
 			if err != nil {
 				return err
 			}
+
+			// increment the position
 			position += uint32(len(tokenBytes) + len(currentToken))
+			// reset the currentToken value
 			currentToken = []byte{}
 		}
 	}
@@ -62,6 +76,25 @@ func Tokenize(snippet *pb.Snippet, onToken func(*pb.Snippet) error) error {
 			Offset: snippet.GetOffset() + position,
 		}
 		err := onToken(pbEntity)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// TokenizeWordBoundary tokenizes on word boundary instead of whitespace and doesn't
+// give any offset information.
+func TokenizeWordBoundary(snippet *pb.Snippet, onToken func(*pb.Snippet) error) error {
+	r := bytes.NewReader(snippet.GetData())
+	scanner := bufio.NewScanner(r)
+	scanner.Split(segment.SplitWords)
+	for scanner.Scan() {
+		token := scanner.Bytes()
+		err := onToken(&pb.Snippet{
+			Data: token,
+			Offset: 0,
+		})
 		if err != nil {
 			return err
 		}

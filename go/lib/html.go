@@ -84,6 +84,10 @@ func (s *htmlStack) pop() {
 	s.Remove(e)
 }
 
+// HtmlToText Uses the html parser from the golang standard lib to get sequential
+// tokens. We keep track of the current html tag so we know whether to include the
+// text or not. When we reach an end tag (i.e. </p>), call onSnippet on the contents
+// of the buffer. Additionally, add line breaks where appropriate.
 func HtmlToText(r io.Reader, onSnippet func(snippet *pb.Snippet) error) error {
 	htmlTokenizer := html.NewTokenizer(r)
 	var position uint32

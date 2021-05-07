@@ -4,10 +4,10 @@ server:
 recognizers:
   dictionary:
     host: localhost
-    grpc_port: 50052
+    grpc_port: 50051
   regexer:
     host: localhost
-    grpc_port: 50053
+    grpc_port: 50052
 #  iupac:
 #    host: localhost
 #    grpc_port: 50054

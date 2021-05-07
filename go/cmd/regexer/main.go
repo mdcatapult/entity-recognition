@@ -35,7 +35,7 @@ func init() {
 	err := lib.InitializeConfig(map[string]interface{}{
 		"log_level": "info",
 		"server": map[string]interface{}{
-			"grpc_port": 50053,
+			"grpc_port": 50051,
 		},
 	})
 	if err != nil {

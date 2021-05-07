@@ -199,5 +199,5 @@ func startHttpServer(clients ...pb.RecognizerClient) {
 
 		c.Data(200, "text/plain", data)
 	})
-	_ = r.Run(":8083")
+	_ = r.Run(fmt.Sprintf(":%d", config.Server.HttpPort))
 }
