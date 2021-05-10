@@ -4,6 +4,9 @@ This [*monorepo*](https://www.atlassian.com/git/tutorials/monorepos) contains al
 
 The intention of this work is to modernise chemical entity recognition via up to date architecture, state of the art models, and brute force.
 
+## Diagrams
+See https://lucid.app/lucidchart/eae25d37-6b9a-4358-8941-9b93012586e7/edit?beaconFlowId=A97289628B477AD2&page=0_0#
+
 ## Run
 ```bash
 docker-compose up -d
