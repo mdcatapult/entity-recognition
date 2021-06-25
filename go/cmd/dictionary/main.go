@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/go-redis/redis"
 	"github.com/spf13/viper"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/cmd/dictionary/db"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"google.golang.org/grpc"
@@ -29,22 +29,13 @@ var compoundTokenLength = 5
 // This number of operations to pipeline to redis (to save on round trip time).
 var pipelineSize = 1000
 
-// Lookup is the value we will store in redis.
-type Lookup struct {
-	Dictionary string `json:"dictionary"`
-	ResolvedEntity string `json:"resolvedEntity,omitempty"`
-}
-
 // config structure
 type conf struct {
 	LogLevel string `mapstructure:"log_level"`
 	Server struct{
 		GrpcPort int `mapstructure:"grpc_port"`
 	}
-	Redis struct {
-		Host string
-		Port int
-	}
+	Redis db.RedisConfig
 }
 
 var config conf
@@ -75,12 +66,10 @@ func init() {
 func main() {
 
 	// Get a redis client
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:               fmt.Sprintf("%s:%d", config.Redis.Host, config.Redis.Port),
-	})
+	dbClient := db.NewRedisClient(config.Redis)
 
 	// read all the dictionaries in the dicitonary folder, parse them, and upload the results to redis.
-	err := uploadDictionaries(redisClient)
+	err := uploadDictionaries(dbClient)
 	if err != nil {
 		panic(err)
 	}
@@ -93,7 +82,7 @@ func main() {
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)
 	pb.RegisterRecognizerServer(grpcServer, recogniser{
-		redisClient: redisClient,
+		dbClient: dbClient,
 	})
 
 	fmt.Println("Serving...")
@@ -105,16 +94,13 @@ func main() {
 
 type recogniser struct {
 	pb.UnimplementedRecognizerServer
-	redisClient *redis.Client
+	dbClient db.Client
 }
 
 func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 	// in memory cache per query. We might be able to be able to combine this
 	// with a global in memory cache with a TTL for more speed.
-	cache := make(map[*pb.Snippet]*Lookup, pipelineSize)
-
-	// this map allows is to reference the results of a redis pipeline execution.
-	results := make(map[*pb.Snippet]*redis.StringCmd, pipelineSize)
+	cache := make(map[*pb.Snippet]*db.Lookup, pipelineSize)
 
 	// populate this when a redis query is queued in the pipeline but the pipeline hasn't
 	// been executed yet. We will get these values from the cache after the client stops
@@ -127,13 +113,27 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 	var keyHistory []string
 	var sentenceEnd bool
 
-	pipe := r.redisClient.Pipeline()
+	pipe := r.dbClient.NewPipeline(pipelineSize)
+	onResult := func(snippet *pb.Snippet, lookup *db.Lookup) error {
+		cache[snippet] = lookup
+		if lookup == nil {
+			return nil
+		}
+		entity := &pb.RecognizedEntity{
+			Entity:     string(snippet.GetData()),
+			Position:   snippet.GetOffset(),
+			Type:       lookup.Dictionary,
+			ResolvedTo: lookup.ResolvedEntity,
+		}
+		return stream.Send(entity)
+	}
+
 	for {
 		token, err := stream.Recv()
 		if err == io.EOF {
 			// There are likely some redis queries queued on the pipe. If there are, execute them. Then break.
-			if len(results) > 0 {
-				err := execPipe(pipe, results, cache, cacheMisses, stream)
+			if pipe.Size() > 0 {
+				err := pipe.ExecGet(onResult)
 				if err != nil {
 					return err
 				}
@@ -196,22 +196,21 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 				}
 			} else {
 				// Not in local cache.
-				// Queue the redis "GET" in the pipe and set the cache value to an empty lookup
+				// Queue the redis "GET" in the pipe and set the cache value to an empty db.Lookup
 				// (so that future equivalent tokens will be a cache miss).
-				results[compoundToken] = pipe.Get(string(compoundToken.GetData()))
-				cache[compoundToken] = &Lookup{}
+				pipe.Get(compoundToken)
+				cache[compoundToken] = &db.Lookup{}
 			}
 		}
 
 		// If we have enough redis queries in the pipeline, execute it and
 		// reset the values of results/cacheMisses.
-		if len(results) > pipelineSize {
-			err := execPipe(pipe, results, cache, cacheMisses, stream)
+		if pipe.Size() > pipelineSize {
+			err := pipe.ExecGet(onResult)
 			if err != nil {
 				return err
 			}
-			results = make(map[*pb.Snippet]*redis.StringCmd, pipelineSize)
-			pipe = r.redisClient.Pipeline()
+			pipe = r.dbClient.NewPipeline(pipelineSize)
 		}
 	}
 
@@ -233,44 +232,7 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 	return nil
 }
 
-func execPipe(pipe redis.Pipeliner, results map[*pb.Snippet]*redis.StringCmd, cache map[*pb.Snippet]*Lookup, cacheMisses []*pb.Snippet, stream pb.Recognizer_RecognizeServer) error {
-	_, err := pipe.Exec()
-	if err != nil && err != redis.Nil {
-		return err
-	}
-	for key, result := range results {
-		b, err := result.Bytes()
-		if err == redis.Nil {
-			// if nil, not in redis. Put nil in local cache.
-			cache[key] = nil
-			continue
-		} else if err != nil {
-			return err
-		}
-		var lookup Lookup
-		err = json.Unmarshal(b, &lookup)
-		if err != nil {
-			return err
-		}
-
-		// At this point we have found an entity in redis. Put it in the cache
-		// and send it back to the client.
-		cache[key] = &lookup
-		entity := &pb.RecognizedEntity{
-			Entity:     string(key.GetData()),
-			Position:   key.GetOffset(),
-			Type:       lookup.Dictionary,
-			ResolvedTo: lookup.ResolvedEntity,
-		}
-		if err := stream.Send(entity); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func uploadDictionaries(redisClient *redis.Client) error {
+func uploadDictionaries(dbClient db.Client) error {
 	_, thisFile, _, _ := runtime.Caller(0)
 	thisDirectory := path.Dir(thisFile)
 	dictionaryDir := filepath.Join(thisDirectory, "dictionaries")
@@ -284,15 +246,15 @@ func uploadDictionaries(redisClient *redis.Client) error {
 		if err != nil {
 			return err
 		}
-		pipe := redisClient.Pipeline()
+		pipe := dbClient.NewPipeline(len(values))
 		for key, lookup := range values {
 			blob, err := json.Marshal(lookup)
 			if err != nil {
 				return err
 			}
-			pipe.Set(key, blob, 0)
+			pipe.Set(key, blob)
 		}
-		_, err = pipe.Exec()
+		err = pipe.ExecSet()
 		if err != nil {
 			return err
 		}
@@ -300,7 +262,7 @@ func uploadDictionaries(redisClient *redis.Client) error {
 	return nil
 }
 
-func parseDict(fileName string) (map[string]Lookup, error) {
+func parseDict(fileName string) (map[string]db.Lookup, error) {
 	tsv, err := os.Open(fileName)
 	if err != nil {
 		return nil, err
@@ -309,7 +271,7 @@ func parseDict(fileName string) (map[string]Lookup, error) {
 	dictionaryName := strings.TrimSuffix(path.Base(fileName), path.Ext(fileName))
 
 	scn := bufio.NewScanner(tsv)
-	dictionary := make(map[string]Lookup)
+	dictionary := make(map[string]db.Lookup)
 	for scn.Scan() {
 		line := scn.Text()
 		uncommented := strings.Split(line, "#")
@@ -320,7 +282,7 @@ func parseDict(fileName string) (map[string]Lookup, error) {
 				continue
 			}
 			if len(record) == 1 {
-				dictionary[strings.TrimSpace(record[0])] = Lookup{
+				dictionary[strings.TrimSpace(record[0])] = db.Lookup{
 					Dictionary:     dictionaryName,
 				}
 				continue
@@ -329,7 +291,7 @@ func parseDict(fileName string) (map[string]Lookup, error) {
 				if key == "" {
 					continue
 				}
-				dictionary[strings.TrimSpace(key)] = Lookup{
+				dictionary[strings.TrimSpace(key)] = db.Lookup{
 					Dictionary:     dictionaryName,
 					ResolvedEntity: resolvedEntity,
 				}
