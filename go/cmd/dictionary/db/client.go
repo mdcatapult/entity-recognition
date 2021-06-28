@@ -9,13 +9,22 @@ type Lookup struct {
 }
 
 type Client interface {
-	NewPipeline(size int) Pipeline
+	NewGetPipeline(size int) GetPipeline
+	NewSetPipeline(size int) SetPipeline
 }
 
 type Pipeline interface {
-	Set(key string, data []byte)
-	ExecSet() error
+	Size() int
+}
+
+type GetPipeline interface {
 	Get(token *pb.Snippet)
 	ExecGet(onResult func(*pb.Snippet, *Lookup) error) error
-	Size() int
+	Pipeline
+}
+
+type SetPipeline interface {
+	Set(key string, data []byte)
+	ExecSet() error
+	Pipeline
 }

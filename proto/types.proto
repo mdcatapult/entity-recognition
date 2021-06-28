@@ -10,5 +10,5 @@ message RecognizedEntity {
     string entity = 1;
     uint32 position = 2;
     string type = 3;
-    string resolvedTo = 4;
+    repeated string resolvedTo = 4;
 }

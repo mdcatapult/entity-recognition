@@ -117,7 +117,7 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 	var keyHistory []string
 	var sentenceEnd bool
 
-	pipe := r.dbClient.NewPipeline(pipelineSize)
+	pipe := r.dbClient.NewGetPipeline(pipelineSize)
 	onResult := func(snippet *pb.Snippet, lookup *db.Lookup) error {
 		cache[snippet] = lookup
 		if lookup == nil {
@@ -127,9 +127,13 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 			Entity:     string(snippet.GetData()),
 			Position:   snippet.GetOffset(),
 			Type:       lookup.Dictionary,
-			ResolvedTo: lookup.ResolvedEntities[0],
+			ResolvedTo: lookup.ResolvedEntities,
 		}
-		return stream.Send(entity)
+		if err := stream.Send(entity); err != nil {
+			return err
+		}
+
+		return nil
 	}
 
 	for {
@@ -193,7 +197,7 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 					Entity:     string(compoundToken.GetData()),
 					Position:   compoundToken.GetOffset(),
 					Type:       lookup.Dictionary,
-					ResolvedTo: lookup.ResolvedEntities[0],
+					ResolvedTo: lookup.ResolvedEntities,
 				}
 				if err := stream.Send(entity); err != nil {
 					return err
@@ -214,7 +218,7 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 			if err != nil {
 				return err
 			}
-			pipe = r.dbClient.NewPipeline(pipelineSize)
+			pipe = r.dbClient.NewGetPipeline(pipelineSize)
 		}
 	}
 
@@ -225,7 +229,7 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 				Entity:     string(token.GetData()),
 				Position:   token.GetOffset(),
 				Type:       lookup.Dictionary,
-				ResolvedTo: lookup.ResolvedEntities[0],
+				ResolvedTo: lookup.ResolvedEntities,
 			}
 			if err := stream.Send(entity); err != nil {
 				return err
@@ -251,16 +255,15 @@ func uploadDictionary(dictPath string, dbClient db.Client) error {
 
 	dictionaryName := "unichem"
 
-	pipe := dbClient.NewPipeline(pipelineSize)
+	pipe := dbClient.NewSetPipeline(pipelineSize)
 
 	scn := bufio.NewScanner(tsv)
 	currentId := -1
 	row := 0
 	var synonyms []string
 	var identifiers []string
-	for scn.Scan() {
+	for scn.Scan() && row <= 1000000 {
 		row++
-		if row > 10000000 { break }
 		if row % 100000 == 0 {
 			log.Info().Int("row", row).Msg("Scanning dictionary...")
 		}
@@ -303,7 +306,7 @@ func uploadDictionary(dictPath string, dbClient db.Client) error {
 					if err := pipe.ExecSet(); err != nil {
 						return err
 					}
-					pipe = dbClient.NewPipeline(pipelineSize)
+					pipe = dbClient.NewSetPipeline(pipelineSize)
 				}
 
 				synonyms = []string{}
@@ -332,7 +335,6 @@ func uploadDictionary(dictPath string, dbClient db.Client) error {
 		if err := pipe.ExecSet(); err != nil {
 			return err
 		}
-		pipe = dbClient.NewPipeline(pipelineSize)
 	}
 
 	return nil
