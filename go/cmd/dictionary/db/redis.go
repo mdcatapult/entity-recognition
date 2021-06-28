@@ -13,7 +13,7 @@ type RedisConfig struct {
 }
 
 func NewRedisClient(conf RedisConfig) Client {
-	return redisClient{
+	return &redisClient{
 		Client: redis.NewClient(&redis.Options{
 			Addr: fmt.Sprintf("%s:%d", conf.Host, conf.Port)}),
 	}
@@ -28,27 +28,27 @@ type redisPipeline struct {
 	cmds map[*pb.Snippet]*redis.StringCmd
 }
 
-func (r redisClient) NewPipeline(size int) Pipeline {
-	return redisPipeline{
+func (r *redisClient) NewPipeline(size int) Pipeline {
+	return &redisPipeline{
 		pipe: r.Pipeline(),
 		cmds: make(map[*pb.Snippet]*redis.StringCmd, size),
 	}
 }
 
-func (r redisPipeline) Set(key string, data []byte) {
+func (r *redisPipeline) Set(key string, data []byte) {
 	r.pipe.Set(key, data, 0)
 }
 
-func (r redisPipeline) ExecSet() error {
+func (r *redisPipeline) ExecSet() error {
 	_, err := r.pipe.Exec()
 	return err
 }
 
-func (r redisPipeline) Get(token *pb.Snippet) {
+func (r *redisPipeline) Get(token *pb.Snippet) {
 	r.cmds[token] = r.pipe.Get(string(token.GetData()))
 }
 
-func (r redisPipeline) ExecGet(onResult func(*pb.Snippet, *Lookup) error) error {
+func (r *redisPipeline) ExecGet(onResult func(*pb.Snippet, *Lookup) error) error {
 
 	_, err := r.pipe.Exec()
 	if err != nil && err != redis.Nil {
@@ -79,6 +79,6 @@ func (r redisPipeline) ExecGet(onResult func(*pb.Snippet, *Lookup) error) error 
 	return nil
 }
 
-func (r redisPipeline) Size() int {
+func (r *redisPipeline) Size() int {
 	return len(r.cmds)
 }

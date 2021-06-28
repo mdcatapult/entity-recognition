@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"path"
@@ -38,8 +39,10 @@ func InitializeConfig(defaults map[string]interface{}) error {
 	repl := strings.NewReplacer(".", "_")
 	viper.SetEnvKeyReplacer(repl)
 	err = viper.ReadInConfig()
-	if err != nil {
-		return err
+	if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+		log.Warn().Err(err).Msg("default settings applied")
+	} else if err != nil {
+		log.Fatal().Err(err).Send()
 	}
 	return nil
 }

@@ -4,18 +4,20 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/cmd/dictionary/db"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"google.golang.org/grpc"
 	"io"
-	"io/ioutil"
 	"net"
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 )
 
@@ -27,11 +29,12 @@ import (
 var compoundTokenLength = 5
 
 // This number of operations to pipeline to redis (to save on round trip time).
-var pipelineSize = 1000
+var pipelineSize = 10000
 
 // config structure
 type conf struct {
 	LogLevel string `mapstructure:"log_level"`
+	DictionaryPath string `mapstructure:"dictionary_path"`
 	Server struct{
 		GrpcPort int `mapstructure:"grpc_port"`
 	}
@@ -44,6 +47,7 @@ func init() {
 	// initialise config with defaults.
 	err := lib.InitializeConfig(map[string]interface{}{
 		"log_level": "info",
+		"dictionary_path": "./dictionaries/henry.tsv",
 		"server": map[string]interface{}{
 			"grpc_port": 50052,
 		},
@@ -69,7 +73,7 @@ func main() {
 	dbClient := db.NewRedisClient(config.Redis)
 
 	// read all the dictionaries in the dicitonary folder, parse them, and upload the results to redis.
-	err := uploadDictionaries(dbClient)
+	err := uploadDictionary(config.DictionaryPath, dbClient)
 	if err != nil {
 		panic(err)
 	}
@@ -123,7 +127,7 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 			Entity:     string(snippet.GetData()),
 			Position:   snippet.GetOffset(),
 			Type:       lookup.Dictionary,
-			ResolvedTo: lookup.ResolvedEntity,
+			ResolvedTo: lookup.ResolvedEntities[0],
 		}
 		return stream.Send(entity)
 	}
@@ -189,7 +193,7 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 					Entity:     string(compoundToken.GetData()),
 					Position:   compoundToken.GetOffset(),
 					Type:       lookup.Dictionary,
-					ResolvedTo: lookup.ResolvedEntity,
+					ResolvedTo: lookup.ResolvedEntities[0],
 				}
 				if err := stream.Send(entity); err != nil {
 					return err
@@ -221,7 +225,7 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 				Entity:     string(token.GetData()),
 				Position:   token.GetOffset(),
 				Type:       lookup.Dictionary,
-				ResolvedTo: lookup.ResolvedEntity,
+				ResolvedTo: lookup.ResolvedEntities[0],
 			}
 			if err := stream.Send(entity); err != nil {
 				return err
@@ -232,71 +236,132 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 	return nil
 }
 
-func uploadDictionaries(dbClient db.Client) error {
-	_, thisFile, _, _ := runtime.Caller(0)
-	thisDirectory := path.Dir(thisFile)
-	dictionaryDir := filepath.Join(thisDirectory, "dictionaries")
-	files, err := ioutil.ReadDir(dictionaryDir)
+func uploadDictionary(dictPath string, dbClient db.Client) error {
+	absPath := dictPath
+	if !filepath.IsAbs(dictPath) {
+		_, thisFile, _, _ := runtime.Caller(0)
+		thisDirectory := path.Dir(thisFile)
+		absPath = filepath.Join(thisDirectory, dictPath)
+	}
+
+	tsv, err := os.Open(absPath)
 	if err != nil {
 		return err
 	}
 
-	for _, f := range files {
-		values, err := parseDict(path.Join(dictionaryDir, f.Name()))
-		if err != nil {
-			return err
+	dictionaryName := "unichem"
+
+	pipe := dbClient.NewPipeline(pipelineSize)
+
+	scn := bufio.NewScanner(tsv)
+	currentId := -1
+	row := 0
+	var synonyms []string
+	var identifiers []string
+	for scn.Scan() {
+		row++
+		if row > 10000000 { break }
+		if row % 100000 == 0 {
+			log.Info().Int("row", row).Msg("Scanning dictionary...")
 		}
-		pipe := dbClient.NewPipeline(len(values))
-		for key, lookup := range values {
-			blob, err := json.Marshal(lookup)
-			if err != nil {
-				return err
+		line := scn.Text()
+		entries := strings.Split(line, "\t")
+		if len(entries) != 2 {
+			log.Warn().Int("row", row).Strs("entries", entries).Msg("invalid row in dictionary tsv")
+			continue
+		}
+
+		pubchemId, err := strconv.Atoi(entries[0])
+		if err != nil {
+			log.Warn().Int("row", row).Strs("entries", entries).Msg("invalid pubchem id")
+			continue
+		}
+
+		var synonym string
+		var identifier string
+		if isIdentifier(entries[1]) {
+			identifier = entries[1]
+		} else {
+			synonym = entries[1]
+		}
+
+		if pubchemId != currentId {
+			if currentId != -1 {
+				// Mid process, some stuff to do
+				for _, s := range synonyms {
+					b, err := json.Marshal(db.Lookup{
+						Dictionary:       dictionaryName,
+						ResolvedEntities: identifiers,
+					})
+					if err != nil {
+						return err
+					}
+					pipe.Set(s, b)
+				}
+
+				if pipe.Size() > pipelineSize {
+					if err := pipe.ExecSet(); err != nil {
+						return err
+					}
+					pipe = dbClient.NewPipeline(pipelineSize)
+				}
+
+				synonyms = []string{}
+				identifiers = []string{}
 			}
-			pipe.Set(key, blob)
-		}
-		err = pipe.ExecSet()
-		if err != nil {
-			return err
+
+
+			// Set new current id
+			currentId = pubchemId
+			if synonym != "" {
+				synonyms = append(synonyms, synonym)
+			} else {
+				identifiers = append(identifiers, fmt.Sprintf("PUBCHEM:%d", pubchemId))
+				identifiers = append(identifiers, identifier)
+			}
+		} else {
+			if synonym != "" {
+				synonyms = append(synonyms, synonym)
+			} else {
+				identifiers = append(identifiers, identifier)
+			}
 		}
 	}
+
+	if pipe.Size() > 0 {
+		if err := pipe.ExecSet(); err != nil {
+			return err
+		}
+		pipe = dbClient.NewPipeline(pipelineSize)
+	}
+
 	return nil
 }
 
-func parseDict(fileName string) (map[string]db.Lookup, error) {
-	tsv, err := os.Open(fileName)
-	if err != nil {
-		return nil, err
-	}
-
-	dictionaryName := strings.TrimSuffix(path.Base(fileName), path.Ext(fileName))
-
-	scn := bufio.NewScanner(tsv)
-	dictionary := make(map[string]db.Lookup)
-	for scn.Scan() {
-		line := scn.Text()
-		uncommented := strings.Split(line, "#")
-		if len(uncommented[0]) > 0 {
-			record := strings.Split(uncommented[0], "\t")
-			resolvedEntity := strings.TrimSpace(record[len(record)-1])
-			if resolvedEntity == "" {
-				continue
-			}
-			if len(record) == 1 {
-				dictionary[strings.TrimSpace(record[0])] = db.Lookup{
-					Dictionary:     dictionaryName,
-				}
-				continue
-			}
-			for _, key := range record[:len(record)-1] {
-				if key == "" {
-					continue
-				}
-				dictionary[strings.TrimSpace(key)] = db.Lookup{
-					Dictionary:     dictionaryName,
-					ResolvedEntity: resolvedEntity,
-				}
-			}
+func isIdentifier(thing string) bool {
+	for _, re := range chemicalIdentifiers {
+		if re.MatchString(thing) {
+			return true
 		}
 	}
-	return dictionary, nil
+	return false
+}
+
+
+var chemicalIdentifiers = []*regexp.Regexp{
+	regexp.MustCompile(`^SCHEMBL\d+$`),
+	regexp.MustCompile(`^DTXSID\d{8}$`),
+	regexp.MustCompile(`^CHEMBL\d+$`),
+	regexp.MustCompile(`^CHEBI:\d+$`),
+	regexp.MustCompile(`^LMFA\d{8}$`),
+	regexp.MustCompile(`^HY-\d+?[A-Z]?$`),
+	regexp.MustCompile(`^CS-.*$`),
+	regexp.MustCompile(`^FT-\d{7}$`),
+	regexp.MustCompile(`^Q\d+$`),
+	regexp.MustCompile(`^ACMC-\w+$`),
+	regexp.MustCompile(`^ALBB-\d{6}$`),
+	regexp.MustCompile(`^AKOS\d{9}$`),
+	regexp.MustCompile(`^\d+-\d+-\d+$`),
+	regexp.MustCompile(`^EINCES\s\d+-\d+-\d+$`),
+	regexp.MustCompile(`^EC\s\d+-\d+-\d+$`),
 }
