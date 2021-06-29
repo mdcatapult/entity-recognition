@@ -9,4 +9,4 @@ FROM golang:alpine
 
 WORKDIR /app
 COPY --from=builder /build/rest-api /app/rest-api
-ENTRYPOINT [ "/app/rest-api --config /app/config.yml" ]
+ENTRYPOINT [ "/app/rest-api", "--config", "/app/config.yml" ]

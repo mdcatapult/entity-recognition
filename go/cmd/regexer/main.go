@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/go-redis/redis"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
@@ -45,7 +46,7 @@ func init() {
 	// unmarshal viper contents into our struct
 	err = viper.Unmarshal(&config)
 	if err != nil {
-		panic(err)
+		log.Fatal().Err(err).Send()
 	}
 }
 
@@ -56,7 +57,7 @@ func main() {
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", config.Server.GrpcPort))
 	if err != nil {
-		panic(err)
+		log.Fatal().Err(err).Send()
 	}
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)
@@ -64,7 +65,7 @@ func main() {
 	fmt.Println("Serving...")
 	err = grpcServer.Serve(lis)
 	if err != nil {
-		panic(err)
+		log.Fatal().Err(err).Send()
 	}
 
 }

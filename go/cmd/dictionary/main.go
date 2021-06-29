@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
@@ -66,7 +67,7 @@ func main() {
 	// start the grpc server
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", config.Server.GrpcPort))
 	if err != nil {
-		panic(err)
+		log.Fatal().Err(err).Send()
 	}
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)
@@ -74,7 +75,7 @@ func main() {
 		dbClient: dbClient,
 	})
 
-	fmt.Println("Serving...")
+	log.Info().Int("port", config.Server.GrpcPort).Msg("ready to accept requests")
 	err = grpcServer.Serve(lis)
 	if err != nil {
 		panic(err)

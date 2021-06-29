@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
@@ -41,7 +42,7 @@ func init() {
 	// Unmarshal the viper config into our struct.
 	err = viper.Unmarshal(&config)
 	if err != nil {
-		panic(err)
+		log.Fatal().Err(err).Send()
 	}
 }
 
@@ -60,7 +61,7 @@ func main() {
 	for _, r := range config.Recognizers {
 		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", r.Host, r.GrpcPort), opts...)
 		if err != nil {
-			panic(err)
+			log.Fatal().Err(err).Send()
 		}
 		connections[i] = conn
 		clients[i] = pb.NewRecognizerClient(conn)
@@ -70,7 +71,7 @@ func main() {
 	startHttpServer(clients...)
 	for _, conn := range connections {
 		if err := conn.Close(); err != nil {
-			panic(err)
+			log.Fatal().Err(err).Send()
 		}
 	}
 }
