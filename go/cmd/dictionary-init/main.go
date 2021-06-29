@@ -69,6 +69,8 @@ func init() {
 
 func main() {
 
+	go lib.HandleInterrupt()
+
 	// Get a redis client
 	dbClient := db.NewRedisClient(config.Redis)
 
@@ -85,7 +87,7 @@ func main() {
 	}
 
 	for !dbClient.Ready() {
-		log.Info().Msg("redis is not ready, waiting...")
+		log.Info().Msg("database is not ready, waiting...")
 		time.Sleep(10 * time.Second)
 	}
 
@@ -98,6 +100,11 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Send()
 	}
+
+	// Block forever. This is so that kubernetes doesn't restart the container over and over.
+	// There will definitely be a better way of dealing with this. This is a hack.
+	log.Info().Msg("finished writing to database")
+	select {}
 }
 
 func uploadLeadmineDictionary(name string, dict *os.File, dbClient db.Client) error {
