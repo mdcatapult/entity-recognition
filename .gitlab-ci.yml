@@ -28,7 +28,7 @@ build-dictionary-dev:
     - |
       /kaniko/executor \
       --context $CI_PROJECT_DIR \
-      --destination $CI_REGISTRY_IMAGE/dictionary:$CI_COMMIT_REF_SLUG
+      --destination $CI_REGISTRY_IMAGE/dictionary:$CI_COMMIT_REF_SLUG \
       --dockerfile $CI_PROJECT_DIR/go/cmd/dictionary/Dockerfile
   except:
     refs:
@@ -43,8 +43,8 @@ build-dictionary-master:
     - |
       /kaniko/executor \
       --context $CI_PROJECT_DIR \
-      --destination $CI_REGISTRY_IMAGE/dictionary:$CI_COMMIT_REF_SLUG
-      --destination $CI_REGISTRY_IMAGE/dictionary:latest
+      --destination $CI_REGISTRY_IMAGE/dictionary:$CI_COMMIT_REF_SLUG \
+      --destination $CI_REGISTRY_IMAGE/dictionary:latest \
       --dockerfile $CI_PROJECT_DIR/go/cmd/dictionary/Dockerfile
   only:
     refs:
@@ -59,7 +59,7 @@ build-regexer-dev:
     - |
       /kaniko/executor \
       --context $CI_PROJECT_DIR \
-      --destination $CI_REGISTRY_IMAGE/regexer:$CI_COMMIT_REF_SLUG
+      --destination $CI_REGISTRY_IMAGE/regexer:$CI_COMMIT_REF_SLUG \
       --dockerfile $CI_PROJECT_DIR/go/cmd/regexer/Dockerfile
   except:
     refs:
@@ -74,8 +74,8 @@ build-regexer-master:
     - |
       /kaniko/executor \
       --context $CI_PROJECT_DIR \
-      --destination $CI_REGISTRY_IMAGE/regexer:$CI_COMMIT_REF_SLUG
-      --destination $CI_REGISTRY_IMAGE/regexer:latest
+      --destination $CI_REGISTRY_IMAGE/regexer:$CI_COMMIT_REF_SLUG \
+      --destination $CI_REGISTRY_IMAGE/regexer:latest \
       --dockerfile $CI_PROJECT_DIR/go/cmd/regexer/Dockerfile
   only:
     refs:
@@ -90,7 +90,7 @@ build-dictionary-init-dev:
     - |
       /kaniko/executor \
       --context $CI_PROJECT_DIR \
-      --destination $CI_REGISTRY_IMAGE/dictionary-init:$CI_COMMIT_REF_SLUG
+      --destination $CI_REGISTRY_IMAGE/dictionary-init:$CI_COMMIT_REF_SLUG \
       --dockerfile $CI_PROJECT_DIR/go/cmd/dictionary-init/Dockerfile
   except:
     refs:
@@ -105,8 +105,8 @@ build-dictionary-init-master:
     - |
       /kaniko/executor \
       --context $CI_PROJECT_DIR \
-      --destination $CI_REGISTRY_IMAGE/dictionary-init:$CI_COMMIT_REF_SLUG
-      --destination $CI_REGISTRY_IMAGE/dictionary-init:latest
+      --destination $CI_REGISTRY_IMAGE/dictionary-init:$CI_COMMIT_REF_SLUG \
+      --destination $CI_REGISTRY_IMAGE/dictionary-init:latest \
       --dockerfile $CI_PROJECT_DIR/go/cmd/dictionary-init/Dockerfile
   only:
     refs:
@@ -121,7 +121,7 @@ build-rest-api-dev:
     - |
       /kaniko/executor \
       --context $CI_PROJECT_DIR \
-      --destination $CI_REGISTRY_IMAGE/rest-api:$CI_COMMIT_REF_SLUG
+      --destination $CI_REGISTRY_IMAGE/rest-api:$CI_COMMIT_REF_SLUG \
       --dockerfile $CI_PROJECT_DIR/go/cmd/rest-api/Dockerfile
   except:
     refs:
@@ -136,8 +136,8 @@ build-rest-api-master:
     - |
       /kaniko/executor \
       --context $CI_PROJECT_DIR \
-      --destination $CI_REGISTRY_IMAGE/rest-api:$CI_COMMIT_REF_SLUG
-      --destination $CI_REGISTRY_IMAGE/rest-api:latest
+      --destination $CI_REGISTRY_IMAGE/rest-api:$CI_COMMIT_REF_SLUG \
+      --destination $CI_REGISTRY_IMAGE/rest-api:latest \
       --dockerfile $CI_PROJECT_DIR/go/cmd/rest-api/Dockerfile
   only:
     refs:
