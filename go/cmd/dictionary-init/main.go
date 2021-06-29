@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
@@ -81,6 +82,11 @@ func main() {
 	dict, err := os.Open(absPath)
 	if err != nil {
 		log.Fatal().Err(err).Send()
+	}
+
+	for !dbClient.Ready() {
+		log.Info().Msg("redis is not ready, waiting...")
+		time.Sleep(10 * time.Second)
 	}
 
 	switch config.Dictionary.Format {

@@ -11,6 +11,7 @@ type Lookup struct {
 type Client interface {
 	NewGetPipeline(size int) GetPipeline
 	NewSetPipeline(size int) SetPipeline
+	Ready() bool
 }
 
 type Pipeline interface {
