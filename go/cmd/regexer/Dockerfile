@@ -9,4 +9,4 @@ FROM golang:alpine
 
 WORKDIR /app
 COPY --from=builder /build/regexer /app/regexer
-ENTRYPOINT [ "/app/regexer" ]
+ENTRYPOINT [ "/app/regexer --config /app/config.yml" ]

@@ -1,23 +1,14 @@
 package main
 
 import (
-	"bufio"
-	"encoding/json"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/cmd/dictionary/db"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/db"
 	"google.golang.org/grpc"
 	"io"
 	"net"
-	"os"
-	"path"
-	"path/filepath"
-	"regexp"
-	"runtime"
-	"strconv"
 	"strings"
 )
 
@@ -71,12 +62,6 @@ func main() {
 
 	// Get a redis client
 	dbClient := db.NewRedisClient(config.Redis)
-
-	// read all the dictionaries in the dicitonary folder, parse them, and upload the results to redis.
-	err := uploadDictionary(config.DictionaryPath, dbClient)
-	if err != nil {
-		panic(err)
-	}
 
 	// start the grpc server
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", config.Server.GrpcPort))
@@ -238,132 +223,4 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 	}
 
 	return nil
-}
-
-func uploadDictionary(dictPath string, dbClient db.Client) error {
-	absPath := dictPath
-	if !filepath.IsAbs(dictPath) {
-		_, thisFile, _, _ := runtime.Caller(0)
-		thisDirectory := path.Dir(thisFile)
-		absPath = filepath.Join(thisDirectory, dictPath)
-	}
-
-	tsv, err := os.Open(absPath)
-	if err != nil {
-		return err
-	}
-
-	dictionaryName := "unichem"
-
-	pipe := dbClient.NewSetPipeline(pipelineSize)
-
-	scn := bufio.NewScanner(tsv)
-	currentId := -1
-	row := 0
-	var synonyms []string
-	var identifiers []string
-	for scn.Scan() && row <= 1000000 {
-		row++
-		if row % 100000 == 0 {
-			log.Info().Int("row", row).Msg("Scanning dictionary...")
-		}
-		line := scn.Text()
-		entries := strings.Split(line, "\t")
-		if len(entries) != 2 {
-			log.Warn().Int("row", row).Strs("entries", entries).Msg("invalid row in dictionary tsv")
-			continue
-		}
-
-		pubchemId, err := strconv.Atoi(entries[0])
-		if err != nil {
-			log.Warn().Int("row", row).Strs("entries", entries).Msg("invalid pubchem id")
-			continue
-		}
-
-		var synonym string
-		var identifier string
-		if isIdentifier(entries[1]) {
-			identifier = entries[1]
-		} else {
-			synonym = entries[1]
-		}
-
-		if pubchemId != currentId {
-			if currentId != -1 {
-				// Mid process, some stuff to do
-				for _, s := range synonyms {
-					b, err := json.Marshal(db.Lookup{
-						Dictionary:       dictionaryName,
-						ResolvedEntities: identifiers,
-					})
-					if err != nil {
-						return err
-					}
-					pipe.Set(s, b)
-				}
-
-				if pipe.Size() > pipelineSize {
-					if err := pipe.ExecSet(); err != nil {
-						return err
-					}
-					pipe = dbClient.NewSetPipeline(pipelineSize)
-				}
-
-				synonyms = []string{}
-				identifiers = []string{}
-			}
-
-
-			// Set new current id
-			currentId = pubchemId
-			if synonym != "" {
-				synonyms = append(synonyms, synonym)
-			} else {
-				identifiers = append(identifiers, fmt.Sprintf("PUBCHEM:%d", pubchemId))
-				identifiers = append(identifiers, identifier)
-			}
-		} else {
-			if synonym != "" {
-				synonyms = append(synonyms, synonym)
-			} else {
-				identifiers = append(identifiers, identifier)
-			}
-		}
-	}
-
-	if pipe.Size() > 0 {
-		if err := pipe.ExecSet(); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func isIdentifier(thing string) bool {
-	for _, re := range chemicalIdentifiers {
-		if re.MatchString(thing) {
-			return true
-		}
-	}
-	return false
-}
-
-
-var chemicalIdentifiers = []*regexp.Regexp{
-	regexp.MustCompile(`^SCHEMBL\d+$`),
-	regexp.MustCompile(`^DTXSID\d{8}$`),
-	regexp.MustCompile(`^CHEMBL\d+$`),
-	regexp.MustCompile(`^CHEBI:\d+$`),
-	regexp.MustCompile(`^LMFA\d{8}$`),
-	regexp.MustCompile(`^HY-\d+?[A-Z]?$`),
-	regexp.MustCompile(`^CS-.*$`),
-	regexp.MustCompile(`^FT-\d{7}$`),
-	regexp.MustCompile(`^Q\d+$`),
-	regexp.MustCompile(`^ACMC-\w+$`),
-	regexp.MustCompile(`^ALBB-\d{6}$`),
-	regexp.MustCompile(`^AKOS\d{9}$`),
-	regexp.MustCompile(`^\d+-\d+-\d+$`),
-	regexp.MustCompile(`^EINCES\s\d+-\d+-\d+$`),
-	regexp.MustCompile(`^EC\s\d+-\d+-\d+$`),
 }
