@@ -47,6 +47,10 @@ func (r *redisClient) NewSetPipeline(size int) SetPipeline {
 	}
 }
 
+func (r *redisClient) Ready() bool {
+	return r.Ping().Err() == nil
+}
+
 func (r *redisSetPipeline) Set(key string, data []byte) {
 	r.cmds[key] = r.pipe.Set(key, data, 0)
 }
