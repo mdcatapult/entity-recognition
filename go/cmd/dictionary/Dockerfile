@@ -9,4 +9,4 @@ FROM golang:alpine
 
 WORKDIR /app
 COPY --from=builder /build/dictionary /app/dictionary
-ENTRYPOINT [ "/app/dictionary", "--config", "/app/config.yml" ]
+ENTRYPOINT [ "/app/dictionary", "--config", "/etc/ner/dictionary/config.yml" ]
