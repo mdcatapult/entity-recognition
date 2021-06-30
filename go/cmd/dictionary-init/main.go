@@ -29,6 +29,13 @@ const (
 	LeadmineDictionaryFormat DictionaryFormat = "leadmine"
 )
 
+type BackendDatabaseType string
+
+const (
+	Redis BackendDatabaseType = "redis"
+	Elasticsearch BackendDatabaseType = "elasticsearch"
+)
+
 // config structure
 type conf struct {
 	LogLevel       string           `mapstructure:"log_level"`
@@ -37,7 +44,9 @@ type conf struct {
 		Path string
 		Format DictionaryFormat
 	}
+	BackendDatabase BackendDatabaseType `mapstructure:"backend_database"`
 	Redis          db.RedisConfig
+	Elasticsearch  db.ElasticsearchConfig
 }
 
 var config conf
@@ -46,6 +55,7 @@ func init() {
 	// initialise config with defaults.
 	err := lib.InitializeConfig(map[string]interface{}{
 		"log_level":       "info",
+		"backend_database": Redis,
 		"dictionary": map[string]interface{}{
 			"name": "pubchem_synonyms",
 			"path": "./dictionaries/pubchem.tsv",
@@ -54,6 +64,10 @@ func init() {
 		"redis": map[string]interface{}{
 			"host": "localhost",
 			"port": 6379,
+		},
+		"elasticsearch": map[string]interface{}{
+			"host": "localhost",
+			"port": 9200,
 		},
 	})
 	if err != nil {
@@ -72,7 +86,15 @@ func main() {
 	go lib.HandleInterrupt()
 
 	// Get a redis client
-	dbClient := db.NewRedisClient(config.Redis)
+	var dbClient db.Client
+	switch config.BackendDatabase {
+	case Redis:
+		dbClient = db.NewRedisClient(config.Redis)
+	case Elasticsearch:
+		dbClient = db.NewElasticsearchClient(config.Elasticsearch)
+	default:
+		log.Fatal().Msg("invalid backend database type")
+	}
 
 	absPath := config.Dictionary.Path
 	if !filepath.IsAbs(absPath) {
@@ -93,9 +115,9 @@ func main() {
 
 	switch config.Dictionary.Format {
 	case PubchemDictionaryFormat:
-		err = uploadPubchemDictionary(config.Dictionary.Name, dict, dbClient)
+		err = uploadPubchemDictionary(dict, dbClient)
 	case LeadmineDictionaryFormat:
-		err = uploadLeadmineDictionary(config.Dictionary.Name, dict, dbClient)
+		err = uploadLeadmineDictionary(dict, dbClient)
 	}
 	if err != nil {
 		log.Fatal().Err(err).Send()
@@ -107,7 +129,7 @@ func main() {
 	select {}
 }
 
-func uploadLeadmineDictionary(name string, dict *os.File, dbClient db.Client) error {
+func uploadLeadmineDictionary(dict *os.File, dbClient db.Client) error {
 
 	pipe := dbClient.NewSetPipeline(pipelineSize)
 	scn := bufio.NewScanner(dict)
@@ -122,7 +144,7 @@ func uploadLeadmineDictionary(name string, dict *os.File, dbClient db.Client) er
 			}
 			if len(record) == 1 {
 				b, err := json.Marshal(&db.Lookup{
-					Dictionary: name,
+					Dictionary: config.Dictionary.Name,
 				})
 				if err != nil {
 					return err
@@ -136,7 +158,7 @@ func uploadLeadmineDictionary(name string, dict *os.File, dbClient db.Client) er
 					continue
 				}
 				b ,err := json.Marshal(&db.Lookup{
-					Dictionary:     name,
+					Dictionary:     config.Dictionary.Name,
 					ResolvedEntities: []string{resolvedEntity},
 				})
 				if err != nil {
@@ -158,13 +180,13 @@ func uploadLeadmineDictionary(name string, dict *os.File, dbClient db.Client) er
 	return nil
 }
 
-func uploadPubchemDictionary(name string, dict *os.File, dbClient db.Client) error {
+func uploadPubchemDictionary(dict *os.File, dbClient db.Client) error {
 	pipe := dbClient.NewSetPipeline(pipelineSize)
 
 	scn := bufio.NewScanner(dict)
 	currentId := -1
 	row := 0
-	redisKeys := 0
+	dbEntries := 0
 	var synonyms []string
 	var identifiers []string
 	for scn.Scan() && row < 100000 {
@@ -193,20 +215,33 @@ func uploadPubchemDictionary(name string, dict *os.File, dbClient db.Client) err
 		if pubchemId != currentId {
 			if currentId != -1 {
 				// Mid process, some stuff to do
-				for _, s := range synonyms {
-					b, err := json.Marshal(db.Lookup{
-						Dictionary:       name,
-						ResolvedEntities: identifiers,
+				switch config.BackendDatabase {
+				case Redis:
+					for _, s := range synonyms {
+						b, err := json.Marshal(db.Lookup{
+							Dictionary:       config.Dictionary.Name,
+							ResolvedEntities: identifiers,
+						})
+						if err != nil {
+							return err
+						}
+						pipe.Set(s, b)
+						dbEntries++
+					}
+				case Elasticsearch:
+					b, err := json.Marshal(db.EsLookup{
+						Synonyms:    synonyms,
+						Identifiers: identifiers,
 					})
 					if err != nil {
 						return err
 					}
-					pipe.Set(s, b)
-					redisKeys++
+					pipe.Set("", b)
+					dbEntries++
 				}
 
 				if pipe.Size() > pipelineSize {
-					log.Info().Int("row", row).Int("keys", redisKeys).Msg("Upserting dictionary to redis...")
+					log.Info().Int("row", row).Int("keys", dbEntries).Msgf("Upserting dictionary to %s...", config.BackendDatabase)
 					if err := pipe.ExecSet(); err != nil {
 						return err
 					}
