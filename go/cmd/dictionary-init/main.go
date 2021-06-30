@@ -167,7 +167,7 @@ func uploadPubchemDictionary(name string, dict *os.File, dbClient db.Client) err
 	redisKeys := 0
 	var synonyms []string
 	var identifiers []string
-	for scn.Scan() {
+	for scn.Scan() && row < 100000 {
 		row++
 		line := scn.Text()
 		entries := strings.Split(line, "\t")
@@ -219,10 +219,10 @@ func uploadPubchemDictionary(name string, dict *os.File, dbClient db.Client) err
 
 			// Set new current id
 			currentId = pubchemId
+			identifiers = append(identifiers, fmt.Sprintf("PUBCHEM:%d", pubchemId))
 			if synonym != "" {
 				synonyms = append(synonyms, synonym)
 			} else {
-				identifiers = append(identifiers, fmt.Sprintf("PUBCHEM:%d", pubchemId))
 				identifiers = append(identifiers, identifier)
 			}
 		} else {
