@@ -19,9 +19,6 @@ import (
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/db"
 )
 
-// This number of operations to pipeline to redis (to save on round trip time).
-var pipelineSize = 10000
-
 type DictionaryFormat string
 
 const (
@@ -45,6 +42,7 @@ type conf struct {
 		Format DictionaryFormat
 	}
 	BackendDatabase BackendDatabaseType `mapstructure:"backend_database"`
+	PipelineSize   int `mapstructure:"pipeline_size"`
 	Redis          db.RedisConfig
 	Elasticsearch  db.ElasticsearchConfig
 }
@@ -56,6 +54,7 @@ func init() {
 	err := lib.InitializeConfig(map[string]interface{}{
 		"log_level":       "info",
 		"backend_database": Redis,
+		"pipeline_size": 10000,
 		"dictionary": map[string]interface{}{
 			"name": "pubchem_synonyms",
 			"path": "./dictionaries/pubchem.tsv",
@@ -87,11 +86,15 @@ func main() {
 
 	// Get a redis client
 	var dbClient db.Client
+	var err error
 	switch config.BackendDatabase {
 	case Redis:
 		dbClient = db.NewRedisClient(config.Redis)
 	case Elasticsearch:
-		dbClient = db.NewElasticsearchClient(config.Elasticsearch)
+		dbClient, err = db.NewElasticsearchClient(config.Elasticsearch)
+		if err != nil {
+			log.Fatal().Err(err).Send()
+		}
 	default:
 		log.Fatal().Msg("invalid backend database type")
 	}
@@ -131,7 +134,7 @@ func main() {
 
 func uploadLeadmineDictionary(dict *os.File, dbClient db.Client) error {
 
-	pipe := dbClient.NewSetPipeline(pipelineSize)
+	pipe := dbClient.NewSetPipeline(config.PipelineSize)
 	scn := bufio.NewScanner(dict)
 	for scn.Scan() {
 		line := scn.Text()
@@ -167,11 +170,11 @@ func uploadLeadmineDictionary(dict *os.File, dbClient db.Client) error {
 				pipe.Set(strings.TrimSpace(key), b)
 			}
 		}
-		if pipe.Size() > pipelineSize {
+		if pipe.Size() > config.PipelineSize {
 			if err := pipe.ExecSet(); err != nil {
 				return err
 			}
-			pipe = dbClient.NewSetPipeline(pipelineSize)
+			pipe = dbClient.NewSetPipeline(config.PipelineSize)
 		}
 	}
 	if pipe.Size() > 0 {
@@ -181,7 +184,7 @@ func uploadLeadmineDictionary(dict *os.File, dbClient db.Client) error {
 }
 
 func uploadPubchemDictionary(dict *os.File, dbClient db.Client) error {
-	pipe := dbClient.NewSetPipeline(pipelineSize)
+	pipe := dbClient.NewSetPipeline(config.PipelineSize)
 
 	scn := bufio.NewScanner(dict)
 	currentId := -1
@@ -240,12 +243,12 @@ func uploadPubchemDictionary(dict *os.File, dbClient db.Client) error {
 					dbEntries++
 				}
 
-				if pipe.Size() > pipelineSize {
+				if pipe.Size() > config.PipelineSize {
 					log.Info().Int("row", row).Int("keys", dbEntries).Msgf("Upserting dictionary to %s...", config.BackendDatabase)
 					if err := pipe.ExecSet(); err != nil {
 						return err
 					}
-					pipe = dbClient.NewSetPipeline(pipelineSize)
+					pipe = dbClient.NewSetPipeline(config.PipelineSize)
 				}
 
 				synonyms = []string{}
