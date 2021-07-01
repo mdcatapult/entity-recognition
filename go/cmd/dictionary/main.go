@@ -13,40 +13,46 @@ import (
 	"strings"
 )
 
-// Dictionaries sometimes match against multiple words.
-// This specifies how many tokens we should concatenate in our lookup.
-// The higher this value, the longer this query will take to resolve.
-// We should try to lower this as much as possible. (maybe we can set it on a
-// per dictionary basis to be as low as the longest key in that dictionary?)
-var compoundTokenLength = 5
-
-// This number of operations to pipeline to redis (to save on round trip time).
-var pipelineSize = 10000
-
 // config structure
 type conf struct {
 	LogLevel string `mapstructure:"log_level"`
-	DictionaryPath string `mapstructure:"dictionary_path"`
 	Server struct{
 		GrpcPort int `mapstructure:"grpc_port"`
 	}
+	BackendDatabase BackendDatabaseType `mapstructure:"backend_database"`
+	PipelineSize   int `mapstructure:"pipeline_size"`
 	Redis db.RedisConfig
+	Elasticsearch db.ElasticsearchConfig
+	CompoundTokenLength int `mapstructure:"compound_token_length"`
 }
 
 var config conf
+
+type BackendDatabaseType string
+
+const (
+	Redis BackendDatabaseType = "redis"
+	Elasticsearch BackendDatabaseType = "elasticsearch"
+)
 
 func init() {
 	// initialise config with defaults.
 	err := lib.InitializeConfig(map[string]interface{}{
 		"log_level": "info",
-		"dictionary_path": "./dictionaries/henry.tsv",
+		"backend_database": Redis,
+		"pipeline_size": 10000,
 		"server": map[string]interface{}{
-			"grpc_port": 50052,
+			"grpc_port": 50051,
 		},
 		"redis": map[string]interface{}{
 			"host": "localhost",
 			"port": 6379,
 		},
+		"elasticsearch": map[string]interface{}{
+			"host": "localhost",
+			"port": 9200,
+		},
+		"compound_token_length": 5,
 	})
 	if err != nil {
 		panic(err)
@@ -62,7 +68,19 @@ func init() {
 func main() {
 
 	// Get a redis client
-	dbClient := db.NewRedisClient(config.Redis)
+	var dbClient db.Client
+	var err error
+	switch config.BackendDatabase {
+	case Redis:
+		dbClient = db.NewRedisClient(config.Redis)
+	case Elasticsearch:
+		dbClient, err = db.NewElasticsearchClient(config.Elasticsearch)
+		if err != nil {
+			log.Fatal().Err(err).Send()
+		}
+	default:
+		log.Fatal().Msg("invalid backend database type")
+	}
 
 	// start the grpc server
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", config.Server.GrpcPort))
@@ -90,12 +108,12 @@ type recogniser struct {
 func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 	// in memory cache per query. We might be able to be able to combine this
 	// with a global in memory cache with a TTL for more speed.
-	cache := make(map[*pb.Snippet]*db.Lookup, pipelineSize)
+	cache := make(map[*pb.Snippet]*db.Lookup, config.PipelineSize)
 
 	// populate this when a redis query is queued in the pipeline but the pipeline hasn't
 	// been executed yet. We will get these values from the cache after the client stops
 	// streaming.
-	cacheMisses := make([]*pb.Snippet, pipelineSize)
+	cacheMisses := make([]*pb.Snippet, config.PipelineSize)
 
 	// token and key histories are used in combination with the compoundTokenLength
 	// to create compound tokens (multiword dictionary keys).
@@ -103,7 +121,7 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 	var keyHistory []string
 	var sentenceEnd bool
 
-	pipe := r.dbClient.NewGetPipeline(pipelineSize)
+	pipe := r.dbClient.NewGetPipeline(config.PipelineSize)
 	onResult := func(snippet *pb.Snippet, lookup *db.Lookup) error {
 		cache[snippet] = lookup
 		if lookup == nil {
@@ -149,7 +167,7 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 		sentenceEnd = lib.Normalize(token)
 
 		// manage the token history
-		if len(tokenHistory) < compoundTokenLength {
+		if len(tokenHistory) < config.CompoundTokenLength {
 			tokenHistory = append(tokenHistory, token)
 			keyHistory = append(keyHistory, string(token.GetData()))
 		} else {
@@ -199,12 +217,12 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 
 		// If we have enough redis queries in the pipeline, execute it and
 		// reset the values of results/cacheMisses.
-		if pipe.Size() > pipelineSize {
+		if pipe.Size() > config.PipelineSize {
 			err := pipe.ExecGet(onResult)
 			if err != nil {
 				return err
 			}
-			pipe = r.dbClient.NewGetPipeline(pipelineSize)
+			pipe = r.dbClient.NewGetPipeline(config.PipelineSize)
 		}
 	}
 

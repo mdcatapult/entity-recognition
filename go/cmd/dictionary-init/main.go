@@ -233,6 +233,7 @@ func uploadPubchemDictionary(dict *os.File, dbClient db.Client) error {
 					}
 				case Elasticsearch:
 					b, err := json.Marshal(db.EsLookup{
+						Dictionary: config.Dictionary.Name,
 						Synonyms:    synonyms,
 						Identifiers: identifiers,
 					})
