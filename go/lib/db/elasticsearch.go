@@ -78,6 +78,10 @@ type esClient struct {
 }
 
 func (e *esClient) Ready() bool {
+	res, err := e.Info()
+	if err != nil || res.StatusCode != 200 {
+		return false
+	}
 	return true
 }
 
