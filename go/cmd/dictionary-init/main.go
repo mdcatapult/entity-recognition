@@ -82,8 +82,6 @@ func init() {
 
 func main() {
 
-	go lib.HandleInterrupt()
-
 	// Get a redis client
 	var dbClient db.Client
 	var err error
@@ -125,11 +123,6 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Send()
 	}
-
-	// Block forever. This is so that kubernetes doesn't restart the container over and over.
-	// There will definitely be a better way of dealing with this. This is a hack.
-	log.Info().Msg("finished writing to database")
-	select {}
 }
 
 func uploadLeadmineDictionary(dict *os.File, dbClient db.Client) error {
