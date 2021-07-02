@@ -192,7 +192,7 @@ func uploadPubchemDictionary(dict *os.File, dbClient db.Client) error {
 	dbEntries := 0
 	var synonyms []string
 	var identifiers []string
-	for scn.Scan() && row < 100000 {
+	for scn.Scan() {
 		row++
 		line := scn.Text()
 		entries := strings.Split(line, "\t")
