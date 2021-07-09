@@ -10,9 +10,10 @@ See https://lucid.app/lucidchart/eae25d37-6b9a-4358-8941-9b93012586e7/edit?beaco
 ## Run
 ```bash
 docker-compose up -d
+go run go/cmd/dictionary-init/main.go --config config.example.yml
 go run go/cmd/regexer/main.go --config config.example.yml
 # open another terminal in the same directory, then:
-go run go/cmd/dictionary/main.go --config config.example.yml
+go build -o dict go/cmd/dictionary && ./dict --config config.example.yml
 # open another terminal in the same directory, then:
 go run go/cmd/rest-api/main.go --config config.example.yml
 ```
