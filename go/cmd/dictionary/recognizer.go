@@ -31,14 +31,11 @@ type requestVars struct {
 
 func (r *recogniser) newResultHandler(requestID uuid.UUID) func(snippet *pb.Snippet, lookup *db.Lookup) error {
 	return func(snippet *pb.Snippet, lookup *db.Lookup) error {
-		r.rwmut.RLock()
-		requestVars, ok := r.requestCache[requestID]
-		r.rwmut.RUnlock()
-		if !ok {
-			err := errors.New("request not in cache, something went horribly wrong")
-			log.Error().Err(err).Send()
+		requestVars, err := r.getVars(requestID)
+		if err!= nil {
 			return err
 		}
+
 		requestVars.tokenCache[snippet] = lookup
 		if lookup == nil {
 			return nil
@@ -49,8 +46,8 @@ func (r *recogniser) newResultHandler(requestID uuid.UUID) func(snippet *pb.Snip
 			Type:       lookup.Dictionary,
 			ResolvedTo: lookup.ResolvedEntities,
 		}
-		err := requestVars.stream.Send(entity)
-		if err != nil {
+
+		if err := requestVars.stream.Send(entity); err != nil {
 			return err
 		}
 
@@ -59,14 +56,11 @@ func (r *recogniser) newResultHandler(requestID uuid.UUID) func(snippet *pb.Snip
 }
 
 func (r *recogniser) getCompoundTokens(requestID uuid.UUID, token *pb.Snippet) ([]*pb.Snippet, error) {
-	r.rwmut.RLock()
-	requestVars, ok := r.requestCache[requestID]
-	r.rwmut.RUnlock()
-	if !ok {
-		err := errors.New("request not in cache, something went horribly wrong")
-		log.Error().Err(err).Send()
+	requestVars, err := r.getVars(requestID)
+	if err!= nil {
 		return nil, err
 	}
+
 	// If sentenceEnd is true, we can save some redis queries by resetting the token history..
 	if requestVars.sentenceEnd {
 		requestVars.tokenHistory = []*pb.Snippet{}
@@ -99,12 +93,8 @@ func (r *recogniser) getCompoundTokens(requestID uuid.UUID, token *pb.Snippet) (
 }
 
 func (r *recogniser) queryCompoundTokens(requestID uuid.UUID, compoundTokens []*pb.Snippet) error {
-	r.rwmut.RLock()
-	requestVars, ok := r.requestCache[requestID]
-	r.rwmut.RUnlock()
-	if !ok {
-		err := errors.New("request not in cache, something went horribly wrong")
-		log.Error().Err(err).Send()
+	requestVars, err := r.getVars(requestID)
+	if err!= nil {
 		return err
 	}
 
@@ -158,12 +148,8 @@ func (r *recogniser) initializeRequest(stream pb.Recognizer_RecognizeServer) uui
 }
 
 func (r *recogniser) execPipe(requestID uuid.UUID, onResult func(snippet *pb.Snippet, lookup *db.Lookup) error, threshold int, new bool) error {
-	r.rwmut.RLock()
-	requestVars, ok := r.requestCache[requestID]
-	r.rwmut.RUnlock()
-	if !ok {
-		err := errors.New("request not in cache, something went horribly wrong")
-		log.Error().Err(err).Send()
+	requestVars, err := r.getVars(requestID)
+	if err!= nil {
 		return err
 	}
 
@@ -179,12 +165,8 @@ func (r *recogniser) execPipe(requestID uuid.UUID, onResult func(snippet *pb.Sni
 }
 
 func (r *recogniser) retryCacheMisses(requestID uuid.UUID) error {
-	r.rwmut.RLock()
-	requestVars, ok := r.requestCache[requestID]
-	r.rwmut.RUnlock()
-	if !ok {
-		err := errors.New("request not in cache, something went horribly wrong")
-		log.Error().Err(err).Send()
+	requestVars, err := r.getVars(requestID)
+	if err!= nil {
 		return err
 	}
 
@@ -203,6 +185,18 @@ func (r *recogniser) retryCacheMisses(requestID uuid.UUID) error {
 		}
 	}
 	return nil
+}
+
+func (r *recogniser) getVars(requestID uuid.UUID) (*requestVars, error) {
+	r.rwmut.RLock()
+	requestVars, ok := r.requestCache[requestID]
+	r.rwmut.RUnlock()
+	if !ok {
+		err := errors.New("request not in cache, something went horribly wrong")
+		log.Error().Err(err).Send()
+		return nil, err
+	}
+	return requestVars, nil
 }
 
 func (r *recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
