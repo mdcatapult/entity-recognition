@@ -1,0 +1,6 @@
+log_level: info
+server:
+  grpc_port: 50051
+backend_database: redis
+pipeline_size: 10000
+compound_token_length: 1

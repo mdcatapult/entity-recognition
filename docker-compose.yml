@@ -4,7 +4,7 @@ services:
     image: redis:latest
     ports:
       - 6379:6379
-  elastic:
+  elasticsearch:
     image: elasticsearch:7.13.2
     ports:
       - 9200:9200

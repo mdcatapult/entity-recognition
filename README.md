@@ -1,27 +1,42 @@
 # Entity recognition
 
-This [*monorepo*](https://www.atlassian.com/git/tutorials/monorepos) contains all MDC entity recognition software, configuration, documentation, and so on.
+This is intended to be a monorepo [*monorepo*](https://www.atlassian.com/git/tutorials/monorepos) containing all MDC entity recognition software, configuration, documentation, and so on.
 
-The intention of this work is to modernise chemical entity recognition via up to date architecture, state of the art models, and brute force.
-
+## Overview
+There are currently 4 primary applications:
+1. **The recognition API**. This HTTP REST API calls out to the recognizer gRPC recognizer services. (See the [overview diagram](#diagrams)).
+2. **The regexer recognizer**. This simple gRPC recognizer service receives a stream of tokens and returns a stream of entities based on a regex match.
+3. **The dictionary recognizer**. This gRPC recognizer service recieves a stream of tokens and looks them up in a backend database, returning a stream of entities based on the result. (This can be complicated by a number of things, see the [diagram](#diagrams))
+4. **The dictionary importer**. This app reads a file line by line, parses it, and upserts it to a backend database that the dictionary recognizer is compatible with.
 ## Diagrams
-See https://lucid.app/lucidchart/eae25d37-6b9a-4358-8941-9b93012586e7/edit?beaconFlowId=A97289628B477AD2&page=0_0#
+* [Overview of the architecture](https://lucid.app/lucidchart/1598c66b-ddb5-486c-a706-5d8a44f07220/edit?page=0_0#).
+* [Dictionary recognizer workflow](https://lucid.app/lucidchart/899a175a-a933-4f8d-9b4f-ff6d93f72896/edit?beaconFlowId=CD8D681A5455AD49&page=0_0#)
 
-## Run
+## Development
+### Run
 ```bash
-docker-compose up -d
-go run go/cmd/dictionary-init/main.go --config config.example.yml
-go run go/cmd/regexer/main.go --config config.example.yml
-# open another terminal in the same directory, then:
-go build -o dict go/cmd/dictionary && ./dict --config config.example.yml
-# open another terminal in the same directory, then:
-go run go/cmd/rest-api/main.go --config config.example.yml
+make config
+make build
+docker-compose up -d redis
+bin/dictionary-importer
+bin/dictionary &
+bin/regexer &
+bin/rest-api
 ```
+**IMPORTANT:** The `&` tells bash to run a command in the background. The binaries will continue to run until you stop them. To stop them, type `fg` and then cancel with `Ctrl+C`. You need to do this twice - once for each background process. *Alternatively* you can just run these binaries in different terminals 
 
-## Test
+
+You can also just press the play button next to a main function in intellij :smiley:.
+### Test
 Grab some html from a website (ctrl+U in chrome). Make a post request to `localhost:8080/html/text`, `localhost:8080/html/tokens`, or `localhost:8080/html/entities` with the html in the body of the request.
 
-## Generate protobufs
+For example:
+```bash
+curl -L http://localhost:8080/wiki/Acetylcarnitine > /tmp/acetylcarnitine.html
+curl -XPOST --data-binary "@/tmp/acetylcarnitine.html" 'http://localhost:8080/html/entities'
+```
+
+### Generate protobufs
 Go:
 ```bash
 protoc --proto_path=./proto --go_out=./go/gen/pb \

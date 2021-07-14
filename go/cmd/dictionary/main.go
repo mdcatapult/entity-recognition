@@ -13,32 +13,25 @@ import (
 )
 
 // config structure
-type conf struct {
-	LogLevel string `mapstructure:"log_level"`
+type dictionaryRecogniserConfig struct {
+	lib.BaseConfig
 	Server struct{
 		GrpcPort int `mapstructure:"grpc_port"`
 	}
-	BackendDatabase BackendDatabaseType `mapstructure:"backend_database"`
-	PipelineSize   int `mapstructure:"pipeline_size"`
-	Redis db.RedisConfig
-	Elasticsearch db.ElasticsearchConfig
+	BackendDatabase     db.DictionaryBackend `mapstructure:"dictionary_backend"`
+	PipelineSize        int               `mapstructure:"pipeline_size"`
+	Redis               db.RedisConfig
+	Elasticsearch       db.ElasticsearchConfig
 	CompoundTokenLength int `mapstructure:"compound_token_length"`
 }
 
-var config conf
-
-type BackendDatabaseType string
-
-const (
-	Redis BackendDatabaseType = "redis"
-	Elasticsearch BackendDatabaseType = "elasticsearch"
-)
+var config dictionaryRecogniserConfig
 
 func init() {
 	// initialise config with defaults.
-	err := lib.InitializeConfig(map[string]interface{}{
+	err := lib.InitializeConfig("./config/dictionary.yml", map[string]interface{}{
 		"log_level": "info",
-		"backend_database": Redis,
+		"dictionary_backend": db.RedisDictionaryBackend,
 		"pipeline_size": 10000,
 		"server": map[string]interface{}{
 			"grpc_port": 50051,
@@ -54,13 +47,13 @@ func init() {
 		"compound_token_length": 5,
 	})
 	if err != nil {
-		panic(err)
+		log.Fatal().Err(err).Send()
 	}
 
 	// unmarshal the viper contents into our config struct
 	err = viper.Unmarshal(&config)
 	if err != nil {
-		panic(err)
+		log.Fatal().Err(err).Send()
 	}
 }
 
@@ -70,9 +63,9 @@ func main() {
 	var dbClient db.Client
 	var err error
 	switch config.BackendDatabase {
-	case Redis:
+	case db.RedisDictionaryBackend:
 		dbClient = db.NewRedisClient(config.Redis)
-	case Elasticsearch:
+	case db.ElasticsearchDictionaryBackend:
 		dbClient, err = db.NewElasticsearchClient(config.Elasticsearch)
 		if err != nil {
 			log.Fatal().Err(err).Send()

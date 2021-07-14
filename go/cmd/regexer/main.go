@@ -12,10 +12,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net"
-	"path"
-	"path/filepath"
 	"regexp"
-	"runtime"
 )
 
 // config structure
@@ -24,6 +21,7 @@ type conf struct {
 	Server struct{
 		GrpcPort int `mapstructure:"grpc_port"`
 	}
+	RegexFile string `mapstructure:"regex_file"`
 }
 
 // global vars initialised on startup (should never be edited after that).
@@ -33,11 +31,12 @@ var regexpStringMap = make(map[string]string)
 
 func init() {
 	// Initialize config with default values
-	err := lib.InitializeConfig(map[string]interface{}{
+	err := lib.InitializeConfig("./config/regexer.yml", map[string]interface{}{
 		"log_level": "info",
 		"server": map[string]interface{}{
 			"grpc_port": 50051,
 		},
+		"regex_file": "./config/regex_file.yml",
 	})
 	if err != nil {
 		panic(err)
@@ -62,12 +61,10 @@ func main() {
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)
 	pb.RegisterRecognizerServer(grpcServer, recogniser{})
-	fmt.Println("Serving...")
-	err = grpcServer.Serve(lis)
-	if err != nil {
+	log.Info().Int("port", config.Server.GrpcPort).Msg("ready to accept requests")
+	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatal().Err(err).Send()
 	}
-
 }
 
 type recogniser struct {
@@ -106,19 +103,20 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 }
 
 func compileRegexps() {
-	_, thisFile, _, _ := runtime.Caller(0)
-	thisDirectory := path.Dir(thisFile)
-	b, err := ioutil.ReadFile(filepath.Join(thisDirectory, "regexps.yml"))
+	b, err := ioutil.ReadFile(config.RegexFile)
 	if err != nil {
-		panic(err)
+		log.Fatal().Err(err).Send()
 	}
 
 	if err := yaml.Unmarshal(b, &regexpStringMap); err != nil {
-		panic(err)
+		log.Fatal().Err(err).Send()
 	}
 
 	regexps = make(map[string]*regexp.Regexp)
 	for name, uncompiledRegexp := range regexpStringMap {
-		regexps[name] = regexp.MustCompile(uncompiledRegexp)
+		regexps[name], err = regexp.Compile(uncompiledRegexp)
+		if err != nil {
+			log.Fatal().Err(err).Send()
+		}
 	}
 }

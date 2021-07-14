@@ -29,3 +29,10 @@ type SetPipeline interface {
 	ExecSet() error
 	Pipeline
 }
+
+type DictionaryBackend string
+
+const (
+	RedisDictionaryBackend         DictionaryBackend = "redis"
+	ElasticsearchDictionaryBackend DictionaryBackend = "elasticsearch"
+)

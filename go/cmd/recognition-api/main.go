@@ -29,7 +29,7 @@ var config conf
 
 func init() {
 	// Set default config values
-	err := lib.InitializeConfig(map[string]interface{}{
+	err := lib.InitializeConfig("./config/recognition-api.yml", map[string]interface{}{
 		"log_level": "info",
 		"server": map[string]interface{}{
 			"http_port": 8080,

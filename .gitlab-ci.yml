@@ -84,14 +84,14 @@ build-regexer-master:
       - $CI_COMMIT_MESSAGE =~ /^Setting version to.*/
 
 
-build-dictionary-init-dev:
+build-dictionary-importer-dev:
   stage: build
   script:
     - |
       /kaniko/executor \
       --context $CI_PROJECT_DIR \
-      --destination $CI_REGISTRY_IMAGE/dictionary-init:$CI_COMMIT_REF_SLUG \
-      --dockerfile $CI_PROJECT_DIR/go/cmd/dictionary-init/Dockerfile
+      --destination $CI_REGISTRY_IMAGE/dictionary-importer:$CI_COMMIT_REF_SLUG \
+      --dockerfile $CI_PROJECT_DIR/go/cmd/dictionary-importer/Dockerfile
   except:
     refs:
       - master
@@ -99,15 +99,15 @@ build-dictionary-init-dev:
     variables:
       - $CI_COMMIT_MESSAGE =~ /^Setting version to.*/
 
-build-dictionary-init-master:
+build-dictionary-importer-master:
   stage: build
   script:
     - |
       /kaniko/executor \
       --context $CI_PROJECT_DIR \
-      --destination $CI_REGISTRY_IMAGE/dictionary-init:$CI_COMMIT_REF_SLUG \
-      --destination $CI_REGISTRY_IMAGE/dictionary-init:latest \
-      --dockerfile $CI_PROJECT_DIR/go/cmd/dictionary-init/Dockerfile
+      --destination $CI_REGISTRY_IMAGE/dictionary-importer:$CI_COMMIT_REF_SLUG \
+      --destination $CI_REGISTRY_IMAGE/dictionary-importer:latest \
+      --dockerfile $CI_PROJECT_DIR/go/cmd/dictionary-importer/Dockerfile
   only:
     refs:
       - tags
@@ -115,14 +115,14 @@ build-dictionary-init-master:
       - $CI_COMMIT_MESSAGE =~ /^Setting version to.*/
 
 
-build-rest-api-dev:
+build-recognition-api-dev:
   stage: build
   script:
     - |
       /kaniko/executor \
       --context $CI_PROJECT_DIR \
-      --destination $CI_REGISTRY_IMAGE/rest-api:$CI_COMMIT_REF_SLUG \
-      --dockerfile $CI_PROJECT_DIR/go/cmd/rest-api/Dockerfile
+      --destination $CI_REGISTRY_IMAGE/recognition-api:$CI_COMMIT_REF_SLUG \
+      --dockerfile $CI_PROJECT_DIR/go/cmd/recognition-api/Dockerfile
   except:
     refs:
       - master
@@ -130,15 +130,15 @@ build-rest-api-dev:
     variables:
       - $CI_COMMIT_MESSAGE =~ /^Setting version to.*/
 
-build-rest-api-master:
+build-recognition-api-master:
   stage: build
   script:
     - |
       /kaniko/executor \
       --context $CI_PROJECT_DIR \
-      --destination $CI_REGISTRY_IMAGE/rest-api:$CI_COMMIT_REF_SLUG \
-      --destination $CI_REGISTRY_IMAGE/rest-api:latest \
-      --dockerfile $CI_PROJECT_DIR/go/cmd/rest-api/Dockerfile
+      --destination $CI_REGISTRY_IMAGE/recognition-api:$CI_COMMIT_REF_SLUG \
+      --destination $CI_REGISTRY_IMAGE/recognition-api:latest \
+      --dockerfile $CI_PROJECT_DIR/go/cmd/recognition-api/Dockerfile
   only:
     refs:
       - tags

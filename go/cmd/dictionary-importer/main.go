@@ -5,10 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path"
-	"path/filepath"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -26,34 +23,27 @@ const (
 	LeadmineDictionaryFormat DictionaryFormat = "leadmine"
 )
 
-type BackendDatabaseType string
-
-const (
-	Redis BackendDatabaseType = "redis"
-	Elasticsearch BackendDatabaseType = "elasticsearch"
-)
-
 // config structure
-type conf struct {
-	LogLevel       string           `mapstructure:"log_level"`
+type dictionaryImporterConfig struct {
+	lib.BaseConfig
 	Dictionary struct {
 		Name string
 		Path string
 		Format DictionaryFormat
 	}
-	BackendDatabase BackendDatabaseType `mapstructure:"backend_database"`
+	BackendDatabase db.DictionaryBackend `mapstructure:"dictionary_backend"`
 	PipelineSize   int `mapstructure:"pipeline_size"`
 	Redis          db.RedisConfig
 	Elasticsearch  db.ElasticsearchConfig
 }
 
-var config conf
+var config dictionaryImporterConfig
 
 func init() {
 	// initialise config with defaults.
-	err := lib.InitializeConfig(map[string]interface{}{
+	err := lib.InitializeConfig("./config/dictionary-importer.yml", map[string]interface{}{
 		"log_level":       "info",
-		"backend_database": Redis,
+		"dictionary_backend": db.RedisDictionaryBackend,
 		"pipeline_size": 10000,
 		"dictionary": map[string]interface{}{
 			"name": "pubchem_synonyms",
@@ -86,9 +76,9 @@ func main() {
 	var dbClient db.Client
 	var err error
 	switch config.BackendDatabase {
-	case Redis:
+	case db.RedisDictionaryBackend:
 		dbClient = db.NewRedisClient(config.Redis)
-	case Elasticsearch:
+	case db.ElasticsearchDictionaryBackend:
 		dbClient, err = db.NewElasticsearchClient(config.Elasticsearch)
 		if err != nil {
 			log.Fatal().Err(err).Send()
@@ -97,14 +87,7 @@ func main() {
 		log.Fatal().Msg("invalid backend database type")
 	}
 
-	absPath := config.Dictionary.Path
-	if !filepath.IsAbs(absPath) {
-		_, thisFile, _, _ := runtime.Caller(0)
-		thisDirectory := path.Dir(thisFile)
-		absPath = filepath.Join(thisDirectory, config.Dictionary.Path)
-	}
-
-	dict, err := os.Open(absPath)
+	dict, err := os.Open(config.Dictionary.Path)
 	if err != nil {
 		log.Fatal().Err(err).Send()
 	}
@@ -212,7 +195,7 @@ func uploadPubchemDictionary(dict *os.File, dbClient db.Client) error {
 			if currentId != -1 {
 				// Mid process, some stuff to do
 				switch config.BackendDatabase {
-				case Redis:
+				case db.RedisDictionaryBackend:
 					for _, s := range synonyms {
 						b, err := json.Marshal(db.Lookup{
 							Dictionary:       config.Dictionary.Name,
@@ -224,7 +207,7 @@ func uploadPubchemDictionary(dict *os.File, dbClient db.Client) error {
 						pipe.Set(s, b)
 						dbEntries++
 					}
-				case Elasticsearch:
+				case db.ElasticsearchDictionaryBackend:
 					b, err := json.Marshal(db.EsLookup{
 						Dictionary: config.Dictionary.Name,
 						Synonyms:    synonyms,
