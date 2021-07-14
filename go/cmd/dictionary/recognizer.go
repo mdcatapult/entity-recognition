@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
@@ -9,14 +8,12 @@ import (
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/db"
 	"io"
 	"strings"
-	"sync"
 )
 
 type recogniser struct {
 	pb.UnimplementedRecognizerServer
 	dbClient db.Client
 	requestCache map[uuid.UUID]*requestVars
-	rwmut sync.RWMutex
 }
 
 type requestVars struct {
@@ -29,14 +26,9 @@ type requestVars struct {
 	pipe db.GetPipeline
 }
 
-func (r *recogniser) newResultHandler(requestID uuid.UUID) func(snippet *pb.Snippet, lookup *db.Lookup) error {
+func (r *recogniser) newResultHandler(vars *requestVars) func(snippet *pb.Snippet, lookup *db.Lookup) error {
 	return func(snippet *pb.Snippet, lookup *db.Lookup) error {
-		requestVars, err := r.getVars(requestID)
-		if err!= nil {
-			return err
-		}
-
-		requestVars.tokenCache[snippet] = lookup
+		vars.tokenCache[snippet] = lookup
 		if lookup == nil {
 			return nil
 		}
@@ -47,7 +39,7 @@ func (r *recogniser) newResultHandler(requestID uuid.UUID) func(snippet *pb.Snip
 			ResolvedTo: lookup.ResolvedEntities,
 		}
 
-		if err := requestVars.stream.Send(entity); err != nil {
+		if err := vars.stream.Send(entity); err != nil {
 			return err
 		}
 
@@ -55,86 +47,72 @@ func (r *recogniser) newResultHandler(requestID uuid.UUID) func(snippet *pb.Snip
 	}
 }
 
-func (r *recogniser) getCompoundTokens(requestID uuid.UUID, token *pb.Snippet) ([]*pb.Snippet, error) {
-	requestVars, err := r.getVars(requestID)
-	if err!= nil {
-		return nil, err
-	}
-
+func (r *recogniser) getCompoundTokens(vars *requestVars, token *pb.Snippet) ([]*pb.Snippet, error) {
 	// If sentenceEnd is true, we can save some redis queries by resetting the token history..
-	if requestVars.sentenceEnd {
-		requestVars.tokenHistory = []*pb.Snippet{}
-		requestVars.keyHistory = []string{}
-		requestVars.sentenceEnd = false
+	if vars.sentenceEnd {
+		vars.tokenHistory = []*pb.Snippet{}
+		vars.keyHistory = []string{}
+		vars.sentenceEnd = false
 	}
 
 	// normalise the token (remove enclosing punctuation and enforce NFKC encoding).
 	// sentenceEnd is true if the last byte in the token is one of '.', '?', or '!'.
-	requestVars.sentenceEnd = lib.Normalize(token)
+	vars.sentenceEnd = lib.Normalize(token)
 
 	// manage the token history
-	if len(requestVars.tokenHistory) < config.CompoundTokenLength {
-		requestVars.tokenHistory = append(requestVars.tokenHistory, token)
-		requestVars.keyHistory = append(requestVars.keyHistory, string(token.GetData()))
+	if len(vars.tokenHistory) < config.CompoundTokenLength {
+		vars.tokenHistory = append(vars.tokenHistory, token)
+		vars.keyHistory = append(vars.keyHistory, string(token.GetData()))
 	} else {
-		requestVars.tokenHistory = append(requestVars.tokenHistory[1:], token)
-		requestVars.keyHistory = append(requestVars.keyHistory[1:], string(token.GetData()))
+		vars.tokenHistory = append(vars.tokenHistory[1:], token)
+		vars.keyHistory = append(vars.keyHistory[1:], string(token.GetData()))
 	}
 
 	// construct the compound tokens to query against redis.
-	queryTokens := make([]*pb.Snippet, len(requestVars.tokenHistory))
-	for i, historicalToken := range requestVars.tokenHistory {
+	queryTokens := make([]*pb.Snippet, len(vars.tokenHistory))
+	for i, historicalToken := range vars.tokenHistory {
 		queryTokens[i] = &pb.Snippet{
-			Data:   []byte(strings.Join(requestVars.keyHistory[i:], " ")),
+			Data:   []byte(strings.Join(vars.keyHistory[i:], " ")),
 			Offset: historicalToken.GetOffset(),
 		}
 	}
 	return queryTokens, nil
 }
 
-func (r *recogniser) queryCompoundTokens(requestID uuid.UUID, compoundTokens []*pb.Snippet) error {
-	requestVars, err := r.getVars(requestID)
-	if err!= nil {
-		return err
-	}
-
-	for _, compoundToken := range compoundTokens {
-		if lookup, ok := requestVars.tokenCache[compoundToken]; ok {
-			// if it's nil, we've already queried redis and it wasn't there
-			if lookup == nil {
-				continue
-			}
-			// If it's empty, it's already queued but we don't know if its there or not.
-			// Append it to the cacheMisses to be found later.
-			if lookup.Dictionary == "" {
-				requestVars.tokenCacheMisses = append(requestVars.tokenCacheMisses, compoundToken)
-				continue
-			}
-			// Otherwise, construct an entity from the cache value and send it back to the caller.
-			entity := &pb.RecognizedEntity{
-				Entity:     string(compoundToken.GetData()),
-				Position:   compoundToken.GetOffset(),
-				Type:       lookup.Dictionary,
-				ResolvedTo: lookup.ResolvedEntities,
-			}
-			if err := requestVars.stream.Send(entity); err != nil {
-				return err
-			}
-		} else {
-			// Not in local cache.
-			// Queue the redis "GET" in the pipe and set the cache value to an empty db.Lookup
-			// (so that future equivalent tokens will be a cache miss).
-			requestVars.pipe.Get(compoundToken)
-			requestVars.tokenCache[compoundToken] = &db.Lookup{}
+func (r *recogniser) queryToken(vars *requestVars, token *pb.Snippet) error {
+	if lookup, ok := vars.tokenCache[token]; ok {
+		// if it's nil, we've already queried redis and it wasn't there
+		if lookup == nil {
+			return nil
 		}
+		// If it's empty, it's already queued but we don't know if its there or not.
+		// Append it to the cacheMisses to be found later.
+		if lookup.Dictionary == "" {
+			vars.tokenCacheMisses = append(vars.tokenCacheMisses, token)
+			return nil
+		}
+		// Otherwise, construct an entity from the cache value and send it back to the caller.
+		entity := &pb.RecognizedEntity{
+			Entity:     string(token.GetData()),
+			Position:   token.GetOffset(),
+			Type:       lookup.Dictionary,
+			ResolvedTo: lookup.ResolvedEntities,
+		}
+		if err := vars.stream.Send(entity); err != nil {
+			return err
+		}
+	} else {
+		// Not in local cache.
+		// Queue the redis "GET" in the pipe and set the cache value to an empty db.Lookup
+		// (so that future equivalent tokens will be a cache miss).
+		vars.pipe.Get(token)
+		vars.tokenCache[token] = &db.Lookup{}
 	}
 	return nil
 }
 
-func (r *recogniser) initializeRequest(stream pb.Recognizer_RecognizeServer) uuid.UUID {
-	requestID := uuid.New()
-	r.rwmut.Lock()
-	r.requestCache[requestID] = &requestVars{
+func (r *recogniser) initializeRequest(stream pb.Recognizer_RecognizeServer) *requestVars {
+	return &requestVars{
 		tokenCache:       make(map[*pb.Snippet]*db.Lookup, config.PipelineSize),
 		tokenCacheMisses: make([]*pb.Snippet, config.PipelineSize),
 		tokenHistory:     []*pb.Snippet{},
@@ -143,49 +121,30 @@ func (r *recogniser) initializeRequest(stream pb.Recognizer_RecognizeServer) uui
 		stream:           stream,
 		pipe: r.dbClient.NewGetPipeline(config.PipelineSize),
 	}
-	r.rwmut.Unlock()
-	return requestID
 }
 
-func (r *recogniser) finalizeRequest(requestID uuid.UUID) {
-	r.rwmut.Lock()
-	delete(r.requestCache, requestID)
-	r.rwmut.Unlock()
-}
-
-func (r *recogniser) execPipe(requestID uuid.UUID, onResult func(snippet *pb.Snippet, lookup *db.Lookup) error, threshold int, new bool) error {
-	requestVars, err := r.getVars(requestID)
-	if err!= nil {
-		return err
-	}
-
-	if requestVars.pipe.Size() > threshold {
-		if err := requestVars.pipe.ExecGet(onResult); err != nil {
+func (r *recogniser) execPipe(vars *requestVars, onResult func(snippet *pb.Snippet, lookup *db.Lookup) error, threshold int, new bool) error {
+	if vars.pipe.Size() > threshold {
+		if err := vars.pipe.ExecGet(onResult); err != nil {
 			return err
 		}
 		if new {
-			requestVars.pipe = r.dbClient.NewGetPipeline(config.PipelineSize)
+			vars.pipe = r.dbClient.NewGetPipeline(config.PipelineSize)
 		}
 	}
 	return nil
 }
 
-func (r *recogniser) retryCacheMisses(requestID uuid.UUID) error {
-	requestVars, err := r.getVars(requestID)
-	if err!= nil {
-		return err
-	}
-
-	// Check if any of the cacheMisses were populated (nil means redis doesnt have it).
-	for _, token := range requestVars.tokenCacheMisses {
-		if lookup := requestVars.tokenCache[token]; lookup != nil {
+func (r *recogniser) retryCacheMisses(vars *requestVars) error {
+	for _, token := range vars.tokenCacheMisses {
+		if lookup := vars.tokenCache[token]; lookup != nil {
 			entity := &pb.RecognizedEntity{
 				Entity:     string(token.GetData()),
 				Position:   token.GetOffset(),
 				Type:       lookup.Dictionary,
 				ResolvedTo: lookup.ResolvedEntities,
 			}
-			if err := requestVars.stream.Send(entity); err != nil {
+			if err := vars.stream.Send(entity); err != nil {
 				return err
 			}
 		}
@@ -193,29 +152,16 @@ func (r *recogniser) retryCacheMisses(requestID uuid.UUID) error {
 	return nil
 }
 
-func (r *recogniser) getVars(requestID uuid.UUID) (*requestVars, error) {
-	r.rwmut.RLock()
-	requestVars, ok := r.requestCache[requestID]
-	r.rwmut.RUnlock()
-	if !ok {
-		err := errors.New("request not in cache, something went horribly wrong")
-		log.Error().Err(err).Send()
-		return nil, err
-	}
-	return requestVars, nil
-}
-
 func (r *recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
-	requestID := r.initializeRequest(stream)
-	defer r.finalizeRequest(requestID)
-	log.Info().Str("request_id", requestID.String()).Msg("received request")
-	onResult := r.newResultHandler(requestID)
+	vars := r.initializeRequest(stream)
+	log.Info().Msg("received request")
+	onResult := r.newResultHandler(vars)
 
 	for {
 		token, err := stream.Recv()
 		if err == io.EOF {
 			// There are likely some redis queries queued on the pipe. If there are, execute them. Then break.
-			if err := r.execPipe(requestID, onResult, 0, false); err != nil {
+			if err := r.execPipe(vars, onResult, 0, false); err != nil {
 				return err
 			}
 			break
@@ -223,19 +169,21 @@ func (r *recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 			return err
 		}
 
-		compoundTokens, err := r.getCompoundTokens(requestID, token)
+		compoundTokens, err := r.getCompoundTokens(vars, token)
 		if err != nil {
 			return err
 		}
 
-		if err := r.queryCompoundTokens(requestID, compoundTokens); err != nil {
-			return err
+		for _, compoundToken := range compoundTokens {
+			if err := r.queryToken(vars, compoundToken); err != nil {
+				return err
+			}
 		}
 
-		if err := r.execPipe(requestID, onResult, config.PipelineSize, true); err != nil {
+		if err := r.execPipe(vars, onResult, config.PipelineSize, true); err != nil {
 			return err
 		}
 	}
 
-	return nil
+	return r.retryCacheMisses(vars)
 }
