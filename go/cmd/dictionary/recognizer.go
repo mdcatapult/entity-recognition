@@ -147,6 +147,12 @@ func (r *recogniser) initializeRequest(stream pb.Recognizer_RecognizeServer) uui
 	return requestID
 }
 
+func (r *recogniser) finalizeRequest(requestID uuid.UUID) {
+	r.rwmut.Lock()
+	delete(r.requestCache, requestID)
+	r.rwmut.Unlock()
+}
+
 func (r *recogniser) execPipe(requestID uuid.UUID, onResult func(snippet *pb.Snippet, lookup *db.Lookup) error, threshold int, new bool) error {
 	requestVars, err := r.getVars(requestID)
 	if err!= nil {
@@ -201,6 +207,7 @@ func (r *recogniser) getVars(requestID uuid.UUID) (*requestVars, error) {
 
 func (r *recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 	requestID := r.initializeRequest(stream)
+	defer r.finalizeRequest(requestID)
 	log.Info().Str("request_id", requestID.String()).Msg("received request")
 	onResult := r.newResultHandler(requestID)
 
