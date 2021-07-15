@@ -36,10 +36,5 @@ curl -L http://localhost:8080/wiki/Acetylcarnitine > /tmp/acetylcarnitine.html
 curl -XPOST --data-binary "@/tmp/acetylcarnitine.html" 'http://localhost:8080/html/entities'
 ```
 
-### Generate protobufs
-Go:
-```bash
-protoc --proto_path=./proto --go_out=./go/gen/pb \
-  --go_opt=paths=source_relative --go-grpc_out=./go/gen/pb \
-  --go-grpc_opt=paths=source_relative ./proto/*.proto
-```
+### Code Generation
+Some code in this repo is generated. The generated code is committed, so you don't need to regenerate it yourself. See the [Makefile](Makefile) for more info.

@@ -1,6 +1,6 @@
 module gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition
 
-go 1.15
+go 1.16
 
 require (
 	github.com/blevesearch/segment v0.9.0
