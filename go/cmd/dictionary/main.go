@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
@@ -83,7 +82,6 @@ func main() {
 	grpcServer := grpc.NewServer(opts...)
 	pb.RegisterRecognizerServer(grpcServer, &recogniser{
 		dbClient: dbClient,
-		requestCache: make(map[uuid.UUID]*requestVars),
 	})
 
 	log.Info().Int("port", config.Server.GrpcPort).Msg("ready to accept requests")

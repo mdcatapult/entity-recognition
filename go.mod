@@ -11,6 +11,7 @@ require (
 	github.com/rs/zerolog v1.23.0 // indirect
 	github.com/spf13/pflag v1.0.3
 	github.com/spf13/viper v1.7.1
+	github.com/stretchr/testify v1.7.0 // indirect
 	golang.org/x/net v0.0.0-20210505024714-0287a6fb4125
 	golang.org/x/text v0.3.6
 	google.golang.org/grpc v1.37.0

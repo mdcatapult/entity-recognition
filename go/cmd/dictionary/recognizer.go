@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
@@ -13,7 +12,6 @@ import (
 type recogniser struct {
 	pb.UnimplementedRecognizerServer
 	dbClient db.Client
-	requestCache map[uuid.UUID]*requestVars
 }
 
 type requestVars struct {
@@ -47,7 +45,7 @@ func (r *recogniser) newResultHandler(vars *requestVars) func(snippet *pb.Snippe
 	}
 }
 
-func (r *recogniser) getCompoundTokens(vars *requestVars, token *pb.Snippet) ([]*pb.Snippet, error) {
+func (r *recogniser) getCompoundTokens(vars *requestVars, token *pb.Snippet) []*pb.Snippet {
 	// If sentenceEnd is true, we can save some redis queries by resetting the token history..
 	if vars.sentenceEnd {
 		vars.tokenHistory = []*pb.Snippet{}
@@ -76,7 +74,7 @@ func (r *recogniser) getCompoundTokens(vars *requestVars, token *pb.Snippet) ([]
 			Offset: historicalToken.GetOffset(),
 		}
 	}
-	return queryTokens, nil
+	return queryTokens
 }
 
 func (r *recogniser) queryToken(vars *requestVars, token *pb.Snippet) error {
@@ -169,10 +167,7 @@ func (r *recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 			return err
 		}
 
-		compoundTokens, err := r.getCompoundTokens(vars, token)
-		if err != nil {
-			return err
-		}
+		compoundTokens := r.getCompoundTokens(vars, token)
 
 		for _, compoundToken := range compoundTokens {
 			if err := r.queryToken(vars, compoundToken); err != nil {
