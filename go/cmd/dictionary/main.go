@@ -27,7 +27,7 @@ type dictionaryRecogniserConfig struct {
 
 var config dictionaryRecogniserConfig
 
-func init() {
+func initConfig() {
 	// initialise config with defaults.
 	err := lib.InitializeConfig("./config/dictionary.yml", map[string]interface{}{
 		"log_level":          "info",
@@ -58,7 +58,7 @@ func init() {
 }
 
 func main() {
-
+	initConfig()
 	// Get a redis client
 	var dbClient db.Client
 	var err error

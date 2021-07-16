@@ -52,6 +52,9 @@ func (c controller) RecognizeInHTML(reader io.Reader) ([]*pb.RecognizedEntity, e
 	recognisers := make([]pb.Recognizer_RecognizeClient, len(c.clients))
 	for i, client := range c.clients {
 		recognisers[i], err = client.Recognize(context.Background())
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// For each recogniser, instantiate a goroutine which listens for entities

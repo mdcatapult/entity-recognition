@@ -1,15 +1,27 @@
 stages:
+  - test
   - build
   - release
 
 default:
-  image:
-    name: gcr.io/kaniko-project/executor:debug
-    entrypoint: [""]
   tags:
     - wopr
-  before_script:
-    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+
+lint:
+  stage: test
+  image: registry.mdcatapult.io/informatics/docker-images/ci/golang
+  script:
+    - go vet ./...
+    - golangci-lint run
+
+test:
+  stage: test
+  image: registry.mdcatapult.io/informatics/docker-images/ci/golang
+  script:
+    - go test ./go/... -coverpkg=./... -coverprofile=cover.out
+    - sed -i "/\/gen\//d" cover.out
+    - go tool cover -func cover.out
+  coverage: /total:\s+\(statements\)\s+(\d+.\d+\%)/
 
 release:
   stage: release
@@ -23,7 +35,12 @@ release:
     - $CI_COMMIT_MESSAGE =~ /^Setting version to.*/
 
 build-dictionary-dev:
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
   stage: build
+  before_script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
   script:
     - |
       /kaniko/executor \
@@ -38,7 +55,12 @@ build-dictionary-dev:
       - $CI_COMMIT_MESSAGE =~ /^Setting version to.*/
 
 build-dictionary-master:
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
   stage: build
+  before_script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
   script:
     - |
       /kaniko/executor \
@@ -54,7 +76,12 @@ build-dictionary-master:
 
 
 build-regexer-dev:
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
   stage: build
+  before_script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
   script:
     - |
       /kaniko/executor \
@@ -69,7 +96,12 @@ build-regexer-dev:
       - $CI_COMMIT_MESSAGE =~ /^Setting version to.*/
 
 build-regexer-master:
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
   stage: build
+  before_script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
   script:
     - |
       /kaniko/executor \
@@ -85,7 +117,12 @@ build-regexer-master:
 
 
 build-dictionary-importer-dev:
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
   stage: build
+  before_script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
   script:
     - |
       /kaniko/executor \
@@ -100,7 +137,12 @@ build-dictionary-importer-dev:
       - $CI_COMMIT_MESSAGE =~ /^Setting version to.*/
 
 build-dictionary-importer-master:
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
   stage: build
+  before_script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
   script:
     - |
       /kaniko/executor \
@@ -116,7 +158,12 @@ build-dictionary-importer-master:
 
 
 build-recognition-api-dev:
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
   stage: build
+  before_script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
   script:
     - |
       /kaniko/executor \
@@ -131,7 +178,12 @@ build-recognition-api-dev:
       - $CI_COMMIT_MESSAGE =~ /^Setting version to.*/
 
 build-recognition-api-master:
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
   stage: build
+  before_script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
   script:
     - |
       /kaniko/executor \

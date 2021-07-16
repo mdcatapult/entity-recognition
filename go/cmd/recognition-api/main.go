@@ -25,7 +25,7 @@ type recognitionAPIConfig struct {
 
 var config recognitionAPIConfig
 
-func init() {
+func initConfig() {
 	// Set default config values
 	err := lib.InitializeConfig("./config/recognition-api.yml", map[string]interface{}{
 		"log_level": "info",
@@ -45,7 +45,7 @@ func init() {
 }
 
 func main() {
-
+	initConfig()
 	// general grpc options
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithInsecure())

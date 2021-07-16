@@ -23,7 +23,7 @@ type regexpRecognizerConfig struct {
 // global vars initialised on startup (should never be edited after that).
 var config regexpRecognizerConfig
 
-func init() {
+func initConfig() {
 	// Initialize config with default values
 	err := lib.InitializeConfig("./config/regexer.yml", map[string]interface{}{
 		"log_level": "info",
@@ -44,6 +44,7 @@ func init() {
 }
 
 func main() {
+	initConfig()
 
 	regexps, err := getRegexps()
 	if err != nil {

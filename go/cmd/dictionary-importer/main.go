@@ -39,7 +39,7 @@ type dictionaryImporterConfig struct {
 
 var config dictionaryImporterConfig
 
-func init() {
+func initConfig() {
 	// initialise config with defaults.
 	err := lib.InitializeConfig("./config/dictionary-importer.yml", map[string]interface{}{
 		"log_level":          "info",
@@ -71,7 +71,7 @@ func init() {
 }
 
 func main() {
-
+	initConfig()
 	// Get a redis client
 	var dbClient db.Client
 	var err error
