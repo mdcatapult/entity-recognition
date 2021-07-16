@@ -52,3 +52,11 @@ proto: require-protoc
 	protoc --proto_path=./proto --go_out=./go/gen/pb \
       --go_opt=paths=source_relative --go-grpc_out=./go/gen/pb \
       --go-grpc_opt=paths=source_relative ./proto/*.proto
+
+.PHONY: run
+run: build
+	@./scripts/run.sh
+
+.PHONY: format
+format: require-go
+	dirs=$$(go list -f {{.Dir}} ./...) && for d in $$dirs; do goimports -w $$d/*.go; done

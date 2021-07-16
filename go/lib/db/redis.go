@@ -3,6 +3,7 @@ package db
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/go-redis/redis"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 )
@@ -65,7 +66,7 @@ func (r *redisSetPipeline) Size() int {
 }
 
 func (r *redisGetPipeline) Get(token *pb.Snippet) {
-	r.cmds[token] = r.pipe.Get(string(token.GetData()))
+	r.cmds[token] = r.pipe.Get(token.GetToken())
 }
 
 func (r *redisGetPipeline) ExecGet(onResult func(*pb.Snippet, *Lookup) error) error {

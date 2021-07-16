@@ -10,7 +10,7 @@ func RandomLowercaseString(len int) string {
 	bytes := make([]byte, len)
 	rand.Read(bytes)
 	for i, b := range bytes {
-		bytes[i] = b % 26 + 97
+		bytes[i] = b%26 + 97
 	}
 	return string(bytes)
 }

@@ -1,12 +1,13 @@
 package lib
 
 import (
+	"path/filepath"
+	"strings"
+
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"path/filepath"
-	"strings"
 )
 
 type BaseConfig struct {

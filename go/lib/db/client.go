@@ -4,7 +4,7 @@ import "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition
 
 // Lookup is the value we will store in the db.
 type Lookup struct {
-	Dictionary       string `json:"dictionary"`
+	Dictionary       string   `json:"dictionary"`
 	ResolvedEntities []string `json:"resolvedEntities,omitempty"`
 }
 

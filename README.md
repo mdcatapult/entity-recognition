@@ -19,11 +19,9 @@ make config
 make build
 docker-compose up -d redis
 bin/dictionary-importer
-bin/dictionary &
-bin/regexer &
-bin/rest-api
+make run
 ```
-**IMPORTANT:** The `&` tells bash to run a command in the background. The binaries will continue to run until you stop them. To stop them, type `fg` and then cancel with `Ctrl+C`. You need to do this twice - once for each background process. *Alternatively* you can just run these binaries in different terminals 
+**IMPORTANT:** The make run command runs processes in the background using `&`. There is a bash trap which executes a function to foreground those processes on interrupt. In case this doesn't work, you might have some hanging processes on your machine. Use `ps` or `pgrep` to find and kill them.
 
 
 You can also just press the play button next to a main function in intellij :smiley:.

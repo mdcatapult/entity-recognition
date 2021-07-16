@@ -27,14 +27,14 @@ const (
 type dictionaryImporterConfig struct {
 	lib.BaseConfig
 	Dictionary struct {
-		Name string
-		Path string
+		Name   string
+		Path   string
 		Format DictionaryFormat
 	}
 	BackendDatabase db.DictionaryBackend `mapstructure:"dictionary_backend"`
-	PipelineSize   int `mapstructure:"pipeline_size"`
-	Redis          db.RedisConfig
-	Elasticsearch  db.ElasticsearchConfig
+	PipelineSize    int                  `mapstructure:"pipeline_size"`
+	Redis           db.RedisConfig
+	Elasticsearch   db.ElasticsearchConfig
 }
 
 var config dictionaryImporterConfig
@@ -42,12 +42,12 @@ var config dictionaryImporterConfig
 func init() {
 	// initialise config with defaults.
 	err := lib.InitializeConfig("./config/dictionary-importer.yml", map[string]interface{}{
-		"log_level":       "info",
+		"log_level":          "info",
 		"dictionary_backend": db.RedisDictionaryBackend,
-		"pipeline_size": 10000,
+		"pipeline_size":      10000,
 		"dictionary": map[string]interface{}{
-			"name": "pubchem_synonyms",
-			"path": "./dictionaries/pubchem.tsv",
+			"name":   "pubchem_synonyms",
+			"path":   "./dictionaries/pubchem.tsv",
 			"format": PubchemDictionaryFormat,
 		},
 		"redis": map[string]interface{}{
@@ -136,8 +136,8 @@ func uploadLeadmineDictionary(dict *os.File, dbClient db.Client) error {
 				if key == "" {
 					continue
 				}
-				b ,err := json.Marshal(&db.Lookup{
-					Dictionary:     config.Dictionary.Name,
+				b, err := json.Marshal(&db.Lookup{
+					Dictionary:       config.Dictionary.Name,
 					ResolvedEntities: []string{resolvedEntity},
 				})
 				if err != nil {
@@ -209,7 +209,7 @@ func uploadPubchemDictionary(dict *os.File, dbClient db.Client) error {
 					}
 				case db.ElasticsearchDictionaryBackend:
 					b, err := json.Marshal(db.EsLookup{
-						Dictionary: config.Dictionary.Name,
+						Dictionary:  config.Dictionary.Name,
 						Synonyms:    synonyms,
 						Identifiers: identifiers,
 					})

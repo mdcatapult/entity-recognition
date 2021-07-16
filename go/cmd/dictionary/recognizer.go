@@ -1,12 +1,13 @@
 package main
 
 import (
+	"io"
+	"strings"
+
 	"github.com/rs/zerolog/log"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/db"
-	"io"
-	"strings"
 )
 
 type recogniser struct {
@@ -15,13 +16,13 @@ type recogniser struct {
 }
 
 type requestVars struct {
-	tokenCache map[*pb.Snippet]*db.Lookup
+	tokenCache       map[*pb.Snippet]*db.Lookup
 	tokenCacheMisses []*pb.Snippet
-	tokenHistory []*pb.Snippet
-	keyHistory []string
-	sentenceEnd bool
-	stream pb.Recognizer_RecognizeServer
-	pipe db.GetPipeline
+	snippetHistory   []*pb.Snippet
+	tokenHistory     []string
+	sentenceEnd      bool
+	stream           pb.Recognizer_RecognizeServer
+	pipe             db.GetPipeline
 }
 
 func (r *recogniser) newResultHandler(vars *requestVars) func(snippet *pb.Snippet, lookup *db.Lookup) error {
@@ -31,7 +32,7 @@ func (r *recogniser) newResultHandler(vars *requestVars) func(snippet *pb.Snippe
 			return nil
 		}
 		entity := &pb.RecognizedEntity{
-			Entity:     string(snippet.GetData()),
+			Entity:     snippet.GetToken(),
 			Position:   snippet.GetOffset(),
 			Type:       lookup.Dictionary,
 			ResolvedTo: lookup.ResolvedEntities,
@@ -45,36 +46,36 @@ func (r *recogniser) newResultHandler(vars *requestVars) func(snippet *pb.Snippe
 	}
 }
 
-func (r *recogniser) getCompoundTokens(vars *requestVars, token *pb.Snippet) []*pb.Snippet {
+func (r *recogniser) getCompoundSnippets(vars *requestVars, snippet *pb.Snippet) []*pb.Snippet {
 	// If sentenceEnd is true, we can save some redis queries by resetting the token history..
 	if vars.sentenceEnd {
-		vars.tokenHistory = []*pb.Snippet{}
-		vars.keyHistory = []string{}
+		vars.snippetHistory = []*pb.Snippet{}
+		vars.tokenHistory = []string{}
 		vars.sentenceEnd = false
 	}
 
 	// normalise the token (remove enclosing punctuation and enforce NFKC encoding).
 	// sentenceEnd is true if the last byte in the token is one of '.', '?', or '!'.
-	vars.sentenceEnd = lib.Normalize(token)
+	vars.sentenceEnd = lib.Normalize(snippet)
 
 	// manage the token history
-	if len(vars.tokenHistory) < config.CompoundTokenLength {
-		vars.tokenHistory = append(vars.tokenHistory, token)
-		vars.keyHistory = append(vars.keyHistory, string(token.GetData()))
+	if len(vars.snippetHistory) < config.CompoundTokenLength {
+		vars.snippetHistory = append(vars.snippetHistory, snippet)
+		vars.tokenHistory = append(vars.tokenHistory, snippet.GetToken())
 	} else {
-		vars.tokenHistory = append(vars.tokenHistory[1:], token)
-		vars.keyHistory = append(vars.keyHistory[1:], string(token.GetData()))
+		vars.snippetHistory = append(vars.snippetHistory[1:], snippet)
+		vars.tokenHistory = append(vars.tokenHistory[1:], snippet.GetToken())
 	}
 
 	// construct the compound tokens to query against redis.
-	queryTokens := make([]*pb.Snippet, len(vars.tokenHistory))
-	for i, historicalToken := range vars.tokenHistory {
-		queryTokens[i] = &pb.Snippet{
-			Data:   []byte(strings.Join(vars.keyHistory[i:], " ")),
+	compoundSnippets := make([]*pb.Snippet, len(vars.snippetHistory))
+	for i, historicalToken := range vars.snippetHistory {
+		compoundSnippets[i] = &pb.Snippet{
+			Token:  strings.Join(vars.tokenHistory[i:], " "),
 			Offset: historicalToken.GetOffset(),
 		}
 	}
-	return queryTokens
+	return compoundSnippets
 }
 
 func (r *recogniser) queryToken(vars *requestVars, token *pb.Snippet) error {
@@ -91,7 +92,7 @@ func (r *recogniser) queryToken(vars *requestVars, token *pb.Snippet) error {
 		}
 		// Otherwise, construct an entity from the cache value and send it back to the caller.
 		entity := &pb.RecognizedEntity{
-			Entity:     string(token.GetData()),
+			Entity:     token.GetToken(),
 			Position:   token.GetOffset(),
 			Type:       lookup.Dictionary,
 			ResolvedTo: lookup.ResolvedEntities,
@@ -113,11 +114,11 @@ func (r *recogniser) initializeRequest(stream pb.Recognizer_RecognizeServer) *re
 	return &requestVars{
 		tokenCache:       make(map[*pb.Snippet]*db.Lookup, config.PipelineSize),
 		tokenCacheMisses: make([]*pb.Snippet, config.PipelineSize),
-		tokenHistory:     []*pb.Snippet{},
-		keyHistory:       []string{},
+		snippetHistory:   []*pb.Snippet{},
+		tokenHistory:     []string{},
 		sentenceEnd:      false,
 		stream:           stream,
-		pipe: r.dbClient.NewGetPipeline(config.PipelineSize),
+		pipe:             r.dbClient.NewGetPipeline(config.PipelineSize),
 	}
 }
 
@@ -137,7 +138,7 @@ func (r *recogniser) retryCacheMisses(vars *requestVars) error {
 	for _, token := range vars.tokenCacheMisses {
 		if lookup := vars.tokenCache[token]; lookup != nil {
 			entity := &pb.RecognizedEntity{
-				Entity:     string(token.GetData()),
+				Entity:     token.GetToken(),
 				Position:   token.GetOffset(),
 				Type:       lookup.Dictionary,
 				ResolvedTo: lookup.ResolvedEntities,
@@ -167,7 +168,7 @@ func (r *recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 			return err
 		}
 
-		compoundTokens := r.getCompoundTokens(vars, token)
+		compoundTokens := r.getCompoundSnippets(vars, token)
 
 		for _, compoundToken := range compoundTokens {
 			if err := r.queryToken(vars, compoundToken); err != nil {

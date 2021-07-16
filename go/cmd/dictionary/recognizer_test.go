@@ -1,15 +1,14 @@
 package main
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/db"
-	"io"
-	"math/rand"
-	"testing"
-	"time"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/testhelpers"
 )
 
 var testConfig = dictionaryRecogniserConfig{
@@ -26,15 +25,19 @@ func TestRecognizerSuite(t *testing.T) {
 	suite.Run(t, new(RecognizerSuite))
 }
 
+func (s *RecognizerSuite) SetupSuite() {
+	config = testConfig
+}
+
 func (s *RecognizerSuite) Test_recognizer_Recognize() {
 	mockDBClient := &mocks.Client{}
 	s.dbClient = mockDBClient
 	mockGetPipeline := &mocks.GetPipeline{}
 	mockDBClient.On("NewGetPipeline", testConfig.PipelineSize).Return(mockGetPipeline).Once()
-	mockStream, snippets := newMockStream("hello", "my", "name", "is", "jeff")
+	mockStream, snippets := testhelpers.NewMockRecognizeServerStream("hello", "my", "name", "is", "jeff")
 	v := &requestVars{}
 	for i, snippet := range snippets {
-		compoundTokens := s.getCompoundTokens(v, snippet)
+		compoundTokens := s.getCompoundSnippets(v, snippet)
 		mockGetPipeline.On("Size").Return(i).Once()
 		for _, token := range compoundTokens {
 			mockGetPipeline.On("Get", token).Once()
@@ -50,57 +53,39 @@ func (s *RecognizerSuite) Test_recognizer_Recognize() {
 	mockStream.AssertExpectations(s.T())
 }
 
-func newMockStream(tokens... string) (*mocks.Recognizer_RecognizeServer, []*pb.Snippet) {
-	stream := &mocks.Recognizer_RecognizeServer{}
-	rand.Seed(time.Now().UnixNano())
-	offset := rand.Intn(1000)
-	var snippets []*pb.Snippet
-	for _, token := range tokens {
-		offset += len(token) + 1
-		snippet := &pb.Snippet{
-			Data:   []byte(token),
-			Offset: uint32(offset),
-		}
-		snippets = append(snippets, snippet)
-		stream.On("Recv").Return(snippet, nil).Once()
-	}
-	stream.On("Recv").Return(nil, io.EOF).Once()
-	return stream, snippets
-}
-
 func (s *RecognizerSuite) Test_recogniser_queryToken() {
 
 	mockDBClient := &mocks.Client{}
 	s.dbClient = mockDBClient
 	mockGetPipeline := &mocks.GetPipeline{}
 	mockDBClient.On("NewGetPipeline", testConfig.PipelineSize).Return(mockGetPipeline).Once()
-	mockStream, _ := newMockStream("hello", "my", "name", "is", "jeff")
+	mockStream, _ := testhelpers.NewMockRecognizeServerStream("hello", "my", "name", "is", "jeff")
 	notInDB := &pb.Snippet{
-		Data: []byte("not in db"),
+		Token: "not in db",
 	}
 	inDB := &pb.Snippet{
-		Data: []byte("in db"),
+		Token: "in db",
 	}
 	cacheMiss := &pb.Snippet{
-		Data: []byte("cache miss"),
+		Token: "cache miss",
 	}
 	notInCache := &pb.Snippet{
-		Data: []byte("not in cache"),
+		Token: "not in cache",
 	}
 	tokenCache := map[*pb.Snippet]*db.Lookup{
-		notInDB: nil,
+		notInDB:   nil,
 		cacheMiss: {},
 		inDB: {
 			Dictionary: "fake dictionary",
 		},
 	}
 	tokenCacheWithMissingToken := make(map[*pb.Snippet]*db.Lookup)
-	for k,v := range tokenCache {
+	for k, v := range tokenCache {
 		tokenCacheWithMissingToken[k] = v
 	}
 	tokenCacheWithMissingToken[notInCache] = &db.Lookup{}
 	foundEntity := &pb.RecognizedEntity{
-		Type:       "fake dictionary",
+		Type:   "fake dictionary",
 		Entity: "in db",
 	}
 	mockStream.On("Send", foundEntity).Return(nil).Once()
@@ -110,22 +95,22 @@ func (s *RecognizerSuite) Test_recogniser_queryToken() {
 		token *pb.Snippet
 	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr error
+		name     string
+		args     args
+		wantErr  error
 		wantVars *requestVars
 	}{
 		{
 			name: "in cache, not in db",
 			args: args{
-				vars:  &requestVars{
-					tokenCache:       tokenCache,
+				vars: &requestVars{
+					tokenCache: tokenCache,
 				},
 				token: notInDB,
 			},
 			wantErr: nil,
 			wantVars: &requestVars{
-				tokenCache:       tokenCache,
+				tokenCache: tokenCache,
 			},
 		},
 		{
@@ -138,7 +123,7 @@ func (s *RecognizerSuite) Test_recogniser_queryToken() {
 			},
 			wantErr: nil,
 			wantVars: &requestVars{
-				tokenCache: tokenCache,
+				tokenCache:       tokenCache,
 				tokenCacheMisses: []*pb.Snippet{cacheMiss},
 			},
 		},
@@ -147,14 +132,14 @@ func (s *RecognizerSuite) Test_recogniser_queryToken() {
 			args: args{
 				vars: &requestVars{
 					tokenCache: tokenCache,
-					stream: mockStream,
+					stream:     mockStream,
 				},
 				token: inDB,
 			},
 			wantErr: nil,
 			wantVars: &requestVars{
 				tokenCache: tokenCache,
-				stream: mockStream,
+				stream:     mockStream,
 			},
 		},
 		{
@@ -162,14 +147,14 @@ func (s *RecognizerSuite) Test_recogniser_queryToken() {
 			args: args{
 				vars: &requestVars{
 					tokenCache: tokenCache,
-					pipe: mockGetPipeline,
+					pipe:       mockGetPipeline,
 				},
 				token: notInCache,
 			},
 			wantErr: nil,
 			wantVars: &requestVars{
 				tokenCache: tokenCacheWithMissingToken,
-				pipe: mockGetPipeline,
+				pipe:       mockGetPipeline,
 			},
 		},
 	}
@@ -187,99 +172,85 @@ func (s *RecognizerSuite) Test_recogniser_getCompoundTokens() {
 		token *pb.Snippet
 	}
 	tests := []struct {
-		name    string
-		args    args
-		want    []*pb.Snippet
+		name     string
+		args     args
+		want     []*pb.Snippet
 		wantVars *requestVars
 	}{
 		{
 			name: "end of sentence (for last token)",
 			args: args{
 				vars: &requestVars{
-					tokenHistory:     snips("got", "stuff", "in", "it."),
-					keyHistory:       []string{"got", "stuff", "in", "it."},
-					sentenceEnd:      true,
+					snippetHistory: testhelpers.Snips("got", "stuff", "in", "it."),
+					tokenHistory:   []string{"got", "stuff", "in", "it."},
+					sentenceEnd:    true,
 				},
-				token: snip("Hello"),
+				token: testhelpers.Snip("Hello", 0),
 			},
-			want: snips("Hello"),
+			want: testhelpers.Snips("Hello"),
 			wantVars: &requestVars{
-				tokenHistory:     snips("Hello"),
-				keyHistory:       []string{"Hello"},
-				sentenceEnd:      false,
+				snippetHistory: testhelpers.Snips("Hello"),
+				tokenHistory:   []string{"Hello"},
+				sentenceEnd:    false,
 			},
 		},
 		{
 			name: "detect end of sentence (for current token)",
 			args: args{
 				vars: &requestVars{
-					tokenHistory:     snips("got"),
-					keyHistory:       []string{"got"},
+					snippetHistory: testhelpers.Snips("got"),
+					tokenHistory:   []string{"got"},
 				},
-				token: snip("Hello."),
+				token: testhelpers.Snip("Hello.", 0),
 			},
-			want: snips("Hello", "got Hello"),
+			want: testhelpers.Snips("Hello", "got Hello"),
 			wantVars: &requestVars{
-				tokenHistory:     snips("got", "Hello"),
-				keyHistory:       []string{"got", "Hello"},
-				sentenceEnd:      true,
+				snippetHistory: testhelpers.Snips("got", "Hello"),
+				tokenHistory:   []string{"got", "Hello"},
+				sentenceEnd:    true,
 			},
 		},
 		{
 			name: "less than compound token length",
 			args: args{
 				vars: &requestVars{
-					keyHistory: []string{"old"},
-					tokenHistory: snips("old"),
+					tokenHistory:   []string{"old"},
+					snippetHistory: testhelpers.Snips("old"),
 				},
-				token: snip("new"),
+				token: testhelpers.Snip("new", 0),
 			},
-			want: snips("old new", "new"),
+			want: testhelpers.Snips("old new", "new"),
 			wantVars: &requestVars{
-				keyHistory: []string{"old", "new"},
-				tokenHistory: snips("old", "new"),
+				tokenHistory:   []string{"old", "new"},
+				snippetHistory: testhelpers.Snips("old", "new"),
 			},
 		},
 		{
 			name: "at compound token length",
 			args: args{
 				vars: &requestVars{
-					keyHistory: []string{"old", "new", "black", "white", "quavers"},
-					tokenHistory: snips("old", "new", "black", "white", "quavers"),
+					tokenHistory:   []string{"old", "new", "black", "white", "quavers"},
+					snippetHistory: testhelpers.Snips("old", "new", "black", "white", "quavers"),
 				},
-				token: snip("latest"),
+				token: testhelpers.Snip("latest", 0),
 			},
-			want: snips("latest", 
+			want: testhelpers.Snips("latest",
 				"quavers latest",
 				"white quavers latest",
 				"black white quavers latest",
 				"new black white quavers latest"),
 			wantVars: &requestVars{
-				tokenHistory:     snips("new", "black", "white", "quavers", "latest"),
-				keyHistory:       []string{"new", "black", "white", "quavers", "latest"},
+				snippetHistory: testhelpers.Snips("new", "black", "white", "quavers", "latest"),
+				tokenHistory:   []string{"new", "black", "white", "quavers", "latest"},
 			},
 		},
 	}
-		for _, tt := range tests {
-			s.T().Log(tt.name)
-			got := s.getCompoundTokens(tt.args.vars, tt.args.token)
-			s.ElementsMatch(tt.want, got)
-			s.ElementsMatch(tt.args.vars.tokenHistory, tt.wantVars.tokenHistory)
-			s.ElementsMatch(tt.args.vars.keyHistory, tt.wantVars.keyHistory)
-			s.Equal(tt.args.vars.sentenceEnd, tt.wantVars.sentenceEnd)
-	}
-}
-
-func snips(toks... string) []*pb.Snippet {
-	snippets := make([]*pb.Snippet, len(toks))
-	for i, tok := range toks {
-		snippets[i] = snip(tok)
-	}
-	return snippets
-}
-
-func snip(tok string) *pb.Snippet {
-	return &pb.Snippet{
-		Data:   []byte(tok),
+	for _, tt := range tests {
+		s.T().Log(tt.name)
+		got := s.getCompoundSnippets(tt.args.vars, tt.args.token)
+		s.ElementsMatch(tt.want, got)
+		s.ElementsMatch(tt.args.vars.snippetHistory, tt.wantVars.snippetHistory)
+		s.ElementsMatch(tt.args.vars.tokenHistory, tt.wantVars.tokenHistory)
+		s.Equal(tt.args.vars.sentenceEnd, tt.wantVars.sentenceEnd)
 	}
 }

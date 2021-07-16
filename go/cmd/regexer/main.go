@@ -2,6 +2,11 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
+	"net"
+	"regexp"
+
 	"github.com/go-redis/redis"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
@@ -9,16 +14,12 @@ import (
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"google.golang.org/grpc"
 	"gopkg.in/yaml.v2"
-	"io"
-	"io/ioutil"
-	"net"
-	"regexp"
 )
 
 // config structure
 type conf struct {
 	LogLevel string `mapstructure:"log_level"`
-	Server struct{
+	Server   struct {
 		GrpcPort int `mapstructure:"grpc_port"`
 	}
 	RegexFile string `mapstructure:"regex_file"`
@@ -87,11 +88,11 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 
 		// For every regexp try to match the token and send the recognised entity if there is a match.
 		for name, re := range regexps {
-			if re.Match(token.GetData()) {
+			if re.MatchString(token.GetToken()) {
 				err := stream.Send(&pb.RecognizedEntity{
-					Entity:     string(token.GetData()),
-					Position:   token.GetOffset(),
-					Type:       name,
+					Entity:   token.GetToken(),
+					Position: token.GetOffset(),
+					Type:     name,
 				})
 				if err != nil {
 					return err

@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"net"
+
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"google.golang.org/grpc"
-	"io"
-	"net"
 )
 
 type tokenizer struct {

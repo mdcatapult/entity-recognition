@@ -2,23 +2,24 @@ package main
 
 import (
 	"fmt"
+	"net"
+
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/db"
 	"google.golang.org/grpc"
-	"net"
 )
 
 // config structure
 type dictionaryRecogniserConfig struct {
 	lib.BaseConfig
-	Server struct{
+	Server struct {
 		GrpcPort int `mapstructure:"grpc_port"`
 	}
 	BackendDatabase     db.DictionaryBackend `mapstructure:"dictionary_backend"`
-	PipelineSize        int               `mapstructure:"pipeline_size"`
+	PipelineSize        int                  `mapstructure:"pipeline_size"`
 	Redis               db.RedisConfig
 	Elasticsearch       db.ElasticsearchConfig
 	CompoundTokenLength int `mapstructure:"compound_token_length"`
@@ -29,9 +30,9 @@ var config dictionaryRecogniserConfig
 func init() {
 	// initialise config with defaults.
 	err := lib.InitializeConfig("./config/dictionary.yml", map[string]interface{}{
-		"log_level": "info",
+		"log_level":          "info",
 		"dictionary_backend": db.RedisDictionaryBackend,
-		"pipeline_size": 10000,
+		"pipeline_size":      10000,
 		"server": map[string]interface{}{
 			"grpc_port": 50051,
 		},

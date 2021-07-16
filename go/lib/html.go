@@ -3,9 +3,10 @@ package lib
 import (
 	"bytes"
 	"container/list"
+	"io"
+
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"golang.org/x/net/html"
-	"io"
 )
 
 var disallowedNodes = map[string]struct{}{
@@ -26,30 +27,30 @@ var disallowedNodes = map[string]struct{}{
 }
 
 var linebreakNodes = map[string]struct{}{
-	"ol":    {},
-	"ul":    {},
-	"li":    {},
-	"table": {},
-	"tbody": {},
-	"tr":    {},
-	"th":    {},
-	"br":    {},
-	"h1":    {},
-	"h2":    {},
-	"h3":    {},
-	"h4":    {},
-	"h5":    {},
-	"h6":    {},
-	"p":     {},
-	"section":     {},
+	"ol":         {},
+	"ul":         {},
+	"li":         {},
+	"table":      {},
+	"tbody":      {},
+	"tr":         {},
+	"th":         {},
+	"br":         {},
+	"h1":         {},
+	"h2":         {},
+	"h3":         {},
+	"h4":         {},
+	"h5":         {},
+	"h6":         {},
+	"p":          {},
+	"section":    {},
 	"header":     {},
-	"article":     {},
-	"aside":     {},
-	"summary":     {},
+	"article":    {},
+	"aside":      {},
+	"summary":    {},
 	"figure":     {},
-	"figcaption":     {},
+	"figcaption": {},
 	"footer":     {},
-	"nav":     {},
+	"nav":        {},
 }
 
 type htmlStack struct {
@@ -123,7 +124,7 @@ Loop:
 					return err
 				}
 				if err = onSnippet(&pb.Snippet{
-					Data:   bufferBytes,
+					Token:  string(bufferBytes),
 					Offset: stack.top().start,
 				}); err != nil {
 					return err
@@ -148,4 +149,3 @@ Loop:
 	}
 	return nil
 }
-

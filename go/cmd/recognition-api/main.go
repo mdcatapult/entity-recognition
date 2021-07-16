@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
@@ -13,10 +14,10 @@ import (
 // config structure
 type recognitionAPIConfig struct {
 	LogLevel string `mapstructure:"log_level"`
-	Server struct{
+	Server   struct {
 		HttpPort int `mapstructure:"http_port"`
 	}
-	Recognizers map[string]struct{
+	Recognizers map[string]struct {
 		Host     string
 		GrpcPort int `mapstructure:"grpc_port"`
 	}
@@ -48,7 +49,7 @@ func main() {
 	// general grpc options
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithInsecure())
-	opts = append(opts, grpc.WithBlock())
+	//opts = append(opts, grpc.WithBlock())
 
 	// for each recogniser in the config, instantiate a client and save the connection
 	// so that we can close it later.
@@ -66,7 +67,8 @@ func main() {
 	}
 
 	r := gin.Default()
-	s := server{clients: clients}
+	c := controller{clients: clients}
+	s := server{controller: c}
 	s.RegisterRoutes(r)
 	if err := r.Run(fmt.Sprintf(":%d", config.Server.HttpPort)); err != nil {
 		for _, conn := range connections {

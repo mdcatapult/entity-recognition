@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+
 	"github.com/elastic/go-elasticsearch/v7"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
-	"io/ioutil"
 )
 
 type ElasticsearchConfig struct {
@@ -16,7 +17,7 @@ type ElasticsearchConfig struct {
 }
 
 type EsLookup struct {
-	Dictionary string `json:"dictionary"`
+	Dictionary  string   `json:"dictionary"`
 	Synonyms    []string `json:"synonyms"`
 	Identifiers []string `json:"identifiers"`
 }
@@ -39,10 +40,10 @@ type esResponse struct {
 			} `json:"total"`
 			MaxScore float64 `json:"max_score"`
 			Hits     []struct {
-				Index  string  `json:"_index"`
-				Type   string  `json:"_type"`
-				ID     string  `json:"_id"`
-				Score  float64 `json:"_score"`
+				Index  string   `json:"_index"`
+				Type   string   `json:"_type"`
+				ID     string   `json:"_id"`
+				Score  float64  `json:"_score"`
 				Source EsLookup `json:"_source"`
 			} `json:"hits"`
 		} `json:"hits"`
@@ -50,9 +51,9 @@ type esResponse struct {
 	} `json:"responses"`
 }
 
-func NewElasticsearchClient (conf ElasticsearchConfig) (Client, error) {
+func NewElasticsearchClient(conf ElasticsearchConfig) (Client, error) {
 	c, err := elasticsearch.NewClient(elasticsearch.Config{
-		Addresses:             []string{fmt.Sprintf("http://%s:%d", conf.Host, conf.Port)},
+		Addresses: []string{fmt.Sprintf("http://%s:%d", conf.Host, conf.Port)},
 	})
 	if err != nil {
 		return nil, err
@@ -68,7 +69,7 @@ func NewElasticsearchClient (conf ElasticsearchConfig) (Client, error) {
 
 	return &esClient{
 		Client: c,
-		index: index,
+		index:  index,
 	}, nil
 }
 
@@ -87,23 +88,23 @@ func (e *esClient) Ready() bool {
 
 func (e *esClient) NewGetPipeline(size int) GetPipeline {
 	return &esPipeline{
-		esClient: e,
-		buf: bytes.NewBuffer(nil),
+		esClient:     e,
+		buf:          bytes.NewBuffer(nil),
 		currentQuery: make([]*pb.Snippet, 0, size),
 	}
 }
 
 func (e *esClient) NewSetPipeline(size int) SetPipeline {
 	return &esPipeline{
-		esClient: e,
-		buf: bytes.NewBuffer(nil),
+		esClient:     e,
+		buf:          bytes.NewBuffer(nil),
 		currentQuery: make([]*pb.Snippet, 0, size),
 	}
 }
 
 type esPipeline struct {
 	*esClient
-	buf *bytes.Buffer
+	buf          *bytes.Buffer
 	currentQuery []*pb.Snippet
 }
 
@@ -123,7 +124,7 @@ func (p *esPipeline) ExecSet() error {
 }
 func (p *esPipeline) Get(token *pb.Snippet) {
 	p.buf.WriteString(fmt.Sprintf(`{}%s`, "\n"))
-	p.buf.WriteString(fmt.Sprintf(`{"size": 1, "query" : {"match" : { "synonyms": "%s" }}}%s`, jsonEscape(string(token.GetData())), "\n"))
+	p.buf.WriteString(fmt.Sprintf(`{"size": 1, "query" : {"match" : { "synonyms": "%s" }}}%s`, jsonEscape(token.GetToken()), "\n"))
 	p.currentQuery = append(p.currentQuery, token)
 }
 
@@ -133,7 +134,7 @@ func jsonEscape(i string) string {
 		panic(err)
 	}
 	s := string(b)
-	return s[1:len(s)-1]
+	return s[1 : len(s)-1]
 }
 
 func (p esPipeline) ExecGet(onResult func(*pb.Snippet, *Lookup) error) error {

@@ -2,7 +2,7 @@ syntax = "proto3";
 option go_package = "gitlab.mdcatapult.io/software-engineering/entity-recognition/gen/pb";
 
 message Snippet {
-    bytes data = 1;
+    string token = 1;
     uint32 offset = 2;
 }
 
