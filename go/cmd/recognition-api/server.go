@@ -91,8 +91,8 @@ func handleError(c *gin.Context, err error) {
 }
 
 func abort(c *gin.Context, code int, err error) {
-	err = c.AbortWithError(code, err)
-	if err != nil {
-		log.Error().Err(err).Send()
+	abortErr := c.AbortWithError(code, err)
+	if abortErr != nil {
+		log.Error().Err(abortErr).Send()
 	}
 }
