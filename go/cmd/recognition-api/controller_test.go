@@ -25,10 +25,6 @@ func TestControllerSuite(t *testing.T) {
 	suite.Run(t, new(ControllerSuite))
 }
 
-func (s *ControllerSuite) SetupSuite() {
-	testhelpers.UseOffsets()
-}
-
 func (s *ControllerSuite) Test_controller_HTMLToText() {
 	acetylcarnitineHTML, err := os.Open("resources/acetylcarnitine.html")
 	s.Require().Nil(err)
@@ -95,13 +91,12 @@ func (s *ControllerSuite) Test_controller_TokenizeHTML() {
 		tokens, err := s.controller.TokenizeHTML(tt.args.reader)
 		s.Equal(tt.wantErr, err)
 		s.Equal(fmt.Sprint(tt.want), fmt.Sprint(tokens))
-		//b, err := json.Marshal(tokens)
-		//err = ioutil.WriteFile("resources/acetylcarnitine-tokens.json", b, 0666)
-		//s.Require().Nil(err)
 	}
 }
 
 func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
+	testhelpers.UseOffsets()
+	defer testhelpers.DoNotUseOffsets()
 	mockRecognizer_RecognizeClient, _ := testhelpers.NewMockRecognizeClientStream("hello", "my", "name", "is", "jeff")
 	foundEntity := &pb.RecognizedEntity{
 		Entity:     "found entity",
@@ -141,4 +136,6 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 		s.ElementsMatch(tt.want, got)
 		s.Equal(tt.wantErr, gotErr)
 	}
+	mockRecognizerClient.AssertExpectations(s.T())
+	mockRecognizer_RecognizeClient.AssertExpectations(s.T())
 }
