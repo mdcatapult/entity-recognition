@@ -78,7 +78,7 @@ func (r *recogniser) getCompoundSnippets(vars *requestVars, snippet *pb.Snippet)
 	return compoundSnippets
 }
 
-func (r *recogniser) queryToken(vars *requestVars, token *pb.Snippet) error {
+func (r *recogniser) findOrQueueSnippet(vars *requestVars, token *pb.Snippet) error {
 	if lookup, ok := vars.tokenCache[token]; ok {
 		// if it's nil, we've already queried redis and it wasn't there
 		if lookup == nil {
@@ -122,14 +122,12 @@ func (r *recogniser) initializeRequest(stream pb.Recognizer_RecognizeServer) *re
 	}
 }
 
-func (r *recogniser) execPipe(vars *requestVars, onResult func(snippet *pb.Snippet, lookup *db.Lookup) error, threshold int, new bool) error {
-	if vars.pipe.Size() > threshold {
-		if err := vars.pipe.ExecGet(onResult); err != nil {
-			return err
-		}
-		if new {
-			vars.pipe = r.dbClient.NewGetPipeline(config.PipelineSize)
-		}
+func (r *recogniser) runPipeline(vars *requestVars, onResult func(snippet *pb.Snippet, lookup *db.Lookup) error, new bool) error {
+	if err := vars.pipe.ExecGet(onResult); err != nil {
+		return err
+	}
+	if new {
+		vars.pipe = r.dbClient.NewGetPipeline(config.PipelineSize)
 	}
 	return nil
 }
@@ -160,8 +158,10 @@ func (r *recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 		token, err := stream.Recv()
 		if err == io.EOF {
 			// There are likely some redis queries queued on the pipe. If there are, execute them. Then break.
-			if err := r.execPipe(vars, onResult, 0, false); err != nil {
-				return err
+			if vars.pipe.Size() > 0 {
+				if err := r.runPipeline(vars, onResult, false); err != nil {
+					return err
+				}
 			}
 			break
 		} else if err != nil {
@@ -171,13 +171,15 @@ func (r *recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 		compoundTokens := r.getCompoundSnippets(vars, token)
 
 		for _, compoundToken := range compoundTokens {
-			if err := r.queryToken(vars, compoundToken); err != nil {
+			if err := r.findOrQueueSnippet(vars, compoundToken); err != nil {
 				return err
 			}
 		}
 
-		if err := r.execPipe(vars, onResult, config.PipelineSize, true); err != nil {
-			return err
+		if vars.pipe.Size() > config.PipelineSize {
+			if err := r.runPipeline(vars, onResult, true); err != nil {
+				return err
+			}
 		}
 	}
 

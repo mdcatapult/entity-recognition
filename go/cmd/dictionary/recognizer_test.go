@@ -160,7 +160,7 @@ func (s *RecognizerSuite) Test_recogniser_queryToken() {
 	}
 	for _, tt := range tests {
 		s.T().Log(tt.name)
-		gotErr := s.queryToken(tt.args.vars, tt.args.token)
+		gotErr := s.findOrQueueSnippet(tt.args.vars, tt.args.token)
 		s.Equal(tt.wantErr, gotErr)
 		s.Equal(tt.wantVars, tt.args.vars)
 	}
