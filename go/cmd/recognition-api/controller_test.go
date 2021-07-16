@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/testhelpers"
 	"io"
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/testhelpers"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
@@ -126,7 +127,7 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 			args: args{
 				reader: buf,
 			},
-			want: []*pb.RecognizedEntity{foundEntity},
+			want:    []*pb.RecognizedEntity{foundEntity},
 			wantErr: nil,
 		},
 	}

@@ -46,7 +46,6 @@ func NewMockRecognizeServerStream(tokens ...string) (*mocks.Recognizer_Recognize
 	return stream, snippets
 }
 
-
 func NewMockRecognizeClientStream(tokens ...string) (*mocks.Recognizer_RecognizeClient, []*pb.Snippet) {
 	stream := &mocks.Recognizer_RecognizeClient{}
 	snippets := Snips(tokens...)
