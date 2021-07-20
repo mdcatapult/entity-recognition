@@ -66,7 +66,8 @@ func main() {
 		i++
 	}
 
-	r := gin.Default()
+	r := gin.New()
+	r.Use(gin.LoggerWithFormatter(lib.JsonLogFormatter))
 	c := controller{clients: clients}
 	s := server{controller: c}
 	s.RegisterRoutes(r)
