@@ -122,13 +122,11 @@ func (r *recogniser) initializeRequest(stream pb.Recognizer_RecognizeServer) *re
 	}
 }
 
-func (r *recogniser) runPipeline(vars *requestVars, onResult func(snippet *pb.Snippet, lookup *db.Lookup) error, new bool) error {
+func (r *recogniser) runPipeline(vars *requestVars, onResult func(snippet *pb.Snippet, lookup *db.Lookup) error) error {
 	if err := vars.pipe.ExecGet(onResult); err != nil {
 		return err
 	}
-	if new {
-		vars.pipe = r.dbClient.NewGetPipeline(config.PipelineSize)
-	}
+	vars.pipe = r.dbClient.NewGetPipeline(config.PipelineSize)
 	return nil
 }
 
@@ -159,7 +157,7 @@ func (r *recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 		if err == io.EOF {
 			// There are likely some redis queries queued on the pipe. If there are, execute them. Then break.
 			if vars.pipe.Size() > 0 {
-				if err := r.runPipeline(vars, onResult, false); err != nil {
+				if err := r.runPipeline(vars, onResult); err != nil {
 					return err
 				}
 			}
@@ -177,7 +175,7 @@ func (r *recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 		}
 
 		if vars.pipe.Size() > config.PipelineSize {
-			if err := r.runPipeline(vars, onResult, true); err != nil {
+			if err := r.runPipeline(vars, onResult); err != nil {
 				return err
 			}
 		}
