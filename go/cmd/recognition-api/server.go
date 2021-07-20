@@ -2,9 +2,9 @@ package main
 
 import (
 	"errors"
+	"io"
 
 	"github.com/gin-gonic/gin"
-	"github.com/rs/zerolog/log"
 )
 
 type HttpError struct {
@@ -28,17 +28,12 @@ type server struct {
 }
 
 func (s server) RegisterRoutes(r *gin.Engine) {
-	r.POST("/html/text", s.HTMLToText)
-	r.POST("/html/tokens", s.TokenizeHTML)
-	r.POST("/html/entities", s.RecognizeInHTML)
+	r.POST("/html/text", validateBody, s.HTMLToText)
+	r.POST("/html/tokens", validateBody, s.TokenizeHTML)
+	r.POST("/html/entities", validateBody, s.RecognizeInHTML)
 }
 
 func (s server) RecognizeInHTML(c *gin.Context) {
-	if c.Request.Body == nil {
-		handleError(c, NewHttpError(400, errors.New("request body missing")))
-		return
-	}
-
 	entities, err := s.controller.RecognizeInHTML(c.Request.Body)
 	if err != nil {
 		handleError(c, err)
@@ -49,11 +44,6 @@ func (s server) RecognizeInHTML(c *gin.Context) {
 }
 
 func (s server) TokenizeHTML(c *gin.Context) {
-	if c.Request.Body == nil {
-		handleError(c, NewHttpError(400, errors.New("request body missing")))
-		return
-	}
-
 	tokens, err := s.controller.TokenizeHTML(c.Request.Body)
 	if err != nil {
 		handleError(c, err)
@@ -64,11 +54,6 @@ func (s server) TokenizeHTML(c *gin.Context) {
 }
 
 func (s server) HTMLToText(c *gin.Context) {
-	if c.Request.Body == nil {
-		handleError(c, NewHttpError(400, errors.New("request body missing")))
-		return
-	}
-
 	data, err := s.controller.HTMLToText(c.Request.Body)
 	if err != nil {
 		handleError(c, err)
@@ -76,6 +61,16 @@ func (s server) HTMLToText(c *gin.Context) {
 	}
 
 	c.Data(200, "text/plain", data)
+}
+
+func validateBody(c *gin.Context) {
+	if c.Request.Body == nil {
+		handleError(c, NewHttpError(400, errors.New("request body missing")))
+	} else if _, err := c.Request.Body.Read(nil); err == io.EOF {
+		handleError(c, NewHttpError(400, errors.New("request body missing")))
+	} else {
+		c.Next()
+	}
 }
 
 func handleError(c *gin.Context, err error) {
@@ -91,8 +86,14 @@ func handleError(c *gin.Context, err error) {
 }
 
 func abort(c *gin.Context, code int, err error) {
-	abortErr := c.AbortWithError(code, err)
-	if abortErr != nil {
-		log.Error().Err(abortErr).Send()
+	switch {
+	case code < 500:
+		c.JSON(code, map[string]interface{}{
+			"status":  code,
+			"message": err.Error(),
+		})
+		c.Abort()
+	default:
+		_ = c.AbortWithError(code, err)
 	}
 }

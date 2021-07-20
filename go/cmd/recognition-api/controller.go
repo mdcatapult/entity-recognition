@@ -111,7 +111,7 @@ func (c controller) RecognizeInHTML(reader io.Reader) ([]*pb.RecognizedEntity, e
 	// This for loop will block execution until all of the go routines
 	// we spawned above have sent either nil or an error on the error
 	// channel. If there is no error on any channel, we can continue.
-	for i := 0; i < len(recognisers); i++ {
+	for range recognisers {
 		if err = <-errChan; err != nil {
 			return nil, err
 		}
