@@ -30,7 +30,7 @@ Grab some html from a website (ctrl+U in chrome). Make a post request to `localh
 
 For example:
 ```bash
-curl -L http://localhost:8080/wiki/Acetylcarnitine > /tmp/acetylcarnitine.html
+curl -L https://en.wikipedia.org/wiki/Acetylcarnitine > /tmp/acetylcarnitine.html
 curl -XPOST --data-binary "@/tmp/acetylcarnitine.html" 'http://localhost:8080/html/entities'
 ```
 
