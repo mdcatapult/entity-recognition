@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 	"io"
 	"sync"
 
@@ -31,7 +32,7 @@ func (c controller) TokenizeHTML(reader io.Reader) ([]*pb.Snippet, error) {
 	// of delimiter, e.g. </br>. Here we tokenize the output and append that to our token slice.
 	var tokens []*pb.Snippet
 	onSnippet := func(snippet *pb.Snippet) error {
-		return lib.Tokenize(snippet, func(snippet *pb.Snippet) error {
+		return text.Tokenize(snippet, func(snippet *pb.Snippet) error {
 			tokens = append(tokens, snippet)
 			return nil
 		})
@@ -85,7 +86,7 @@ func (c controller) RecognizeInHTML(reader io.Reader) ([]*pb.RecognizedEntity, e
 	// Callback to the html to text function. Tokenize each block of text
 	// and send every token to every recogniser.
 	onSnippet := func(snippet *pb.Snippet) error {
-		return lib.Tokenize(snippet, func(snippet *pb.Snippet) error {
+		return text.Tokenize(snippet, func(snippet *pb.Snippet) error {
 			for _, recogniser := range recognisers {
 				if err := recogniser.Send(snippet); err != nil {
 					return err

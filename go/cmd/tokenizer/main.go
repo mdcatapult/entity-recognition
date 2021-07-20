@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 	"io"
 	"net"
 
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"google.golang.org/grpc"
 )
 
@@ -23,7 +23,7 @@ func (t tokenizer) Tokenize(stream pb.Tokenizer_TokenizeServer) error {
 			return err
 		}
 
-		err = lib.Tokenize(snippet, func(snippet *pb.Snippet) error {
+		err = text.Tokenize(snippet, func(snippet *pb.Snippet) error {
 			return stream.Send(snippet)
 		})
 		if err != nil {

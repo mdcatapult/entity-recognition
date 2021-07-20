@@ -1,12 +1,12 @@
 package main
 
 import (
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 	"io"
 	"io/ioutil"
 	"regexp"
 
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"gopkg.in/yaml.v2"
 )
 
@@ -26,7 +26,7 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 		}
 
 		// normalize the token (removes punctuation and enforces NFKC encoding on the utf8 characters).
-		lib.Normalize(token)
+		text.Normalize(token)
 
 		// For every regexp try to match the token and send the recognised entity if there is a match.
 		for name, re := range r.regexps {

@@ -1,12 +1,12 @@
 package main
 
 import (
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 	"io"
 	"strings"
 
 	"github.com/rs/zerolog/log"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/db"
 )
 
@@ -56,7 +56,7 @@ func (r *recogniser) getCompoundSnippets(vars *requestVars, snippet *pb.Snippet)
 
 	// normalise the token (remove enclosing punctuation and enforce NFKC encoding).
 	// sentenceEnd is true if the last byte in the token is one of '.', '?', or '!'.
-	vars.sentenceEnd = lib.Normalize(snippet)
+	vars.sentenceEnd = text.Normalize(snippet)
 
 	// manage the token history
 	if len(vars.snippetHistory) < config.CompoundTokenLength {
@@ -155,7 +155,8 @@ func (r *recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 	for {
 		token, err := stream.Recv()
 		if err == io.EOF {
-			// There are likely some redis queries queued on the pipe. If there are, execute them. Then break.
+			// Number of tokens is unlikely to be a multiple of the pipeline size. There will still be tokens on the
+			// pipeline. Execute it now, then break.
 			if vars.pipe.Size() > 0 {
 				if err := r.runPipeline(vars, onResult); err != nil {
 					return err
