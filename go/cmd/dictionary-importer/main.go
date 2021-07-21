@@ -99,16 +99,18 @@ func main() {
 
 	switch config.Dictionary.Format {
 	case PubchemDictionaryFormat:
-		err = uploadPubchemDictionary(dict, dbClient)
+		err = new(pubchemUploader).uploadDictionary(dict, dbClient)
 	case LeadmineDictionaryFormat:
-		err = uploadLeadmineDictionary(dict, dbClient)
+		err = new(leadmineUploader).uploadDictionary(dict, dbClient)
 	}
 	if err != nil {
 		log.Fatal().Err(err).Send()
 	}
 }
 
-func uploadLeadmineDictionary(dict *os.File, dbClient db.Client) error {
+type leadmineUploader struct {}
+
+func (l leadmineUploader) uploadDictionary(dict *os.File, dbClient db.Client) error {
 
 	pipe := dbClient.NewSetPipeline(config.PipelineSize)
 	scn := bufio.NewScanner(dict)
@@ -159,96 +161,69 @@ func uploadLeadmineDictionary(dict *os.File, dbClient db.Client) error {
 	return nil
 }
 
-func uploadPubchemDictionary(dict *os.File, dbClient db.Client) error {
-	pipe := dbClient.NewSetPipeline(config.PipelineSize)
+type pubchemUploader struct {}
 
+func (p pubchemUploader) uploadDictionary(dict *os.File, dbClient db.Client) error {
+
+	// Instantiate variables we need to keep track of across lines.
+	pipe := dbClient.NewSetPipeline(config.PipelineSize)
 	scn := bufio.NewScanner(dict)
 	currentId := -1
 	row := 0
 	dbEntries := 0
 	var synonyms []string
 	var identifiers []string
+
 	for scn.Scan() {
 		row++
 		line := scn.Text()
+
+		// Split by tab to get a slice of length 2.
 		entries := strings.Split(line, "\t")
 		if len(entries) != 2 {
 			log.Warn().Int("row", row).Strs("entries", entries).Msg("invalid row in dictionary tsv")
 			continue
 		}
 
+		// Ensure the pubchem id is an int.
 		pubchemId, err := strconv.Atoi(entries[0])
 		if err != nil {
 			log.Warn().Int("row", row).Strs("entries", entries).Msg("invalid pubchem id")
 			continue
 		}
 
-		var synonym string
-		var identifier string
-		if isIdentifier(entries[1]) {
-			identifier = entries[1]
-		} else {
-			synonym = entries[1]
-		}
-
-		if pubchemId != currentId {
-			if currentId != -1 {
-				// Mid process, some stuff to do
-				switch config.BackendDatabase {
-				case db.RedisDictionaryBackend:
-					for _, s := range synonyms {
-						b, err := json.Marshal(db.Lookup{
-							Dictionary:       config.Dictionary.Name,
-							ResolvedEntities: identifiers,
-						})
-						if err != nil {
-							return err
-						}
-						pipe.Set(s, b)
-						dbEntries++
-					}
-				case db.ElasticsearchDictionaryBackend:
-					b, err := json.Marshal(db.EsLookup{
-						Dictionary:  config.Dictionary.Name,
-						Synonyms:    synonyms,
-						Identifiers: identifiers,
-					})
-					if err != nil {
-						return err
-					}
-					pipe.Set("", b)
-					dbEntries++
-				}
-
-				if pipe.Size() > config.PipelineSize {
-					log.Info().Int("row", row).Int("keys", dbEntries).Msgf("Upserting dictionary to %s...", config.BackendDatabase)
-					if err := pipe.ExecSet(); err != nil {
-						return err
-					}
-					pipe = dbClient.NewSetPipeline(config.PipelineSize)
-				}
-
-				synonyms = []string{}
-				identifiers = []string{}
-			}
-
-			// Set new current id
+		if pubchemId == currentId && isIdentifier(entries[1]) {
+			// Same id and value is an identifier.
+			identifiers = append(identifiers, entries[1])
+		} else if pubchemId == currentId {
+			// Same id and value is not an identifier.
+			synonyms = append(synonyms, entries[1])
+		} else if row == 1 {
+			// Different id but only on first line, so nothing to add to the pipeline.
 			currentId = pubchemId
 			identifiers = append(identifiers, fmt.Sprintf("PUBCHEM:%d", pubchemId))
-			if synonym != "" {
-				synonyms = append(synonyms, synonym)
-			} else {
-				identifiers = append(identifiers, identifier)
-			}
 		} else {
-			if synonym != "" {
-				synonyms = append(synonyms, synonym)
-			} else {
-				identifiers = append(identifiers, identifier)
+			// Different id, add synonyms & identifiers to pipeline.
+			if err := p.addToPipe(synonyms, identifiers, pipe, &dbEntries); err != nil {
+				return err
 			}
+
+			// If pipe size is big enough execute it.
+			if pipe.Size() > config.PipelineSize {
+				log.Info().Int("row", row).Int("keys", dbEntries).Msgf("Upserting dictionary to %s...", config.BackendDatabase)
+				if err := pipe.ExecSet(); err != nil {
+					return err
+				}
+				pipe = dbClient.NewSetPipeline(config.PipelineSize)
+			}
+
+			// Reset synonyms and identifiers.
+			synonyms = []string{}
+			identifiers = []string{}
 		}
 	}
 
+	// Execute pipe for any remaining stuff.
 	if pipe.Size() > 0 {
 		if err := pipe.ExecSet(); err != nil {
 			return err
@@ -283,4 +258,34 @@ var chemicalIdentifiers = []*regexp.Regexp{
 	regexp.MustCompile(`^\d+-\d+-\d+$`),
 	regexp.MustCompile(`^EINCES\s\d+-\d+-\d+$`),
 	regexp.MustCompile(`^EC\s\d+-\d+-\d+$`),
+}
+
+func (p pubchemUploader) addToPipe(synonyms, identifiers []string, pipe db.SetPipeline, dbEntries *int) error {
+	// Mid process, some stuff to do
+	switch config.BackendDatabase {
+	case db.RedisDictionaryBackend:
+		for _, s := range synonyms {
+			b, err := json.Marshal(db.Lookup{
+				Dictionary:       config.Dictionary.Name,
+				ResolvedEntities: identifiers,
+			})
+			if err != nil {
+				return err
+			}
+			pipe.Set(s, b)
+			*dbEntries++
+		}
+	case db.ElasticsearchDictionaryBackend:
+		b, err := json.Marshal(db.EsLookup{
+			Dictionary:  config.Dictionary.Name,
+			Synonyms:    synonyms,
+			Identifiers: identifiers,
+		})
+		if err != nil {
+			return err
+		}
+		pipe.Set("", b)
+		*dbEntries++
+	}
+	return nil
 }
