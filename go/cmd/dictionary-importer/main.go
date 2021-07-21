@@ -113,42 +113,38 @@ type leadmineUploader struct {}
 
 func (l leadmineUploader) uploadDictionary(dict *os.File, dbClient db.Client) error {
 
+	// Instantiate variables we need to keep track of across lines.
 	pipe := dbClient.NewSetPipeline(config.PipelineSize)
 	scn := bufio.NewScanner(dict)
+
 	for scn.Scan() {
 		line := scn.Text()
-		uncommented := strings.Split(line, "#")
-		if len(uncommented[0]) > 0 {
-			record := strings.Split(uncommented[0], "\t")
-			resolvedEntity := strings.TrimSpace(record[len(record)-1])
-			if resolvedEntity == "" {
-				continue
-			}
-			if len(record) == 1 {
-				b, err := json.Marshal(&db.Lookup{
-					Dictionary: config.Dictionary.Name,
-				})
-				if err != nil {
-					return err
-				}
 
-				pipe.Set(strings.TrimSpace(record[0]), b)
-				continue
-			}
-			for _, key := range record[:len(record)-1] {
-				if key == "" {
-					continue
-				}
-				b, err := json.Marshal(&db.Lookup{
-					Dictionary:       config.Dictionary.Name,
-					ResolvedEntities: []string{resolvedEntity},
-				})
-				if err != nil {
-					return err
-				}
-				pipe.Set(strings.TrimSpace(key), b)
-			}
+		// skip empty lines and commented out lines.
+		if len(line) == 0 || line[0] == '#' {
+			continue
 		}
+
+		entries := strings.Split(line, "\t")
+
+		// The identifier is the last entry, other entries are synonyms.
+		identifier := entries[len(entries)-1]
+		synonyms := entries[:len(entries)-1]
+
+		// Create a redis lookup for each synonym.
+		for _, synonym := range synonyms {
+			b, err := json.Marshal(&db.Lookup{
+				Dictionary:       config.Dictionary.Name,
+				ResolvedEntities: []string{identifier},
+			})
+			if err != nil {
+				return err
+			}
+			pipe.Set(synonym, b)
+		}
+
+		// Check if the pipe size has exceeded the config limit.
+		// If it has, execute it and reset the pipe.
 		if pipe.Size() > config.PipelineSize {
 			if err := pipe.ExecSet(); err != nil {
 				return err
@@ -156,6 +152,8 @@ func (l leadmineUploader) uploadDictionary(dict *os.File, dbClient db.Client) er
 			pipe = dbClient.NewSetPipeline(config.PipelineSize)
 		}
 	}
+
+	// Execute the pipe for any remaining synonyms.
 	if pipe.Size() > 0 {
 		return pipe.ExecSet()
 	}
