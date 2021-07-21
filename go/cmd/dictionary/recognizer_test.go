@@ -33,7 +33,7 @@ func (s *RecognizerSuite) Test_recognizer_Recognize() {
 	mockDBClient := &mocks.Client{}
 	s.dbClient = mockDBClient
 	mockGetPipeline := &mocks.GetPipeline{}
-	mockDBClient.On("NewGetPipeline", testConfig.PipelineSize).Return(mockGetPipeline).Once()
+	mockDBClient.On("NewGetPipeline", testConfig.PipelineSize).Return(mockGetPipeline).Times(2)
 	mockStream, snippets := testhelpers.NewMockRecognizeServerStream("hello", "my", "name", "is", "jeff")
 	v := &requestVars{}
 	for i, snippet := range snippets {
