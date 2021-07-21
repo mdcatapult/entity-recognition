@@ -57,6 +57,7 @@ func initConfig() {
 		"elasticsearch": map[string]interface{}{
 			"host": "localhost",
 			"port": 9200,
+			"index": "pubchem",
 		},
 	})
 	if err != nil {

@@ -14,6 +14,7 @@ import (
 type ElasticsearchConfig struct {
 	Host string
 	Port int
+	index string
 }
 
 type EsLookup struct {
@@ -58,18 +59,9 @@ func NewElasticsearchClient(conf ElasticsearchConfig) (Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	//index := lib.RandomLowercaseString(7)
-	index := "pubchem"
-	//res, err := c.Indices.Create(index)
-	//if err != nil {
-	//	return nil, err
-	//} else if res.StatusCode != 200 {
-	//	return nil, errors.New(res.String())
-	//}
-
 	return &esClient{
 		Client: c,
-		index:  index,
+		index:  conf.index,
 	}, nil
 }
 

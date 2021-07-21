@@ -43,6 +43,7 @@ func initConfig() {
 		"elasticsearch": map[string]interface{}{
 			"host": "localhost",
 			"port": 9200,
+			"index": "pubchem",
 		},
 		"compound_token_length": 5,
 	})
