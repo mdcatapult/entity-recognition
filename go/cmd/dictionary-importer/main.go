@@ -197,11 +197,7 @@ func (p pubchemUploader) uploadDictionary(dict *os.File, dbClient db.Client) err
 		} else if pubchemId == currentId {
 			// Same id and value is not an identifier.
 			synonyms = append(synonyms, entries[1])
-		} else if row == 1 {
-			// Different id but only on first line, so nothing to add to the pipeline.
-			currentId = pubchemId
-			identifiers = append(identifiers, fmt.Sprintf("PUBCHEM:%d", pubchemId))
-		} else {
+		} else if row != 1 {
 			// Different id, add synonyms & identifiers to pipeline.
 			if err := p.addToPipe(synonyms, identifiers, pipe, &dbEntries); err != nil {
 				return err
@@ -219,6 +215,12 @@ func (p pubchemUploader) uploadDictionary(dict *os.File, dbClient db.Client) err
 			// Reset synonyms and identifiers.
 			synonyms = []string{}
 			identifiers = []string{}
+		}
+
+		if pubchemId != currentId {
+			// Different id but only on first line, so nothing to add to the pipeline.
+			currentId = pubchemId
+			identifiers = append(identifiers, fmt.Sprintf("PUBCHEM:%d", pubchemId))
 		}
 	}
 
