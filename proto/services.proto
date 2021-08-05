@@ -1,5 +1,5 @@
 syntax = "proto3";
-option go_package = "github.com/markylaing/entity-recognition/gen/pb";
+option go_package = "gitlab.mdcatapult.io/software-engineering/entity-recognition/gen/pb";
 
 import "types.proto";
 
