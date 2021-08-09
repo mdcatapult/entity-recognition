@@ -1,0 +1,199 @@
+stages:
+  - test
+  - build
+  - release
+
+default:
+  tags:
+    - wopr
+
+lint:
+  stage: test
+  image: registry.mdcatapult.io/informatics/docker-images/ci/golang
+  script:
+    - go vet ./...
+    - golangci-lint run
+
+test:
+  stage: test
+  image: registry.mdcatapult.io/informatics/docker-images/ci/golang
+  script:
+    - go test ./go/... -coverpkg=./... -coverprofile=cover.out
+    - sed -i "/\/gen\//d" cover.out
+    - go tool cover -func cover.out
+  coverage: /total:\s+\(statements\)\s+(\d+.\d+\%)/
+
+release:
+  stage: release
+  image: registry.mdcatapult.io/informatics/docker-images/ci/golang
+  script:
+    - release.sh
+  only:
+    refs:
+      - master
+  except:
+    - $CI_COMMIT_MESSAGE =~ /^Setting version to.*/
+
+build-dictionary-dev:
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  stage: build
+  before_script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+  script:
+    - |
+      /kaniko/executor \
+      --context $CI_PROJECT_DIR \
+      --destination $CI_REGISTRY_IMAGE/dictionary:$CI_COMMIT_REF_SLUG \
+      --dockerfile $CI_PROJECT_DIR/go/cmd/dictionary/Dockerfile
+  except:
+    refs:
+      - master
+      - tags
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /^Setting version to.*/
+
+build-dictionary-master:
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  stage: build
+  before_script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+  script:
+    - |
+      /kaniko/executor \
+      --context $CI_PROJECT_DIR \
+      --destination $CI_REGISTRY_IMAGE/dictionary:$CI_COMMIT_REF_SLUG \
+      --destination $CI_REGISTRY_IMAGE/dictionary:latest \
+      --dockerfile $CI_PROJECT_DIR/go/cmd/dictionary/Dockerfile
+  only:
+    refs:
+      - tags
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /^Setting version to.*/
+
+
+build-regexer-dev:
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  stage: build
+  before_script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+  script:
+    - |
+      /kaniko/executor \
+      --context $CI_PROJECT_DIR \
+      --destination $CI_REGISTRY_IMAGE/regexer:$CI_COMMIT_REF_SLUG \
+      --dockerfile $CI_PROJECT_DIR/go/cmd/regexer/Dockerfile
+  except:
+    refs:
+      - master
+      - tags
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /^Setting version to.*/
+
+build-regexer-master:
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  stage: build
+  before_script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+  script:
+    - |
+      /kaniko/executor \
+      --context $CI_PROJECT_DIR \
+      --destination $CI_REGISTRY_IMAGE/regexer:$CI_COMMIT_REF_SLUG \
+      --destination $CI_REGISTRY_IMAGE/regexer:latest \
+      --dockerfile $CI_PROJECT_DIR/go/cmd/regexer/Dockerfile
+  only:
+    refs:
+      - tags
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /^Setting version to.*/
+
+
+build-dictionary-importer-dev:
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  stage: build
+  before_script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+  script:
+    - |
+      /kaniko/executor \
+      --context $CI_PROJECT_DIR \
+      --destination $CI_REGISTRY_IMAGE/dictionary-importer:$CI_COMMIT_REF_SLUG \
+      --dockerfile $CI_PROJECT_DIR/go/cmd/dictionary-importer/Dockerfile
+  except:
+    refs:
+      - master
+      - tags
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /^Setting version to.*/
+
+build-dictionary-importer-master:
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  stage: build
+  before_script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+  script:
+    - |
+      /kaniko/executor \
+      --context $CI_PROJECT_DIR \
+      --destination $CI_REGISTRY_IMAGE/dictionary-importer:$CI_COMMIT_REF_SLUG \
+      --destination $CI_REGISTRY_IMAGE/dictionary-importer:latest \
+      --dockerfile $CI_PROJECT_DIR/go/cmd/dictionary-importer/Dockerfile
+  only:
+    refs:
+      - tags
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /^Setting version to.*/
+
+
+build-recognition-api-dev:
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  stage: build
+  before_script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+  script:
+    - |
+      /kaniko/executor \
+      --context $CI_PROJECT_DIR \
+      --destination $CI_REGISTRY_IMAGE/recognition-api:$CI_COMMIT_REF_SLUG \
+      --dockerfile $CI_PROJECT_DIR/go/cmd/recognition-api/Dockerfile
+  except:
+    refs:
+      - master
+      - tags
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /^Setting version to.*/
+
+build-recognition-api-master:
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  stage: build
+  before_script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+  script:
+    - |
+      /kaniko/executor \
+      --context $CI_PROJECT_DIR \
+      --destination $CI_REGISTRY_IMAGE/recognition-api:$CI_COMMIT_REF_SLUG \
+      --destination $CI_REGISTRY_IMAGE/recognition-api:latest \
+      --dockerfile $CI_PROJECT_DIR/go/cmd/recognition-api/Dockerfile
+  only:
+    refs:
+      - tags
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /^Setting version to.*/
+

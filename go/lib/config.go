@@ -1,17 +1,22 @@
 package lib
 
 import (
+	"path/filepath"
+	"strings"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"path"
-	"path/filepath"
-	"runtime"
-	"strings"
 )
 
+type BaseConfig struct {
+	LogLevel string `mapstructure:"log_level"`
+}
+
 // InitializeConfig standardises config initialization across all apps.
-func InitializeConfig(defaults map[string]interface{}) error {
-	pflag.String("config", "config.yml", "The config file path.")
+func InitializeConfig(defaultPath string, defaults map[string]interface{}) error {
+	pflag.String("config", defaultPath, "The config file path.")
 	pflag.Parse()
 	err := viper.BindPFlags(pflag.CommandLine)
 	if err != nil {
@@ -20,9 +25,7 @@ func InitializeConfig(defaults map[string]interface{}) error {
 
 	configFile := viper.GetString("config")
 	if !filepath.IsAbs(configFile) {
-		_, callingFile, _, _ := runtime.Caller(1)
-		callersDirectory := path.Dir(callingFile)
-		configFile, err = filepath.Abs(path.Join(callersDirectory, configFile))
+		configFile, err = filepath.Abs(configFile)
 		if err != nil {
 			return err
 		}
@@ -38,8 +41,23 @@ func InitializeConfig(defaults map[string]interface{}) error {
 	repl := strings.NewReplacer(".", "_")
 	viper.SetEnvKeyReplacer(repl)
 	err = viper.ReadInConfig()
+	if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+		log.Warn().Err(err).Msg("default settings applied")
+	} else if err != nil {
+		return err
+	}
+
+	var bc BaseConfig
+	err = viper.Unmarshal(&bc)
 	if err != nil {
 		return err
 	}
+
+	lvl, err := zerolog.ParseLevel(bc.LogLevel)
+	if err != nil {
+		return err
+	}
+	zerolog.SetGlobalLevel(lvl)
+
 	return nil
 }
