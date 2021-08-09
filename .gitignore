@@ -1,2 +1,6 @@
 .idea
-**/config.yml
+bin
+cover.out
+config/*.yml
+!config/*.example.yml
+*.iml
