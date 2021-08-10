@@ -49,7 +49,7 @@ func main() {
 	// general grpc options
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithInsecure())
-	//opts = append(opts, grpc.WithBlock())
+	opts = append(opts, grpc.WithBlock())
 
 	// for each recogniser in the config, instantiate a client and save the connection
 	// so that we can close it later.
@@ -61,6 +61,7 @@ func main() {
 		if err != nil {
 			log.Fatal().Err(err).Send()
 		}
+		log.Info().Str("host", r.Host).Msg("connected to recognizer")
 		connections[i] = conn
 		clients[i] = pb.NewRecognizerClient(conn)
 		i++
