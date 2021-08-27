@@ -27,48 +27,58 @@ func (p pubchemReader) read(dict *os.File, lookupChan chan *Entry, errChan chan 
 
 	// Instantiate variables we need to keep track of across lines.
 	scn := bufio.NewScanner(dict)
-	currentId := -1
-	row := 0
+	row := 1
 	var synonyms []string
 	var identifiers []string
+
+	scn.Scan()
+	currentId, firstValue := parseLine(scn.Text(), row)
+	identifiers = []string{fmt.Sprintf("PUBCHEM:%d", currentId)}
+	if isIdentifier(firstValue) {
+		identifiers = append(identifiers, firstValue)
+	} else {
+		synonyms = append(synonyms, firstValue)
+	}
 
 	for scn.Scan() {
 		row++
 		line := scn.Text()
+		id, value := parseLine(line, row)
 
-		// Split by tab to get a slice of length 2.
-		entries := strings.Split(line, "\t")
-		if len(entries) != 2 {
-			log.Warn().Int("row", row).Strs("entries", entries).Msg("invalid row in dictionary tsv")
-			continue
-		}
-
-		// Ensure the pubchem id is an int.
-		pubchemId, err := strconv.Atoi(entries[0])
-		if err != nil {
-			log.Warn().Int("row", row).Strs("entries", entries).Msg("invalid pubchem id")
-			continue
-		}
-
-		if pubchemId != currentId {
-			if row != 1 {
-				lookupChan <- &Entry{
-					Synonyms:    synonyms,
-					Identifiers: identifiers,
-				}
+		if id != currentId {
+			lookupChan <- &Entry{
+				Synonyms:    synonyms,
+				Identifiers: identifiers,
 			}
 			synonyms = []string{}
-			identifiers = []string{fmt.Sprintf("PUBCHEM:%d", pubchemId)}
+			identifiers = []string{fmt.Sprintf("PUBCHEM:%d", id)}
+			currentId = id
 		}
 
-		if isIdentifier(entries[1]) {
-			identifiers = append(identifiers, entries[1])
+		if isIdentifier(value) {
+			identifiers = append(identifiers, value)
 		} else {
-			synonyms = append(synonyms, entries[1])
+			synonyms = append(synonyms, value)
 		}
 	}
 
 	errChan <- nil
+}
+
+func parseLine(line string, row int) (id int, value string) {
+	// Split by tab to get a slice of length 2.
+	entries := strings.Split(line, "\t")
+	if len(entries) != 2 {
+		log.Warn().Int("row", row).Strs("entries", entries).Msg("invalid row in dictionary tsv")
+	}
+
+	// Ensure the pubchem id is an int.
+	pubchemId, err := strconv.Atoi(entries[0])
+	if err != nil {
+		log.Warn().Int("row", row).Strs("entries", entries).Msg("invalid pubchem id")
+	}
+
+	return pubchemId, entries[1]
 }
 
 func isIdentifier(thing string) bool {

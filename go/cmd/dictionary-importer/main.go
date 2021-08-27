@@ -104,28 +104,17 @@ func uploadDictionary(dbClient remote.Client, entries chan *dict.Entry, errors c
 	// Instantiate variables we need to keep track of across lines.
 	pipe := dbClient.NewSetPipeline(config.PipelineSize)
 	insertions := 0
-	Entries: for entry := range entries {
-
+	Listen: for {
 		select {
 		case err := <-errors:
 			if err != nil {
 				log.Fatal().Err(err).Send()
 			}
-			break Entries
-		default:
-		}
-
-		if err := addToPipe(entry, pipe, &insertions); err != nil {
-			log.Fatal().Err(err).Send()
-		}
-
-		// Check if the pipe size has exceeded the config limit.
-		// If it has, execute it and reset the pipe.
-		if pipe.Size() > config.PipelineSize {
-			if err := pipe.ExecSet(); err != nil {
-				return err
+			break Listen
+		case entry := <-entries:
+			if err := addToPipe(entry, pipe, &insertions); err != nil {
+				log.Fatal().Err(err).Send()
 			}
-			pipe = dbClient.NewSetPipeline(config.PipelineSize)
 		}
 	}
 
