@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/db"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/testhelpers"
 )
 
@@ -72,18 +72,18 @@ func (s *RecognizerSuite) Test_recogniser_queryToken() {
 	notInCache := &pb.Snippet{
 		Token: "not in cache",
 	}
-	tokenCache := map[*pb.Snippet]*db.Lookup{
+	tokenCache := map[*pb.Snippet]*cache.Lookup{
 		notInDB:   nil,
 		cacheMiss: {},
 		inDB: {
 			Dictionary: "fake dictionary",
 		},
 	}
-	tokenCacheWithMissingToken := make(map[*pb.Snippet]*db.Lookup)
+	tokenCacheWithMissingToken := make(map[*pb.Snippet]*cache.Lookup)
 	for k, v := range tokenCache {
 		tokenCacheWithMissingToken[k] = v
 	}
-	tokenCacheWithMissingToken[notInCache] = &db.Lookup{}
+	tokenCacheWithMissingToken[notInCache] = &cache.Lookup{}
 	foundEntity := &pb.RecognizedEntity{
 		Type:   "fake dictionary",
 		Entity: "in db",

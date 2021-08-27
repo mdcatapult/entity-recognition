@@ -50,28 +50,21 @@ func (p pubchemReader) read(dict *os.File, lookupChan chan *Entry, errChan chan 
 			continue
 		}
 
-		if pubchemId == currentId && isIdentifier(entries[1]) {
-			// Same id and value is an identifier.
-			identifiers = append(identifiers, entries[1])
-		} else if pubchemId == currentId {
-			// Same id and value is not an identifier.
-			synonyms = append(synonyms, entries[1])
-		} else if row != 1 {
-			// Different id, add synonyms & identifiers to pipeline.
-			lookupChan <- &Entry{
-				Synonyms:    synonyms,
-				Identifiers: identifiers,
+		if pubchemId != currentId {
+			if row != 1 {
+				lookupChan <- &Entry{
+					Synonyms:    synonyms,
+					Identifiers: identifiers,
+				}
 			}
-
-			// Reset synonyms and identifiers.
 			synonyms = []string{}
-			identifiers = []string{}
+			identifiers = []string{fmt.Sprintf("PUBCHEM:%d", pubchemId)}
 		}
 
-		if pubchemId != currentId {
-			// Different id but only on first line, so nothing to add to the pipeline.
-			currentId = pubchemId
-			identifiers = append(identifiers, fmt.Sprintf("PUBCHEM:%d", pubchemId))
+		if isIdentifier(entries[1]) {
+			identifiers = append(identifiers, entries[1])
+		} else {
+			synonyms = append(synonyms, entries[1])
 		}
 	}
 
