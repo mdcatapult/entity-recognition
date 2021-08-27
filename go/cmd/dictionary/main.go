@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache/remote"
 	"net"
 
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/db"
 	"google.golang.org/grpc"
 )
 
@@ -18,10 +19,10 @@ type dictionaryRecogniserConfig struct {
 	Server struct {
 		GrpcPort int `mapstructure:"grpc_port"`
 	}
-	BackendDatabase     db.DictionaryBackend `mapstructure:"dictionary_backend"`
-	PipelineSize        int                  `mapstructure:"pipeline_size"`
-	Redis               db.RedisConfig
-	Elasticsearch       db.ElasticsearchConfig
+	BackendDatabase cache.Type `mapstructure:"dictionary_backend"`
+	PipelineSize    int        `mapstructure:"pipeline_size"`
+	Redis               remote.RedisConfig
+	Elasticsearch       remote.ElasticsearchConfig
 	CompoundTokenLength int `mapstructure:"compound_token_length"`
 }
 
@@ -31,7 +32,7 @@ func initConfig() {
 	// initialise config with defaults.
 	err := lib.InitializeConfig("./config/dictionary.yml", map[string]interface{}{
 		"log_level":          "info",
-		"dictionary_backend": db.RedisDictionaryBackend,
+		"dictionary_backend": cache.Redis,
 		"pipeline_size":      10000,
 		"server": map[string]interface{}{
 			"grpc_port": 50051,
@@ -61,13 +62,13 @@ func initConfig() {
 func main() {
 	initConfig()
 	// Get a redis client
-	var dbClient db.Client
+	var dbClient remote.Client
 	var err error
 	switch config.BackendDatabase {
-	case db.RedisDictionaryBackend:
-		dbClient = db.NewRedisClient(config.Redis)
-	case db.ElasticsearchDictionaryBackend:
-		dbClient, err = db.NewElasticsearchClient(config.Elasticsearch)
+	case cache.Redis:
+		dbClient = remote.NewRedisClient(config.Redis)
+	case cache.Elasticsearch:
+		dbClient, err = remote.NewElasticsearchClient(config.Elasticsearch)
 		if err != nil {
 			log.Fatal().Err(err).Send()
 		}

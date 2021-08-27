@@ -1,10 +1,11 @@
-package db
+package remote
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache"
 	"io/ioutil"
 
 	"github.com/elastic/go-elasticsearch/v7"
@@ -129,7 +130,7 @@ func jsonEscape(i string) string {
 	return s[1 : len(s)-1]
 }
 
-func (p esPipeline) ExecGet(onResult func(*pb.Snippet, *Lookup) error) error {
+func (p esPipeline) ExecGet(onResult func(*pb.Snippet, *cache.Lookup) error) error {
 	//f, err := os.Create(fmt.Sprintf("%s.jsonl", time.Now().Format(time.RFC3339Nano)))
 	//if err != nil {
 	//	return err
@@ -156,11 +157,11 @@ func (p esPipeline) ExecGet(onResult func(*pb.Snippet, *Lookup) error) error {
 
 	for i, response := range esresponse.Responses {
 
-		var lookup *Lookup
+		var lookup *cache.Lookup
 		if len(response.Hits.Hits) == 0 {
 			lookup = nil
 		} else {
-			lookup = &Lookup{
+			lookup = &cache.Lookup{
 				Dictionary:       response.Hits.Hits[0].Source.Dictionary,
 				ResolvedEntities: response.Hits.Hits[0].Source.Identifiers,
 			}
