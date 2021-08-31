@@ -41,7 +41,9 @@ func Read(format Format, file *os.File) (chan Entry, chan error, error) {
 	}
 }
 
-func ReadWithCallback(format Format, onEntry func(entry Entry) error, onExit func() error, file *os.File) error {
+// ReadWithCallback reads the dictionary file according to its format and executes the onEntry callback for each Entry.
+// The onEOF callback is executed when there are no more entries in the file.
+func ReadWithCallback(file *os.File, format Format, onEntry func(entry Entry) error, onEOF func() error) error {
 	entries, errors, err := Read(format, file)
 	if err != nil {
 		return err
@@ -61,8 +63,8 @@ func ReadWithCallback(format Format, onEntry func(entry Entry) error, onExit fun
 		}
 	}
 
-	if onExit != nil {
-		return onExit()
+	if onEOF != nil {
+		return onEOF()
 	}
 
 	return nil

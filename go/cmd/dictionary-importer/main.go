@@ -103,7 +103,7 @@ func main() {
 		return nil
 	}
 
-	onExit := func() error {
+	onEOF := func() error {
 		if pipe.Size() > 0 {
 			return pipe.ExecSet()
 		}
@@ -111,7 +111,7 @@ func main() {
 		return nil
 	}
 
-	if err := dict.ReadWithCallback(config.DictConfig.Format, onEntry, onExit, dictFile); err != nil {
+	if err := dict.ReadWithCallback(dictFile, config.DictConfig.Format, onEntry, onEOF); err != nil {
 		log.Fatal().Err(err).Send()
 	}
 }

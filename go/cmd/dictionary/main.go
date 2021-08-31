@@ -96,7 +96,7 @@ func main() {
 			return nil
 		}
 
-		if err := dict.ReadWithCallback(config.Dictionary.Format, callback, nil, dictFile); err != nil {
+		if err := dict.ReadWithCallback(dictFile, config.Dictionary.Format, callback, nil); err != nil {
 			log.Fatal().Err(err).Send()
 		}
 
