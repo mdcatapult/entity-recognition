@@ -2,6 +2,7 @@ package dict
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"github.com/rs/zerolog/log"
 	"os"
@@ -32,7 +33,12 @@ func (p pubchemReader) read(dict *os.File, entries chan Entry, errors chan error
 	var identifiers []string
 
 	scn.Scan()
-	currentId, firstValue := parseLine(scn.Text(), row)
+	currentId, firstValue, err := parseLine(scn.Text())
+	if err != nil {
+		errors <- err
+		return
+	}
+
 	identifiers = []string{fmt.Sprintf("PUBCHEM:%d", currentId)}
 	if isIdentifier(firstValue) {
 		identifiers = append(identifiers, firstValue)
@@ -43,7 +49,11 @@ func (p pubchemReader) read(dict *os.File, entries chan Entry, errors chan error
 	for scn.Scan() {
 		row++
 		line := scn.Text()
-		id, value := parseLine(line, row)
+		id, value, err := parseLine(line)
+		if err != nil {
+			log.Warn().Int("row", row).Err(err).Send()
+			continue
+		}
 
 		if id != currentId {
 			entries <- Entry{
@@ -65,20 +75,20 @@ func (p pubchemReader) read(dict *os.File, entries chan Entry, errors chan error
 	errors <- nil
 }
 
-func parseLine(line string, row int) (id int, value string) {
+func parseLine(line string) (id int, value string, err error) {
 	// Split by tab to get a slice of length 2.
 	entries := strings.Split(line, "\t")
 	if len(entries) != 2 {
-		log.Warn().Int("row", row).Strs("entries", entries).Msg("invalid row in dictionary tsv")
+		return 0, "", errors.New("invalid number of columns")
 	}
 
 	// Ensure the pubchem id is an int.
 	pubchemId, err := strconv.Atoi(entries[0])
 	if err != nil {
-		log.Warn().Int("row", row).Strs("entries", entries).Msg("invalid pubchem id")
+		return 0, "", errors.New("invalid pubchem id")
 	}
 
-	return pubchemId, entries[1]
+	return pubchemId, entries[1], nil
 }
 
 func isIdentifier(thing string) bool {
