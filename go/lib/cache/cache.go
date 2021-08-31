@@ -6,11 +6,6 @@ type Lookup struct {
 	ResolvedEntities []string `json:"resolvedEntities,omitempty"`
 }
 
-type KeyAndLookup struct {
-	Key string `json:"key"`
-	Lookup
-}
-
 type Type string
 
 const (
