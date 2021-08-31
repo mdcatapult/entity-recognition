@@ -47,7 +47,7 @@ func (r *recogniser) newResultHandler(vars *requestVars) func(snippet *pb.Snippe
 	}
 }
 
-func (r *recogniser) getCompoundSnippets(vars *requestVars, snippet *pb.Snippet) []*pb.Snippet {
+func getCompoundSnippets(vars *requestVars, snippet *pb.Snippet) []*pb.Snippet {
 	// If sentenceEnd is true, we can save some redis queries by resetting the token history..
 	if vars.sentenceEnd {
 		vars.snippetHistory = []*pb.Snippet{}
@@ -168,7 +168,7 @@ func (r *recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 			return err
 		}
 
-		compoundTokens := r.getCompoundSnippets(vars, token)
+		compoundTokens := getCompoundSnippets(vars, token)
 
 		for _, compoundToken := range compoundTokens {
 			if err := r.findOrQueueSnippet(vars, compoundToken); err != nil {
