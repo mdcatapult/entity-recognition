@@ -13,7 +13,7 @@ import (
 
 type recogniser struct {
 	pb.UnimplementedRecognizerServer
-	dbClient remote.Client
+	remoteCache remote.Client
 }
 
 type requestVars struct {
@@ -119,7 +119,7 @@ func (r *recogniser) initializeRequest(stream pb.Recognizer_RecognizeServer) *re
 		tokenHistory:     []string{},
 		sentenceEnd:      false,
 		stream:           stream,
-		pipe:             r.dbClient.NewGetPipeline(config.PipelineSize),
+		pipe:             r.remoteCache.NewGetPipeline(config.PipelineSize),
 	}
 }
 
@@ -127,7 +127,7 @@ func (r *recogniser) runPipeline(vars *requestVars, onResult func(snippet *pb.Sn
 	if err := vars.pipe.ExecGet(onResult); err != nil {
 		return err
 	}
-	vars.pipe = r.dbClient.NewGetPipeline(config.PipelineSize)
+	vars.pipe = r.remoteCache.NewGetPipeline(config.PipelineSize)
 	return nil
 }
 

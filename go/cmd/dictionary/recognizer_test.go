@@ -31,7 +31,7 @@ func (s *RecognizerSuite) SetupSuite() {
 
 func (s *RecognizerSuite) Test_recognizer_Recognize() {
 	mockDBClient := &mocks.Client{}
-	s.dbClient = mockDBClient
+	s.remoteCache = mockDBClient
 	mockGetPipeline := &mocks.GetPipeline{}
 	mockDBClient.On("NewGetPipeline", testConfig.PipelineSize).Return(mockGetPipeline).Times(2)
 	mockStream, snippets := testhelpers.NewMockRecognizeServerStream("hello", "my", "name", "is", "jeff")
@@ -56,7 +56,7 @@ func (s *RecognizerSuite) Test_recognizer_Recognize() {
 func (s *RecognizerSuite) Test_recogniser_queryToken() {
 
 	mockDBClient := &mocks.Client{}
-	s.dbClient = mockDBClient
+	s.remoteCache = mockDBClient
 	mockGetPipeline := &mocks.GetPipeline{}
 	mockDBClient.On("NewGetPipeline", testConfig.PipelineSize).Return(mockGetPipeline).Once()
 	mockStream, _ := testhelpers.NewMockRecognizeServerStream("hello", "my", "name", "is", "jeff")

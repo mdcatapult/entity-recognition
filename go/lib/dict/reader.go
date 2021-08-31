@@ -5,6 +5,12 @@ import (
 	"os"
 )
 
+type DictConfig struct {
+	Name   string
+	Path   string
+	Format Format
+}
+
 type Entry struct {
 	Synonyms []string
 	Identifiers []string
@@ -18,7 +24,7 @@ const (
 	LeadmineDictionaryFormat Format = "leadmine"
 )
 
-type DictReader interface {
+type Reader interface {
 	Read(file *os.File) (chan *Entry, chan error)
 }
 
@@ -33,4 +39,27 @@ func Read(format Format, file *os.File) (chan *Entry, chan error, error) {
 	default:
 		return nil, nil, fmt.Errorf("unsupported dictionary format %v", format)
 	}
+}
+
+func ReadWithCallback(format Format, callback func(entry *Entry) error, file *os.File) error {
+	entries, errors, err := Read(format, file)
+	if err != nil {
+		return err
+	}
+
+	Listen: for {
+		select {
+		case err := <-errors:
+			if err != nil {
+				return err
+			}
+			break Listen
+		case entry := <-entries:
+			if err := callback(entry); err != nil {
+				return err
+			}
+		}
+	}
+
+	return callback(nil)
 }

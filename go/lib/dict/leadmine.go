@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func NewLeadmineReader() DictReader {
+func NewLeadmineReader() Reader {
 	return leadmineReader{}
 }
 

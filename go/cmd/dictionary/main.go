@@ -2,12 +2,15 @@ package main
 
 import (
 	"fmt"
+	"github.com/spf13/viper"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache/local"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache/remote"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/dict"
 	"net"
+	"os"
 
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"google.golang.org/grpc"
@@ -16,11 +19,12 @@ import (
 // config structure
 type dictionaryRecogniserConfig struct {
 	lib.BaseConfig
+	Dictionary dict.DictConfig
 	Server struct {
 		GrpcPort int `mapstructure:"grpc_port"`
 	}
-	BackendDatabase cache.Type `mapstructure:"dictionary_backend"`
-	PipelineSize    int        `mapstructure:"pipeline_size"`
+	CacheType    cache.Type `mapstructure:"cache_type"`
+	PipelineSize int        `mapstructure:"pipeline_size"`
 	Redis               remote.RedisConfig
 	Elasticsearch       remote.ElasticsearchConfig
 	CompoundTokenLength int `mapstructure:"compound_token_length"`
@@ -53,8 +57,7 @@ func initConfig() {
 	}
 
 	// unmarshal the viper contents into our config struct
-	err = viper.Unmarshal(&config)
-	if err != nil {
+	if err = viper.Unmarshal(&config); err != nil {
 		log.Fatal().Err(err).Send()
 	}
 }
@@ -62,16 +65,45 @@ func initConfig() {
 func main() {
 	initConfig()
 	// Get a redis client
-	var dbClient remote.Client
+	var remoteCache remote.Client
+	var localCache local.Client
 	var err error
-	switch config.BackendDatabase {
+	switch config.CacheType {
 	case cache.Redis:
-		dbClient = remote.NewRedisClient(config.Redis)
+		remoteCache = remote.NewRedisClient(config.Redis)
 	case cache.Elasticsearch:
-		dbClient, err = remote.NewElasticsearchClient(config.Elasticsearch)
+		remoteCache, err = remote.NewElasticsearchClient(config.Elasticsearch)
 		if err != nil {
 			log.Fatal().Err(err).Send()
 		}
+	case cache.Local:
+		localCache = local.New()
+		dictFile, err := os.Open(config.Dictionary.Path)
+		if err != nil {
+			log.Fatal().Err(err).Send()
+		}
+
+		callback := func(entry *dict.Entry) error {
+			if entry == nil {
+				return nil
+			}
+
+			lookup := &cache.Lookup{
+				Dictionary:       config.Dictionary.Name,
+				ResolvedEntities: entry.Identifiers,
+			}
+
+			for _, synonym := range entry.Synonyms {
+				localCache.Set(synonym, lookup)
+			}
+
+			return nil
+		}
+
+		if err := dict.ReadWithCallback(config.Dictionary.Format, callback, dictFile); err != nil {
+			log.Fatal().Err(err).Send()
+		}
+
 	default:
 		log.Fatal().Msg("invalid backend database type")
 	}
@@ -83,9 +115,17 @@ func main() {
 	}
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)
-	pb.RegisterRecognizerServer(grpcServer, &recogniser{
-		dbClient: dbClient,
-	})
+	if remoteCache != nil {
+		pb.RegisterRecognizerServer(grpcServer, &recogniser{
+			remoteCache: remoteCache,
+		})
+	} else if localCache != nil {
+		pb.RegisterRecognizerServer(grpcServer, &localRecogniser{
+			localCache: localCache,
+		})
+	} else {
+		log.Fatal().Msg("no cache configured")
+	}
 
 	log.Info().Int("port", config.Server.GrpcPort).Msg("ready to accept requests")
 	err = grpcServer.Serve(lis)

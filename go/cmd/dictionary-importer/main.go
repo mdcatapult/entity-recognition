@@ -17,11 +17,7 @@ import (
 // config structure
 type dictionaryImporterConfig struct {
 	lib.BaseConfig
-	Dictionary struct {
-		Name   string
-		Path   string
-		Format dict.Format
-	}
+	dict.DictConfig
 	BackendDatabase cache.Type `mapstructure:"dictionary_backend"`
 	PipelineSize    int        `mapstructure:"pipeline_size"`
 	Redis           remote.RedisConfig
@@ -79,7 +75,7 @@ func main() {
 		log.Fatal().Msg("invalid backend database type")
 	}
 
-	dictFile, err := os.Open(config.Dictionary.Path)
+	dictFile, err := os.Open(config.DictConfig.Path)
 	if err != nil {
 		log.Fatal().Err(err).Send()
 	}
@@ -89,40 +85,31 @@ func main() {
 		time.Sleep(10 * time.Second)
 	}
 
-	entries, errors, err := dict.Read(config.Dictionary.Format, dictFile)
-	if err != nil {
-		log.Fatal().Err(err).Send()
-	}
-
-	if err := uploadDictionary(dbClient, entries, errors); err != nil {
-		log.Fatal().Err(err).Send()
-	}
-}
-
-func uploadDictionary(dbClient remote.Client, entries chan *dict.Entry, errors chan error) error {
-
-	// Instantiate variables we need to keep track of across lines.
 	pipe := dbClient.NewSetPipeline(config.PipelineSize)
-	insertions := 0
-	Listen: for {
-		select {
-		case err := <-errors:
-			if err != nil {
-				log.Fatal().Err(err).Send()
-			}
-			break Listen
-		case entry := <-entries:
-			if err := addToPipe(entry, pipe, &insertions); err != nil {
-				log.Fatal().Err(err).Send()
-			}
+	nInsertions := 0
+	fn := func(entry *dict.Entry) error {
+		if entry == nil {
+			return pipe.ExecSet()
 		}
+
+		if err := addToPipe(entry, pipe, &nInsertions); err != nil {
+			return err
+		}
+
+		if pipe.Size() > config.PipelineSize {
+			if err := pipe.ExecSet(); err != nil {
+				return err
+			}
+
+			pipe = dbClient.NewSetPipeline(config.PipelineSize)
+		}
+
+		return nil
 	}
 
-	// Execute the pipe for any remaining synonyms.
-	if pipe.Size() > 0 {
-		return pipe.ExecSet()
+	if err := dict.ReadWithCallback(config.DictConfig.Format, fn, dictFile); err != nil {
+		log.Fatal().Err(err).Send()
 	}
-	return nil
 }
 
 func addToPipe(entry *dict.Entry, pipe remote.SetPipeline, nInsertions *int) error {
@@ -131,7 +118,7 @@ func addToPipe(entry *dict.Entry, pipe remote.SetPipeline, nInsertions *int) err
 	case cache.Redis:
 		for _, s := range entry.Synonyms {
 			b, err := json.Marshal(cache.Lookup{
-				Dictionary:       config.Dictionary.Name,
+				Dictionary:       config.DictConfig.Name,
 				ResolvedEntities: entry.Identifiers,
 			})
 			if err != nil {
@@ -142,7 +129,7 @@ func addToPipe(entry *dict.Entry, pipe remote.SetPipeline, nInsertions *int) err
 		}
 	case cache.Elasticsearch:
 		b, err := json.Marshal(remote.EsLookup{
-			Dictionary:  config.Dictionary.Name,
+			Dictionary:  config.DictConfig.Name,
 			Synonyms:    entry.Synonyms,
 			Identifiers: entry.Identifiers,
 		})
