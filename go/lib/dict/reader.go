@@ -25,23 +25,23 @@ const (
 )
 
 type Reader interface {
-	Read(file *os.File) (chan *Entry, chan error)
+	Read(file *os.File) (chan Entry, chan error)
 }
 
-func Read(format Format, file *os.File) (chan *Entry, chan error, error) {
+func Read(format Format, file *os.File) (chan Entry, chan error, error) {
 	switch format {
 	case PubchemDictionaryFormat:
-		lCh, eCh :=  NewPubchemReader().Read(file)
-		return lCh, eCh, nil
+		entries, errors :=  NewPubchemReader().Read(file)
+		return entries, errors, nil
 	case LeadmineDictionaryFormat:
-		lCh, eCh := NewLeadmineReader().Read(file)
-		return lCh, eCh, nil
+		entries, errors := NewLeadmineReader().Read(file)
+		return entries, errors, nil
 	default:
 		return nil, nil, fmt.Errorf("unsupported dictionary format %v", format)
 	}
 }
 
-func ReadWithCallback(format Format, callback func(entry *Entry) error, file *os.File) error {
+func ReadWithCallback(format Format, onEntry func(entry Entry) error, onExit func() error, file *os.File) error {
 	entries, errors, err := Read(format, file)
 	if err != nil {
 		return err
@@ -55,11 +55,15 @@ func ReadWithCallback(format Format, callback func(entry *Entry) error, file *os
 			}
 			break Listen
 		case entry := <-entries:
-			if err := callback(entry); err != nil {
+			if err := onEntry(entry); err != nil {
 				return err
 			}
 		}
 	}
 
-	return callback(nil)
+	if onExit != nil {
+		return onExit()
+	}
+
+	return nil
 }

@@ -83,11 +83,7 @@ func main() {
 			log.Fatal().Err(err).Send()
 		}
 
-		callback := func(entry *dict.Entry) error {
-			if entry == nil {
-				return nil
-			}
-
+		callback := func(entry dict.Entry) error {
 			lookup := &cache.Lookup{
 				Dictionary:       config.Dictionary.Name,
 				ResolvedEntities: entry.Identifiers,
@@ -100,7 +96,7 @@ func main() {
 			return nil
 		}
 
-		if err := dict.ReadWithCallback(config.Dictionary.Format, callback, dictFile); err != nil {
+		if err := dict.ReadWithCallback(config.Dictionary.Format, callback, nil, dictFile); err != nil {
 			log.Fatal().Err(err).Send()
 		}
 

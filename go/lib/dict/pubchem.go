@@ -16,14 +16,14 @@ func NewPubchemReader() Reader {
 
 type pubchemReader struct {}
 
-func (p pubchemReader) Read(file *os.File) (chan *Entry, chan error) {
-	lookupChan := make(chan *Entry)
-	errChan := make(chan error)
-	go p.read(file, lookupChan, errChan)
-	return lookupChan, errChan
+func (p pubchemReader) Read(file *os.File) (chan Entry, chan error) {
+	entries := make(chan Entry)
+	errors := make(chan error)
+	go p.read(file, entries, errors)
+	return entries, errors
 }
 
-func (p pubchemReader) read(dict *os.File, lookupChan chan *Entry, errChan chan error) {
+func (p pubchemReader) read(dict *os.File, entries chan Entry, errors chan error) {
 
 	// Instantiate variables we need to keep track of across lines.
 	scn := bufio.NewScanner(dict)
@@ -46,7 +46,7 @@ func (p pubchemReader) read(dict *os.File, lookupChan chan *Entry, errChan chan 
 		id, value := parseLine(line, row)
 
 		if id != currentId {
-			lookupChan <- &Entry{
+			entries <- Entry{
 				Synonyms:    synonyms,
 				Identifiers: identifiers,
 			}
@@ -62,7 +62,7 @@ func (p pubchemReader) read(dict *os.File, lookupChan chan *Entry, errChan chan 
 		}
 	}
 
-	errChan <- nil
+	errors <- nil
 }
 
 func parseLine(line string, row int) (id int, value string) {

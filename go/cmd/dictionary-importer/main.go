@@ -87,11 +87,7 @@ func main() {
 
 	pipe := dbClient.NewSetPipeline(config.PipelineSize)
 	nInsertions := 0
-	fn := func(entry *dict.Entry) error {
-		if entry == nil {
-			return pipe.ExecSet()
-		}
-
+	onEntry := func(entry dict.Entry) error {
 		if err := addToPipe(entry, pipe, &nInsertions); err != nil {
 			return err
 		}
@@ -107,12 +103,20 @@ func main() {
 		return nil
 	}
 
-	if err := dict.ReadWithCallback(config.DictConfig.Format, fn, dictFile); err != nil {
+	onExit := func() error {
+		if pipe.Size() > 0 {
+			return pipe.ExecSet()
+		}
+
+		return nil
+	}
+
+	if err := dict.ReadWithCallback(config.DictConfig.Format, onEntry, onExit, dictFile); err != nil {
 		log.Fatal().Err(err).Send()
 	}
 }
 
-func addToPipe(entry *dict.Entry, pipe remote.SetPipeline, nInsertions *int) error {
+func addToPipe(entry dict.Entry, pipe remote.SetPipeline, nInsertions *int) error {
 	// Mid process, some stuff to do
 	switch config.BackendDatabase {
 	case cache.Redis:

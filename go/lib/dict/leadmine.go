@@ -12,14 +12,14 @@ func NewLeadmineReader() Reader {
 
 type leadmineReader struct {}
 
-func (l leadmineReader) Read(dict *os.File) (chan *Entry, chan error) {
-	entries := make(chan *Entry)
+func (l leadmineReader) Read(dict *os.File) (chan Entry, chan error) {
+	entries := make(chan Entry)
 	errors := make(chan error)
 	go l.read(dict, entries, errors)
 	return entries, errors
 }
 
-func (l leadmineReader) read(dict *os.File, entries chan *Entry, errors chan error) {
+func (l leadmineReader) read(dict *os.File, entries chan Entry, errors chan error) {
 
 	// Instantiate variables we need to keep track of across lines.
 	scn := bufio.NewScanner(dict)
@@ -39,7 +39,7 @@ func (l leadmineReader) read(dict *os.File, entries chan *Entry, errors chan err
 		synonyms := row[:len(row)-1]
 
 		// Create a redis lookup for each synonym.
-		entries <- &Entry{
+		entries <- Entry{
 			Synonyms:    synonyms,
 			Identifiers: []string{identifier},
 		}
