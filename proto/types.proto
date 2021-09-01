@@ -9,6 +9,7 @@ message Snippet {
 message RecognizedEntity {
     string entity = 1;
     uint32 position = 2;
-    string type = 3;
-    repeated string resolvedTo = 4;
+    string dictionary = 3;
+    map<string,string> identifiers = 4;
+    map<string,string> metadata = 5;
 }

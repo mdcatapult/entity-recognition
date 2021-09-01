@@ -13,7 +13,8 @@ type DictConfig struct {
 
 type Entry struct {
 	Synonyms []string
-	Identifiers []string
+	Identifiers map[string]string
+	Metadata map[string]interface{}
 }
 
 
@@ -22,6 +23,7 @@ type Format string
 const (
 	PubchemDictionaryFormat  Format = "pubchem"
 	LeadmineDictionaryFormat Format = "leadmine"
+	NativeDictionaryFormat   Format = "native"
 )
 
 type Reader interface {
@@ -35,6 +37,9 @@ func Read(format Format, file *os.File) (chan Entry, chan error, error) {
 		return entries, errors, nil
 	case LeadmineDictionaryFormat:
 		entries, errors := NewLeadmineReader().Read(file)
+		return entries, errors, nil
+	case NativeDictionaryFormat:
+		entries, errors := NewNativeReader().Read(file)
 		return entries, errors, nil
 	default:
 		return nil, nil, fmt.Errorf("unsupported dictionary format %v", format)

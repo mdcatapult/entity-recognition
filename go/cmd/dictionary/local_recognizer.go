@@ -40,8 +40,9 @@ func (r *localRecogniser) Recognize(stream pb.Recognizer_RecognizeServer) error 
 				entity := &pb.RecognizedEntity{
 					Entity:     compoundToken.GetToken(),
 					Position:   compoundToken.GetOffset(),
-					Type:       lookup.Dictionary,
-					ResolvedTo: lookup.ResolvedEntities,
+					Dictionary:       lookup.Dictionary,
+					Identifiers: lookup.Identifiers,
+					Metadata: lookup.Metadata,
 				}
 
 				if err := vars.stream.Send(entity); err != nil {

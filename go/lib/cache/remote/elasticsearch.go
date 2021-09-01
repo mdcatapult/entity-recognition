@@ -21,7 +21,7 @@ type ElasticsearchConfig struct {
 type EsLookup struct {
 	Dictionary  string   `json:"dictionary"`
 	Synonyms    []string `json:"synonyms"`
-	Identifiers []string `json:"identifiers"`
+	Identifiers map[string]string `json:"identifiers"`
 }
 
 type esResponse struct {
@@ -162,8 +162,8 @@ func (p esPipeline) ExecGet(onResult func(*pb.Snippet, *cache.Lookup) error) err
 			lookup = nil
 		} else {
 			lookup = &cache.Lookup{
-				Dictionary:       response.Hits.Hits[0].Source.Dictionary,
-				ResolvedEntities: response.Hits.Hits[0].Source.Identifiers,
+				Dictionary:  response.Hits.Hits[0].Source.Dictionary,
+				Identifiers: response.Hits.Hits[0].Source.Identifiers,
 			}
 		}
 		if err := onResult(p.currentQuery[i], lookup); err != nil {

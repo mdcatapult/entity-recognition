@@ -35,8 +35,8 @@ func (r *recogniser) newResultHandler(vars *requestVars) func(snippet *pb.Snippe
 		entity := &pb.RecognizedEntity{
 			Entity:     snippet.GetToken(),
 			Position:   snippet.GetOffset(),
-			Type:       lookup.Dictionary,
-			ResolvedTo: lookup.ResolvedEntities,
+			Dictionary:       lookup.Dictionary,
+			Identifiers: lookup.Identifiers,
 		}
 
 		if err := vars.stream.Send(entity); err != nil {
@@ -95,8 +95,8 @@ func (r *recogniser) findOrQueueSnippet(vars *requestVars, token *pb.Snippet) er
 		entity := &pb.RecognizedEntity{
 			Entity:     token.GetToken(),
 			Position:   token.GetOffset(),
-			Type:       lookup.Dictionary,
-			ResolvedTo: lookup.ResolvedEntities,
+			Dictionary:       lookup.Dictionary,
+			Identifiers: lookup.Identifiers,
 		}
 		if err := vars.stream.Send(entity); err != nil {
 			return err
@@ -137,8 +137,8 @@ func (r *recogniser) retryCacheMisses(vars *requestVars) error {
 			entity := &pb.RecognizedEntity{
 				Entity:     token.GetToken(),
 				Position:   token.GetOffset(),
-				Type:       lookup.Dictionary,
-				ResolvedTo: lookup.ResolvedEntities,
+				Dictionary:       lookup.Dictionary,
+				Identifiers: lookup.Identifiers,
 			}
 			if err := vars.stream.Send(entity); err != nil {
 				return err

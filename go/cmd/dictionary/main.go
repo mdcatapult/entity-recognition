@@ -85,8 +85,8 @@ func main() {
 
 		callback := func(entry dict.Entry) error {
 			lookup := &cache.Lookup{
-				Dictionary:       config.Dictionary.Name,
-				ResolvedEntities: entry.Identifiers,
+				Dictionary:  config.Dictionary.Name,
+				Identifiers: entry.Identifiers,
 			}
 
 			for _, synonym := range entry.Synonyms {

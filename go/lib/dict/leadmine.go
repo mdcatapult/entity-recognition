@@ -41,7 +41,7 @@ func (l leadmineReader) read(dict *os.File, entries chan Entry, errors chan erro
 		// Create a redis lookup for each synonym.
 		entries <- Entry{
 			Synonyms:    synonyms,
-			Identifiers: []string{identifier},
+			Identifiers: map[string]string{identifier:""},
 		}
 	}
 	errors <- nil
