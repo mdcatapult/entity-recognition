@@ -1,32 +1,33 @@
 package main
 
 import (
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 	"io"
 	"strings"
 
 	"github.com/rs/zerolog/log"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/db"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache/remote"
 )
 
 type recogniser struct {
 	pb.UnimplementedRecognizerServer
-	dbClient db.Client
+	remoteCache remote.Client
 }
 
 type requestVars struct {
-	tokenCache       map[*pb.Snippet]*db.Lookup
+	tokenCache       map[*pb.Snippet]*cache.Lookup
 	tokenCacheMisses []*pb.Snippet
 	snippetHistory   []*pb.Snippet
 	tokenHistory     []string
 	sentenceEnd      bool
 	stream           pb.Recognizer_RecognizeServer
-	pipe             db.GetPipeline
+	pipe             remote.GetPipeline
 }
 
-func (r *recogniser) newResultHandler(vars *requestVars) func(snippet *pb.Snippet, lookup *db.Lookup) error {
-	return func(snippet *pb.Snippet, lookup *db.Lookup) error {
+func (r *recogniser) newResultHandler(vars *requestVars) func(snippet *pb.Snippet, lookup *cache.Lookup) error {
+	return func(snippet *pb.Snippet, lookup *cache.Lookup) error {
 		vars.tokenCache[snippet] = lookup
 		if lookup == nil {
 			return nil
@@ -46,7 +47,7 @@ func (r *recogniser) newResultHandler(vars *requestVars) func(snippet *pb.Snippe
 	}
 }
 
-func (r *recogniser) getCompoundSnippets(vars *requestVars, snippet *pb.Snippet) []*pb.Snippet {
+func getCompoundSnippets(vars *requestVars, snippet *pb.Snippet) []*pb.Snippet {
 	// If sentenceEnd is true, we can save some redis queries by resetting the token history..
 	if vars.sentenceEnd {
 		vars.snippetHistory = []*pb.Snippet{}
@@ -105,28 +106,28 @@ func (r *recogniser) findOrQueueSnippet(vars *requestVars, token *pb.Snippet) er
 		// Queue the redis "GET" in the pipe and set the cache value to an empty db.Lookup
 		// (so that future equivalent tokens will be a cache miss).
 		vars.pipe.Get(token)
-		vars.tokenCache[token] = &db.Lookup{}
+		vars.tokenCache[token] = &cache.Lookup{}
 	}
 	return nil
 }
 
 func (r *recogniser) initializeRequest(stream pb.Recognizer_RecognizeServer) *requestVars {
 	return &requestVars{
-		tokenCache:       make(map[*pb.Snippet]*db.Lookup, config.PipelineSize),
+		tokenCache:       make(map[*pb.Snippet]*cache.Lookup, config.PipelineSize),
 		tokenCacheMisses: make([]*pb.Snippet, config.PipelineSize),
 		snippetHistory:   []*pb.Snippet{},
 		tokenHistory:     []string{},
 		sentenceEnd:      false,
 		stream:           stream,
-		pipe:             r.dbClient.NewGetPipeline(config.PipelineSize),
+		pipe:             r.remoteCache.NewGetPipeline(config.PipelineSize),
 	}
 }
 
-func (r *recogniser) runPipeline(vars *requestVars, onResult func(snippet *pb.Snippet, lookup *db.Lookup) error) error {
+func (r *recogniser) runPipeline(vars *requestVars, onResult func(snippet *pb.Snippet, lookup *cache.Lookup) error) error {
 	if err := vars.pipe.ExecGet(onResult); err != nil {
 		return err
 	}
-	vars.pipe = r.dbClient.NewGetPipeline(config.PipelineSize)
+	vars.pipe = r.remoteCache.NewGetPipeline(config.PipelineSize)
 	return nil
 }
 
@@ -167,7 +168,7 @@ func (r *recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 			return err
 		}
 
-		compoundTokens := r.getCompoundSnippets(vars, token)
+		compoundTokens := getCompoundSnippets(vars, token)
 
 		for _, compoundToken := range compoundTokens {
 			if err := r.findOrQueueSnippet(vars, compoundToken); err != nil {

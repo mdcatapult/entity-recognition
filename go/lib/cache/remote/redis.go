@@ -1,4 +1,4 @@
-package db
+package remote
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-redis/redis"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache"
 )
 
 type RedisConfig struct {
@@ -69,7 +70,7 @@ func (r *redisGetPipeline) Get(token *pb.Snippet) {
 	r.cmds[token] = r.pipe.Get(token.GetToken())
 }
 
-func (r *redisGetPipeline) ExecGet(onResult func(*pb.Snippet, *Lookup) error) error {
+func (r *redisGetPipeline) ExecGet(onResult func(*pb.Snippet, *cache.Lookup) error) error {
 
 	_, err := r.pipe.Exec()
 	if err != nil && err != redis.Nil {
@@ -87,7 +88,7 @@ func (r *redisGetPipeline) ExecGet(onResult func(*pb.Snippet, *Lookup) error) er
 			return err
 		}
 
-		var lookup Lookup
+		var lookup cache.Lookup
 		if err = json.Unmarshal(b, &lookup); err != nil {
 			return err
 		}
