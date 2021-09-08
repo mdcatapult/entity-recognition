@@ -122,8 +122,8 @@ func addToPipe(entry dict.Entry, pipe remote.SetPipeline, nInsertions *int) erro
 	case cache.Redis:
 		for _, s := range entry.Synonyms {
 			b, err := json.Marshal(cache.Lookup{
-				Dictionary:       config.DictConfig.Name,
-				ResolvedEntities: entry.Identifiers,
+				Dictionary:  config.DictConfig.Name,
+				Identifiers: entry.Identifiers,
 			})
 			if err != nil {
 				return err

@@ -102,8 +102,8 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 	foundEntity := &pb.RecognizedEntity{
 		Entity:     "found entity",
 		Position:   2312,
-		Type:       "test",
-		ResolvedTo: []string{"many", "things"},
+		Dictionary:       "test",
+		Identifiers: map[string]string{"many":"", "things":""},
 	}
 	mockRecognizer_RecognizeClient.On("Recv").Return(foundEntity, nil).Once()
 	mockRecognizer_RecognizeClient.On("Recv").Return(nil, io.EOF).Once()

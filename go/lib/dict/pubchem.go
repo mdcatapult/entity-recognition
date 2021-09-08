@@ -56,9 +56,13 @@ func (p pubchemReader) read(dict *os.File, entries chan Entry, errors chan error
 		}
 
 		if id != currentId {
+			ids := make(map[string]string)
+			for _, id := range identifiers {
+				ids[id] = ""
+			}
 			entries <- Entry{
 				Synonyms:    synonyms,
-				Identifiers: identifiers,
+				Identifiers: ids,
 			}
 			synonyms = []string{}
 			identifiers = []string{fmt.Sprintf("PUBCHEM:%d", id)}

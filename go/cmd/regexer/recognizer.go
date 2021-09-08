@@ -34,7 +34,7 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 				err := stream.Send(&pb.RecognizedEntity{
 					Entity:   token.GetToken(),
 					Position: token.GetOffset(),
-					Type:     name,
+					Dictionary:     name,
 				})
 				if err != nil {
 					return err
