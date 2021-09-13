@@ -2,13 +2,15 @@ package main
 
 import (
 	"fmt"
+	"net"
+	"os"
+	"time"
+
 	"github.com/spf13/viper"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache/local"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache/remote"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/dict"
-	"net"
-	"os"
 
 	"github.com/rs/zerolog/log"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
@@ -38,6 +40,10 @@ func initConfig() {
 		"log_level":          "info",
 		"dictionary_backend": cache.Redis,
 		"pipeline_size":      10000,
+		"dictionary": map[string]interface{}{
+			"type": "pubchem",
+			"name": "pubchem_data",
+		},
 		"server": map[string]interface{}{
 			"grpc_port": 50051,
 		},
@@ -101,6 +107,8 @@ func main() {
 		}
 
 	default:
+		log.Warn().Msg("invalid backend database type")
+		time.Sleep(120 * time.Second)
 		log.Fatal().Msg("invalid backend database type")
 	}
 
