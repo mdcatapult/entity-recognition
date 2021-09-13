@@ -32,7 +32,8 @@ release:
     refs:
       - master
   except:
-    - $CI_COMMIT_MESSAGE =~ /^Setting version to.*/
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /^Setting version to.*/
 
 build-dictionary-dev:
   image:
