@@ -58,7 +58,8 @@ func main() {
 	clients := make([]pb.RecognizerClient, len(config.Recognizers))
 	connections := make([]*grpc.ClientConn, len(config.Recognizers))
 	i := 0
-	for _, r := range config.Recognizers {
+	for name, r := range config.Recognizers {
+		log.Info().Str("recognizer", name).Msg("connecting...")
 		ctx, cancel := context.WithTimeout(context.Background(), 30 * time.Second)
 		conn, err := grpc.DialContext(ctx, fmt.Sprintf("%s:%d", r.Host, r.GrpcPort), opts...)
 		if err != nil {

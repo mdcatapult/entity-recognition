@@ -89,14 +89,22 @@ func main() {
 			log.Fatal().Err(err).Send()
 		}
 
+		nSynonyms := 0
+		nLookups := 0
 		callback := func(entry dict.Entry) error {
+			nLookups++
 			lookup := &cache.Lookup{
 				Dictionary:  config.Dictionary.Name,
 				Identifiers: entry.Identifiers,
 			}
-
+			
 			for _, synonym := range entry.Synonyms {
 				localCache.Set(synonym, lookup)
+				nSynonyms++
+			}
+
+			if nLookups % 100000 == 0 {
+				log.Info().Int("identifiers", nLookups).Int("synonyms", nSynonyms).Msg("importing data")
 			}
 
 			return nil
