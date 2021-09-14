@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
@@ -49,7 +51,7 @@ func main() {
 	// general grpc options
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithInsecure())
-	//opts = append(opts, grpc.WithBlock())
+	opts = append(opts, grpc.WithBlock())
 
 	// for each recogniser in the config, instantiate a client and save the connection
 	// so that we can close it later.
@@ -57,10 +59,12 @@ func main() {
 	connections := make([]*grpc.ClientConn, len(config.Recognizers))
 	i := 0
 	for _, r := range config.Recognizers {
-		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", r.Host, r.GrpcPort), opts...)
+		ctx, cancel := context.WithTimeout(context.Background(), 30 * time.Second)
+		conn, err := grpc.DialContext(ctx, fmt.Sprintf("%s:%d", r.Host, r.GrpcPort), opts...)
 		if err != nil {
 			log.Fatal().Err(err).Send()
 		}
+		cancel()
 		connections[i] = conn
 		clients[i] = pb.NewRecognizerClient(conn)
 		i++
