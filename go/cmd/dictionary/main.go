@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"time"
 
-	"github.com/spf13/viper"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache/local"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache/remote"
@@ -22,54 +20,45 @@ import (
 type dictionaryRecogniserConfig struct {
 	lib.BaseConfig
 	Dictionary dict.DictConfig
-	Server struct {
+	Server     struct {
 		GrpcPort int `mapstructure:"grpc_port"`
 	}
-	CacheType    cache.Type `mapstructure:"cache_type"`
-	PipelineSize int        `mapstructure:"pipeline_size"`
+	CacheType           cache.Type `mapstructure:"cache_type"`
+	PipelineSize        int        `mapstructure:"pipeline_size"`
 	Redis               remote.RedisConfig
 	Elasticsearch       remote.ElasticsearchConfig
 	CompoundTokenLength int `mapstructure:"compound_token_length"`
 }
 
 var config dictionaryRecogniserConfig
-
-func initConfig() {
-	// initialise config with defaults.
-	err := lib.InitializeConfig("./config/dictionary.yml", map[string]interface{}{
-		"log_level":          "info",
-		"dictionary_backend": cache.Redis,
-		"pipeline_size":      10000,
-		"dictionary": map[string]interface{}{
-			"type": "pubchem",
-			"name": "pubchem_data",
-		},
-		"server": map[string]interface{}{
-			"grpc_port": 50051,
-		},
-		"redis": map[string]interface{}{
-			"host": "localhost",
-			"port": 6379,
-		},
-		"elasticsearch": map[string]interface{}{
-			"host": "localhost",
-			"port": 9200,
-			"index": "pubchem",
-		},
-		"compound_token_length": 5,
-	})
-	if err != nil {
-		log.Fatal().Err(err).Send()
-	}
-
-	// unmarshal the viper contents into our config struct
-	if err = viper.Unmarshal(&config); err != nil {
-		log.Fatal().Err(err).Send()
-	}
+var defaultConfig = map[string]interface{}{
+	"log_level":          "info",
+	"dictionary_backend": cache.Redis,
+	"pipeline_size":      10000,
+	"dictionary": map[string]interface{}{
+		"type": "pubchem",
+		"name": "pubchem_data",
+	},
+	"server": map[string]interface{}{
+		"grpc_port": 50051,
+	},
+	"redis": map[string]interface{}{
+		"host": "localhost",
+		"port": 6379,
+	},
+	"elasticsearch": map[string]interface{}{
+		"host":  "localhost",
+		"port":  9200,
+		"index": "pubchem",
+	},
+	"compound_token_length": 5,
 }
 
 func main() {
-	initConfig()
+	if err := lib.InitializeConfig("./config/dictionary.yml", defaultConfig, &config); err != nil {
+		log.Fatal().Err(err).Send()
+	}
+
 	// Get a redis client
 	var remoteCache remote.Client
 	var localCache local.Client
@@ -97,13 +86,13 @@ func main() {
 				Dictionary:  config.Dictionary.Name,
 				Identifiers: entry.Identifiers,
 			}
-			
+
 			for _, synonym := range entry.Synonyms {
 				localCache.Set(synonym, lookup)
 				nSynonyms++
 			}
 
-			if nLookups % 100000 == 0 {
+			if nLookups%100000 == 0 {
 				log.Info().Int("identifiers", nLookups).Int("synonyms", nSynonyms).Msg("importing data")
 			}
 
@@ -115,8 +104,6 @@ func main() {
 		}
 
 	default:
-		log.Warn().Msg("invalid backend database type")
-		time.Sleep(120 * time.Second)
 		log.Fatal().Msg("invalid backend database type")
 	}
 

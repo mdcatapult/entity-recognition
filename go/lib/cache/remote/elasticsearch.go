@@ -5,22 +5,22 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache"
 	"io/ioutil"
 
 	"github.com/elastic/go-elasticsearch/v7"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache"
 )
 
 type ElasticsearchConfig struct {
-	Host string
-	Port int
+	Host  string
+	Port  int
 	index string
 }
 
 type EsLookup struct {
-	Dictionary  string   `json:"dictionary"`
-	Synonyms    []string `json:"synonyms"`
+	Dictionary  string            `json:"dictionary"`
+	Synonyms    []string          `json:"synonyms"`
 	Identifiers map[string]string `json:"identifiers"`
 }
 

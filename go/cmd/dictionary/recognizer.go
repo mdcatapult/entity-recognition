@@ -1,14 +1,14 @@
 package main
 
 import (
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 	"io"
 	"strings"
 
 	"github.com/rs/zerolog/log"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache/remote"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 )
 
 type recogniser struct {
@@ -33,9 +33,9 @@ func (r *recogniser) newResultHandler(vars *requestVars) func(snippet *pb.Snippe
 			return nil
 		}
 		entity := &pb.RecognizedEntity{
-			Entity:     snippet.GetToken(),
-			Position:   snippet.GetOffset(),
-			Dictionary:       lookup.Dictionary,
+			Entity:      snippet.GetToken(),
+			Position:    snippet.GetOffset(),
+			Dictionary:  lookup.Dictionary,
 			Identifiers: lookup.Identifiers,
 		}
 
@@ -93,9 +93,9 @@ func (r *recogniser) findOrQueueSnippet(vars *requestVars, token *pb.Snippet) er
 		}
 		// Otherwise, construct an entity from the cache value and send it back to the caller.
 		entity := &pb.RecognizedEntity{
-			Entity:     token.GetToken(),
-			Position:   token.GetOffset(),
-			Dictionary:       lookup.Dictionary,
+			Entity:      token.GetToken(),
+			Position:    token.GetOffset(),
+			Dictionary:  lookup.Dictionary,
 			Identifiers: lookup.Identifiers,
 		}
 		if err := vars.stream.Send(entity); err != nil {
@@ -135,9 +135,9 @@ func (r *recogniser) retryCacheMisses(vars *requestVars) error {
 	for _, token := range vars.tokenCacheMisses {
 		if lookup := vars.tokenCache[token]; lookup != nil {
 			entity := &pb.RecognizedEntity{
-				Entity:     token.GetToken(),
-				Position:   token.GetOffset(),
-				Dictionary:       lookup.Dictionary,
+				Entity:      token.GetToken(),
+				Position:    token.GetOffset(),
+				Dictionary:  lookup.Dictionary,
 				Identifiers: lookup.Identifiers,
 			}
 			if err := vars.stream.Send(entity); err != nil {

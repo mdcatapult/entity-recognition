@@ -14,8 +14,12 @@ type BaseConfig struct {
 	LogLevel string `mapstructure:"log_level"`
 }
 
-// InitializeConfig standardises config initialization across all apps.
-func InitializeConfig(defaultPath string, defaults map[string]interface{}) error {
+// InitializeConfig standardises config initialization across all apps. defaultPath is the default relative 
+// or absolute path to the config file. This is overriden with the --config flag. defaultConfig is the default 
+// config, defined as a map[string]interface{} within the code itself. It should be defined close to the "main" 
+// function and should be set up for local development. targetStruct should be a pointer to a struct which the
+// config can be unmarshalled to. 
+func InitializeConfig(defaultPath string, defaultConfig map[string]interface{}, targetStruct interface{}) error {
 	pflag.String("config", defaultPath, "The config file path.")
 	pflag.Parse()
 	err := viper.BindPFlags(pflag.CommandLine)
@@ -31,7 +35,7 @@ func InitializeConfig(defaultPath string, defaults map[string]interface{}) error
 		}
 	}
 
-	for k, v := range defaults {
+	for k, v := range defaultConfig {
 		viper.SetDefault(k, v)
 	}
 
@@ -58,6 +62,10 @@ func InitializeConfig(defaultPath string, defaults map[string]interface{}) error
 		return err
 	}
 	zerolog.SetGlobalLevel(lvl)
+
+	if err := viper.Unmarshal(targetStruct); err != nil {
+		return err
+	}
 
 	return nil
 }

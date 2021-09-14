@@ -1,8 +1,9 @@
 package local
 
 import (
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache"
 	"sync"
+
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache"
 )
 
 func New() Client {
@@ -20,7 +21,7 @@ type Client interface {
 
 type local struct {
 	store map[string]*cache.Lookup
-	mut *sync.RWMutex
+	mut   *sync.RWMutex
 }
 
 func (l *local) Get(key string) *cache.Lookup {
