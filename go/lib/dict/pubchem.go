@@ -4,18 +4,19 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/rs/zerolog/log"
 )
 
 func NewPubchemReader() Reader {
 	return pubchemReader{}
 }
 
-type pubchemReader struct {}
+type pubchemReader struct{}
 
 func (p pubchemReader) Read(file *os.File) (chan Entry, chan error) {
 	entries := make(chan Entry)

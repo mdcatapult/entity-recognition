@@ -1,11 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"google.golang.org/grpc"
@@ -24,43 +25,36 @@ type recognitionAPIConfig struct {
 }
 
 var config recognitionAPIConfig
-
-func initConfig() {
-	// Set default config values
-	err := lib.InitializeConfig("./config/recognition-api.yml", map[string]interface{}{
-		"log_level": "info",
-		"server": map[string]interface{}{
-			"http_port": 8080,
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	// Unmarshal the viper config into our struct.
-	err = viper.Unmarshal(&config)
-	if err != nil {
-		log.Fatal().Err(err).Send()
-	}
+var defaultConfig = map[string]interface{}{
+	"log_level": "info",
+	"server": map[string]interface{}{
+		"http_port": 8080,
+	},
 }
 
 func main() {
-	initConfig()
+	if err := lib.InitializeConfig("./config/recognition-api.yml", defaultConfig, &config); err != nil {
+		log.Fatal().Err(err).Send()
+	}
+
 	// general grpc options
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithInsecure())
-	//opts = append(opts, grpc.WithBlock())
+	opts = append(opts, grpc.WithBlock())
 
 	// for each recogniser in the config, instantiate a client and save the connection
 	// so that we can close it later.
 	clients := make([]pb.RecognizerClient, len(config.Recognizers))
 	connections := make([]*grpc.ClientConn, len(config.Recognizers))
 	i := 0
-	for _, r := range config.Recognizers {
-		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", r.Host, r.GrpcPort), opts...)
+	for name, r := range config.Recognizers {
+		log.Info().Str("recognizer", name).Msg("connecting...")
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		conn, err := grpc.DialContext(ctx, fmt.Sprintf("%s:%d", r.Host, r.GrpcPort), opts...)
 		if err != nil {
 			log.Fatal().Err(err).Send()
 		}
+		cancel()
 		connections[i] = conn
 		clients[i] = pb.NewRecognizerClient(conn)
 		i++

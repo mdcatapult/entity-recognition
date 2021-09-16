@@ -10,7 +10,7 @@ func NewLeadmineReader() Reader {
 	return leadmineReader{}
 }
 
-type leadmineReader struct {}
+type leadmineReader struct{}
 
 func (l leadmineReader) Read(dict *os.File) (chan Entry, chan error) {
 	entries := make(chan Entry)
@@ -41,7 +41,7 @@ func (l leadmineReader) read(dict *os.File, entries chan Entry, errors chan erro
 		// Create a redis lookup for each synonym.
 		entries <- Entry{
 			Synonyms:    synonyms,
-			Identifiers: map[string]string{identifier:""},
+			Identifiers: map[string]string{identifier: ""},
 		}
 	}
 	errors <- nil

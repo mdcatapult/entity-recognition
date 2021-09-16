@@ -1,12 +1,12 @@
 package main
 
 import (
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 	"io"
 	"io/ioutil"
 	"regexp"
 
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 	"gopkg.in/yaml.v2"
 )
 
@@ -32,9 +32,9 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 		for name, re := range r.regexps {
 			if re.MatchString(token.GetToken()) {
 				err := stream.Send(&pb.RecognizedEntity{
-					Entity:   token.GetToken(),
-					Position: token.GetOffset(),
-					Dictionary:     name,
+					Entity:     token.GetToken(),
+					Position:   token.GetOffset(),
+					Dictionary: name,
 				})
 				if err != nil {
 					return err
@@ -50,6 +50,7 @@ func getRegexps() (map[string]*regexp.Regexp, error) {
 	if err != nil {
 		return nil, err
 	}
+	
 	var regexpStringMap map[string]string
 	if err := yaml.Unmarshal(b, &regexpStringMap); err != nil {
 		return nil, err

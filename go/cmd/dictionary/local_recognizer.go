@@ -1,10 +1,11 @@
 package main
 
 import (
+	"io"
+
 	"github.com/rs/zerolog/log"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache/local"
-	"io"
 )
 
 type localRecogniser struct {
@@ -14,10 +15,10 @@ type localRecogniser struct {
 
 func initializeRequest(stream pb.Recognizer_RecognizeServer) *requestVars {
 	return &requestVars{
-		snippetHistory:   []*pb.Snippet{},
-		tokenHistory:     []string{},
-		sentenceEnd:      false,
-		stream:           stream,
+		snippetHistory: []*pb.Snippet{},
+		tokenHistory:   []string{},
+		sentenceEnd:    false,
+		stream:         stream,
 	}
 }
 
@@ -38,11 +39,11 @@ func (r *localRecogniser) Recognize(stream pb.Recognizer_RecognizeServer) error 
 		for _, compoundToken := range compoundTokens {
 			if lookup := r.localCache.Get(compoundToken.GetToken()); lookup != nil {
 				entity := &pb.RecognizedEntity{
-					Entity:     compoundToken.GetToken(),
-					Position:   compoundToken.GetOffset(),
-					Dictionary:       lookup.Dictionary,
+					Entity:      compoundToken.GetToken(),
+					Position:    compoundToken.GetOffset(),
+					Dictionary:  lookup.Dictionary,
 					Identifiers: lookup.Identifiers,
-					Metadata: lookup.Metadata,
+					Metadata:    lookup.Metadata,
 				}
 
 				if err := vars.stream.Send(entity); err != nil {

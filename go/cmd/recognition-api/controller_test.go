@@ -9,12 +9,11 @@ import (
 	"os"
 	"testing"
 
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/testhelpers"
-
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/testhelpers"
 )
 
 type ControllerSuite struct {
@@ -100,10 +99,10 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 	defer testhelpers.DoNotUseOffsets()
 	mockRecognizer_RecognizeClient, _ := testhelpers.NewMockRecognizeClientStream("hello", "my", "name", "is", "jeff")
 	foundEntity := &pb.RecognizedEntity{
-		Entity:     "found entity",
-		Position:   2312,
-		Dictionary:       "test",
-		Identifiers: map[string]string{"many":"", "things":""},
+		Entity:      "found entity",
+		Position:    2312,
+		Dictionary:  "test",
+		Identifiers: map[string]string{"many": "", "things": ""},
 	}
 	mockRecognizer_RecognizeClient.On("Recv").Return(foundEntity, nil).Once()
 	mockRecognizer_RecognizeClient.On("Recv").Return(nil, io.EOF).Once()

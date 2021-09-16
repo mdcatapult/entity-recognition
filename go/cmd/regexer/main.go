@@ -5,7 +5,6 @@ import (
 	"net"
 
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"google.golang.org/grpc"
@@ -22,33 +21,22 @@ type regexpRecognizerConfig struct {
 
 // global vars initialised on startup (should never be edited after that).
 var config regexpRecognizerConfig
-
-func initConfig() {
-	// Initialize config with default values
-	err := lib.InitializeConfig("./config/regexer.yml", map[string]interface{}{
-		"log_level": "info",
-		"server": map[string]interface{}{
-			"grpc_port": 50051,
-		},
-		"regex_file": "./config/regex_file.yml",
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	// unmarshal viper contents into our struct
-	err = viper.Unmarshal(&config)
-	if err != nil {
-		log.Fatal().Err(err).Send()
-	}
+var defaultConfig = map[string]interface{}{
+	"log_level": "info",
+	"server": map[string]interface{}{
+		"grpc_port": 50051,
+	},
+	"regex_file": "./config/regex_file.yml",
 }
 
 func main() {
-	initConfig()
+	if err := lib.InitializeConfig("./config/regexer.yml", defaultConfig, &config); err != nil {
+		log.Fatal().Err(err).Send()
+	}
 
 	regexps, err := getRegexps()
 	if err != nil {
-		log.Fatal().Err(err).Send()
+		log.Fatal().Str("path", config.RegexFile).Err(err).Send()
 	}
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", config.Server.GrpcPort))

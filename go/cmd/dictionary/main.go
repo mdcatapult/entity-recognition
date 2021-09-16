@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
+	"net"
+	"os"
+
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache/local"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache/remote"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/dict"
-	"net"
-	"os"
 
 	"github.com/rs/zerolog/log"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
@@ -20,50 +20,45 @@ import (
 type dictionaryRecogniserConfig struct {
 	lib.BaseConfig
 	Dictionary dict.DictConfig
-	Server struct {
+	Server     struct {
 		GrpcPort int `mapstructure:"grpc_port"`
 	}
-	CacheType    cache.Type `mapstructure:"cache_type"`
-	PipelineSize int        `mapstructure:"pipeline_size"`
+	CacheType           cache.Type `mapstructure:"cache_type"`
+	PipelineSize        int        `mapstructure:"pipeline_size"`
 	Redis               remote.RedisConfig
 	Elasticsearch       remote.ElasticsearchConfig
 	CompoundTokenLength int `mapstructure:"compound_token_length"`
 }
 
 var config dictionaryRecogniserConfig
-
-func initConfig() {
-	// initialise config with defaults.
-	err := lib.InitializeConfig("./config/dictionary.yml", map[string]interface{}{
-		"log_level":          "info",
-		"dictionary_backend": cache.Redis,
-		"pipeline_size":      10000,
-		"server": map[string]interface{}{
-			"grpc_port": 50051,
-		},
-		"redis": map[string]interface{}{
-			"host": "localhost",
-			"port": 6379,
-		},
-		"elasticsearch": map[string]interface{}{
-			"host": "localhost",
-			"port": 9200,
-			"index": "pubchem",
-		},
-		"compound_token_length": 5,
-	})
-	if err != nil {
-		log.Fatal().Err(err).Send()
-	}
-
-	// unmarshal the viper contents into our config struct
-	if err = viper.Unmarshal(&config); err != nil {
-		log.Fatal().Err(err).Send()
-	}
+var defaultConfig = map[string]interface{}{
+	"log_level":          "info",
+	"dictionary_backend": cache.Redis,
+	"pipeline_size":      10000,
+	"dictionary": map[string]interface{}{
+		"type": "pubchem",
+		"name": "pubchem_data",
+	},
+	"server": map[string]interface{}{
+		"grpc_port": 50051,
+	},
+	"redis": map[string]interface{}{
+		"host": "localhost",
+		"port": 6379,
+	},
+	"elasticsearch": map[string]interface{}{
+		"host":  "localhost",
+		"port":  9200,
+		"index": "pubchem",
+	},
+	"compound_token_length": 5,
 }
 
 func main() {
-	initConfig()
+	if err := lib.InitializeConfig("./config/dictionary.yml", defaultConfig, &config); err != nil {
+		log.Fatal().Err(err).Send()
+	}
+
 	// Get a redis client
 	var remoteCache remote.Client
 	var localCache local.Client
@@ -83,7 +78,10 @@ func main() {
 			log.Fatal().Err(err).Send()
 		}
 
+		nSynonyms := 0
+		nLookups := 0
 		callback := func(entry dict.Entry) error {
+			nLookups++
 			lookup := &cache.Lookup{
 				Dictionary:  config.Dictionary.Name,
 				Identifiers: entry.Identifiers,
@@ -91,6 +89,11 @@ func main() {
 
 			for _, synonym := range entry.Synonyms {
 				localCache.Set(synonym, lookup)
+				nSynonyms++
+			}
+
+			if nLookups%100000 == 0 {
+				log.Info().Int("identifiers", nLookups).Int("synonyms", nSynonyms).Msg("importing data")
 			}
 
 			return nil

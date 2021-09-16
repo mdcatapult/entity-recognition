@@ -2,64 +2,55 @@ package main
 
 import (
 	"encoding/json"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache/remote"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/dict"
 	"os"
 	"time"
 
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache/remote"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/dict"
 )
-
 
 // config structure
 type dictionaryImporterConfig struct {
 	lib.BaseConfig
-	dict.DictConfig
+	Dictionary      dict.DictConfig
 	BackendDatabase cache.Type `mapstructure:"dictionary_backend"`
 	PipelineSize    int        `mapstructure:"pipeline_size"`
 	Redis           remote.RedisConfig
 	Elasticsearch   remote.ElasticsearchConfig
 }
 
-var config dictionaryImporterConfig
-
-func initConfig() {
-	// initialise config with defaults.
-	err := lib.InitializeConfig("./config/dictionary-importer.yml", map[string]interface{}{
-		"log_level":          "info",
-		"dictionary_backend": cache.Redis,
-		"pipeline_size":      10000,
-		"dictionary": map[string]interface{}{
-			"name":   "pubchem_synonyms",
-			"path":   "./dictionaries/pubchem.tsv",
-			"format": dict.PubchemDictionaryFormat,
-		},
-		"redis": map[string]interface{}{
-			"host": "localhost",
-			"port": 6379,
-		},
-		"elasticsearch": map[string]interface{}{
-			"host": "localhost",
-			"port": 9200,
-			"index": "pubchem",
-		},
-	})
-	if err != nil {
-		log.Fatal().Err(err).Send()
-	}
-
-	// unmarshal the viper contents into our config struct
-	err = viper.Unmarshal(&config)
-	if err != nil {
-		log.Fatal().Err(err).Send()
-	}
+var defaultConfig = map[string]interface{}{
+	"log_level":          "info",
+	"dictionary_backend": cache.Redis,
+	"pipeline_size":      10000,
+	"dictionary": map[string]interface{}{
+		"name":   "pubchem_synonyms",
+		"path":   "./dictionaries/pubchem.tsv",
+		"format": dict.PubchemDictionaryFormat,
+	},
+	"redis": map[string]interface{}{
+		"host": "localhost",
+		"port": 6379,
+	},
+	"elasticsearch": map[string]interface{}{
+		"host":  "localhost",
+		"port":  9200,
+		"index": "pubchem",
+	},
 }
 
+var config dictionaryImporterConfig
+
 func main() {
-	initConfig()
+
+	// initialise config with defaults.
+	if err := lib.InitializeConfig("./config/dictionary-importer.yml", defaultConfig, &config); err != nil {
+		log.Fatal().Err(err).Send()
+	}
+
 	// Get a redis client
 	var dbClient remote.Client
 	var err error
@@ -72,27 +63,29 @@ func main() {
 			log.Fatal().Err(err).Send()
 		}
 	default:
-		log.Fatal().Msg("invalid backend database type")
+		log.Fatal().Str("backend database", string(config.BackendDatabase)).Msg("invalid backend database type")
 	}
 
-	dictFile, err := os.Open(config.DictConfig.Path)
+	dictFile, err := os.Open(config.Dictionary.Path)
 	if err != nil {
-		log.Fatal().Err(err).Send()
+		log.Fatal().Str("path", config.Dictionary.Path).Err(err).Send()
 	}
 
-	for !dbClient.Ready() {
-		log.Info().Msg("database is not ready, waiting...")
-		time.Sleep(10 * time.Second)
-	}
-
+	entries := 0
 	pipe := dbClient.NewSetPipeline(config.PipelineSize)
-	nInsertions := 0
 	onEntry := func(entry dict.Entry) error {
-		if err := addToPipe(entry, pipe, &nInsertions); err != nil {
+		entries++
+
+		if entries%50000 == 0 {
+			log.Info().Int("entries", entries).Str("backend", string(config.BackendDatabase)).Msg("importing")
+		}
+
+		if err := addToPipe(entry, pipe); err != nil {
 			return err
 		}
 
 		if pipe.Size() > config.PipelineSize {
+			awaitDB(dbClient)
 			if err := pipe.ExecSet(); err != nil {
 				return err
 			}
@@ -111,29 +104,28 @@ func main() {
 		return nil
 	}
 
-	if err := dict.ReadWithCallback(dictFile, config.DictConfig.Format, onEntry, onEOF); err != nil {
+	if err := dict.ReadWithCallback(dictFile, config.Dictionary.Format, onEntry, onEOF); err != nil {
 		log.Fatal().Err(err).Send()
 	}
 }
 
-func addToPipe(entry dict.Entry, pipe remote.SetPipeline, nInsertions *int) error {
+func addToPipe(entry dict.Entry, pipe remote.SetPipeline) error {
 	// Mid process, some stuff to do
 	switch config.BackendDatabase {
 	case cache.Redis:
 		for _, s := range entry.Synonyms {
 			b, err := json.Marshal(cache.Lookup{
-				Dictionary:  config.DictConfig.Name,
+				Dictionary:  config.Dictionary.Name,
 				Identifiers: entry.Identifiers,
 			})
 			if err != nil {
 				return err
 			}
 			pipe.Set(s, b)
-			*nInsertions++
 		}
 	case cache.Elasticsearch:
 		b, err := json.Marshal(remote.EsLookup{
-			Dictionary:  config.DictConfig.Name,
+			Dictionary:  config.Dictionary.Name,
 			Synonyms:    entry.Synonyms,
 			Identifiers: entry.Identifiers,
 		})
@@ -141,7 +133,13 @@ func addToPipe(entry dict.Entry, pipe remote.SetPipeline, nInsertions *int) erro
 			return err
 		}
 		pipe.Set("", b)
-		*nInsertions++
 	}
 	return nil
+}
+
+func awaitDB(dbClient remote.Client) {
+	for !dbClient.Ready() {
+		log.Info().Msg("database is not ready, waiting...")
+		time.Sleep(5 * time.Second)
+	}
 }
