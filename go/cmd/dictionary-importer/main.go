@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -78,6 +80,15 @@ func main() {
 
 		if entries%50000 == 0 {
 			log.Info().Int("entries", entries).Str("backend", string(config.BackendDatabase)).Msg("importing")
+		}
+
+		for i, synonym := range entry.Synonyms {
+			tokens := strings.Fields(synonym)
+			normalizedTokens := make([]string, len(tokens))
+			for j, token := range tokens {
+				normalizedTokens[j], _, _ = text.NormalizeString(token)
+			}
+			entry.Synonyms[i] = strings.Join(normalizedTokens, " ")
 		}
 
 		if err := addToPipe(entry, pipe); err != nil {

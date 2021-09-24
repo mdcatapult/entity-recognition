@@ -26,7 +26,7 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 		}
 
 		// normalize the token (removes punctuation and enforces NFKC encoding on the utf8 characters).
-		text.Normalize(token)
+		text.NormalizeSnippet(token)
 
 		// For every regexp try to match the token and send the recognised entity if there is a match.
 		for name, re := range r.regexps {

@@ -57,7 +57,7 @@ func getCompoundSnippets(vars *requestVars, snippet *pb.Snippet) []*pb.Snippet {
 
 	// normalise the token (remove enclosing punctuation and enforce NFKC encoding).
 	// sentenceEnd is true if the last byte in the token is one of '.', '?', or '!'.
-	vars.sentenceEnd = text.Normalize(snippet)
+	vars.sentenceEnd = text.NormalizeSnippet(snippet)
 
 	// manage the token history
 	if len(vars.snippetHistory) < config.CompoundTokenLength {

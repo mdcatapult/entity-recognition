@@ -3,6 +3,7 @@ package text
 import (
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"golang.org/x/text/unicode/norm"
+	"strings"
 )
 
 var EnclosingCharacters = map[byte]struct{}{
@@ -54,36 +55,53 @@ func RemoveFirstChar(in string) string {
 	return in[1:]
 }
 
-func Normalize(snippet *pb.Snippet) bool {
+func NormalizeSnippet(snippet *pb.Snippet) bool {
+	if snippet == nil {
+		return false
+	}
+
+	var sentenceEnd bool
+	var offset uint32
+	snippet.Token, sentenceEnd, offset = NormalizeString(snippet.Token)
+	snippet.Offset += offset
+
+	return sentenceEnd
+}
+
+func NormalizeString(token string) (string, bool, uint32) {
+	var offset uint32 = 0
+	var sentenceEnd = false
 
 	// Check length so we dont get a seg fault
-	if snippet == nil || len(snippet.Token) == 0 {
-		return false
-	} else if len(snippet.Token) == 1 {
-		return IsEndSentencePunctuation(snippet.Token[0])
+	if len(token) == 0 {
+		return "", false, 0
+	} else if len(token) == 1 {
+		return token, IsEndSentencePunctuation(token[0]), offset
 	}
 
 	// remove quotes, brackets etc. from start and increase offset if so.
-	if IsEnclosingCharacter(snippet.Token[0]) {
-		snippet.Offset += 1
-		snippet.Token = RemoveFirstChar(snippet.Token)
+	if IsEnclosingCharacter(token[0]) {
+		offset += 1
+		token = RemoveFirstChar(token)
 	}
 
 	// remove quotes, brackets etc. from end
-	if IsEnclosingCharacter(LastChar(snippet.Token)) {
-		snippet.Token = RemoveLastChar(snippet.Token)
+	if IsEnclosingCharacter(LastChar(token)) {
+		token = RemoveLastChar(token)
 	}
 
 	// Remove mid or end sentence punctuation.
-	var sentenceEnd bool
-	if IsMidSentencePunctuation(LastChar(snippet.Token)) {
-		snippet.Token = RemoveLastChar(snippet.Token)
-	} else if IsEndSentencePunctuation(LastChar(snippet.Token)) {
+	if IsMidSentencePunctuation(LastChar(token)) {
+		token = RemoveLastChar(token)
+	} else if IsEndSentencePunctuation(LastChar(token)) {
 		sentenceEnd = true
-		snippet.Token = RemoveLastChar(snippet.Token)
+		token = RemoveLastChar(token)
 	}
 
 	// normalise the bytes to NFKC
-	snippet.Token = norm.NFKC.String(snippet.Token)
-	return sentenceEnd
+	token = norm.NFKC.String(token)
+	token = strings.ToLower(token)
+
+	return token, sentenceEnd, offset
 }
+
