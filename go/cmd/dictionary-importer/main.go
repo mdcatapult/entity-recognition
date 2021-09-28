@@ -84,9 +84,12 @@ func main() {
 
 		for i, synonym := range entry.Synonyms {
 			tokens := strings.Fields(synonym)
-			normalizedTokens := make([]string, len(tokens))
-			for j, token := range tokens {
-				normalizedTokens[j], _, _ = text.NormalizeString(token)
+			var normalizedTokens []string
+			for _, token := range tokens {
+				normalizedToken, _, _ := text.NormalizeAndLowercaseString(token)
+				if len(normalizedToken) > 0 {
+					normalizedTokens = append(normalizedTokens, normalizedToken)
+				}
 			}
 			entry.Synonyms[i] = strings.Join(normalizedTokens, " ")
 		}

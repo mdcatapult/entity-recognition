@@ -1,12 +1,12 @@
 package main
 
 import (
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 	"io"
 	"io/ioutil"
 	"regexp"
 
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 	"gopkg.in/yaml.v2"
 )
 

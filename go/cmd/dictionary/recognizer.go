@@ -47,8 +47,8 @@ func (r *recogniser) newResultHandler(vars *requestVars) func(snippet *pb.Snippe
 	}
 }
 
-func getCompoundSnippets(vars *requestVars, snippet *pb.Snippet) []*pb.Snippet {
-	// If sentenceEnd is true, we can save some redis queries by resetting the token history..
+func getCompoundSnippets(vars *requestVars, snippet *pb.Snippet) ([]*pb.Snippet, bool) {
+	// If sentenceEnd is true, we can save some redis queries by resetting the token history.
 	if vars.sentenceEnd {
 		vars.snippetHistory = []*pb.Snippet{}
 		vars.tokenHistory = []string{}
@@ -57,7 +57,10 @@ func getCompoundSnippets(vars *requestVars, snippet *pb.Snippet) []*pb.Snippet {
 
 	// normalise the token (remove enclosing punctuation and enforce NFKC encoding).
 	// sentenceEnd is true if the last byte in the token is one of '.', '?', or '!'.
-	vars.sentenceEnd = text.NormalizeSnippet(snippet)
+	vars.sentenceEnd = text.NormalizeAndLowercaseSnippet(snippet)
+	if len(snippet.Token) == 0 {
+		return nil, true
+	}
 
 	// manage the token history
 	if len(vars.snippetHistory) < config.CompoundTokenLength {
@@ -76,7 +79,7 @@ func getCompoundSnippets(vars *requestVars, snippet *pb.Snippet) []*pb.Snippet {
 			Offset: historicalToken.GetOffset(),
 		}
 	}
-	return compoundSnippets
+	return compoundSnippets, false
 }
 
 func (r *recogniser) findOrQueueSnippet(vars *requestVars, token *pb.Snippet) error {
@@ -168,7 +171,10 @@ func (r *recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 			return err
 		}
 
-		compoundTokens := getCompoundSnippets(vars, token)
+		compoundTokens, skip := getCompoundSnippets(vars, token)
+		if skip {
+			continue
+		}
 
 		for _, compoundToken := range compoundTokens {
 			if err := r.findOrQueueSnippet(vars, compoundToken); err != nil {

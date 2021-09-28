@@ -34,7 +34,10 @@ func (r *localRecogniser) Recognize(stream pb.Recognizer_RecognizeServer) error 
 			return err
 		}
 
-		compoundTokens := getCompoundSnippets(vars, token)
+		compoundTokens, skip := getCompoundSnippets(vars, token)
+		if skip {
+			continue
+		}
 
 		for _, compoundToken := range compoundTokens {
 			if lookup := r.localCache.Get(compoundToken.GetToken()); lookup != nil {
