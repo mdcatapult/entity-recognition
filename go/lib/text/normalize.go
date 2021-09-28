@@ -54,9 +54,7 @@ func NormalizeSnippet(snippet *pb.Snippet) bool {
 	return sentenceEnd
 }
 
-func NormalizeString(token string) (string, bool, uint32) {
-	var offset uint32 = 0
-	var sentenceEnd = false
+func NormalizeString(token string) (normalizedToken string, sentenceEnd bool, offset uint32) {
 
 	// Check length so we dont get a seg fault
 	if len(token) == 0 {
@@ -79,7 +77,7 @@ func NormalizeString(token string) (string, bool, uint32) {
 
 	// normalise the bytes to NFKC
 	token = norm.NFKC.String(token)
-	token = strings.ToLower(token)
+	normalizedToken = strings.ToLower(token)
 
-	return token, sentenceEnd, offset
+	return normalizedToken, sentenceEnd, offset
 }
