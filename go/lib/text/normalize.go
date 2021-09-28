@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-var EnclosingCharacters = map[byte]struct{}{
+var TokenDelimiters = map[byte]struct{}{
 	'(': {},
 	')': {},
 	'{': {},
@@ -14,32 +14,17 @@ var EnclosingCharacters = map[byte]struct{}{
 	'[': {},
 	']': {},
 	'"': {},
-}
-
-var MidSentencePunctuation = map[byte]struct{}{
+	'\'': {},
 	':': {},
 	';': {},
 	',': {},
-}
-
-var EndSentencePunctuation = map[byte]struct{}{
 	'.': {},
 	'?': {},
 	'!': {},
 }
 
-func IsEndSentencePunctuation(b byte) bool {
-	_, ok := EndSentencePunctuation[b]
-	return ok
-}
-
-func IsMidSentencePunctuation(b byte) bool {
-	_, ok := MidSentencePunctuation[b]
-	return ok
-}
-
-func IsEnclosingCharacter(b byte) bool {
-	_, ok := EnclosingCharacters[b]
+func IsTokenDelimiter(b byte) bool {
+	_, ok := TokenDelimiters[b]
 	return ok
 }
 
@@ -76,26 +61,19 @@ func NormalizeString(token string) (string, bool, uint32) {
 	if len(token) == 0 {
 		return "", false, 0
 	} else if len(token) == 1 {
-		return token, IsEndSentencePunctuation(token[0]), offset
+		return "", IsTokenDelimiter(token[0]), offset
 	}
 
 	// remove quotes, brackets etc. from start and increase offset if so.
-	if IsEnclosingCharacter(token[0]) {
+	if IsTokenDelimiter(token[0]) {
 		offset += 1
 		token = RemoveFirstChar(token)
 	}
 
 	// remove quotes, brackets etc. from end
-	if IsEnclosingCharacter(LastChar(token)) {
+	if IsTokenDelimiter(LastChar(token)) {
 		token = RemoveLastChar(token)
-	}
-
-	// Remove mid or end sentence punctuation.
-	if IsMidSentencePunctuation(LastChar(token)) {
-		token = RemoveLastChar(token)
-	} else if IsEndSentencePunctuation(LastChar(token)) {
 		sentenceEnd = true
-		token = RemoveLastChar(token)
 	}
 
 	// normalise the bytes to NFKC
