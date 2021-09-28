@@ -1,26 +1,27 @@
 package text
 
 import (
+	"strings"
+
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"golang.org/x/text/unicode/norm"
-	"strings"
 )
 
 var TokenDelimiters = map[byte]struct{}{
-	'(': {},
-	')': {},
-	'{': {},
-	'}': {},
-	'[': {},
-	']': {},
-	'"': {},
+	'(':  {},
+	')':  {},
+	'{':  {},
+	'}':  {},
+	'[':  {},
+	']':  {},
+	'"':  {},
 	'\'': {},
-	':': {},
-	';': {},
-	',': {},
-	'.': {},
-	'?': {},
-	'!': {},
+	':':  {},
+	';':  {},
+	',':  {},
+	'.':  {},
+	'?':  {},
+	'!':  {},
 }
 
 func IsTokenDelimiter(b byte) bool {
@@ -82,4 +83,3 @@ func NormalizeString(token string) (string, bool, uint32) {
 
 	return token, sentenceEnd, offset
 }
-

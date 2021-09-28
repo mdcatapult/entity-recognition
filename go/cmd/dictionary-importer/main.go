@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 	"os"
 	"strings"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache/remote"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/dict"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 )
 
 // config structure
