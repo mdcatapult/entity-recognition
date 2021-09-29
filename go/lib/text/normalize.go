@@ -1,44 +1,31 @@
 package text
 
 import (
+	"strings"
+
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"golang.org/x/text/unicode/norm"
 )
 
-var EnclosingCharacters = map[byte]struct{}{
-	'(': {},
-	')': {},
-	'{': {},
-	'}': {},
-	'[': {},
-	']': {},
-	'"': {},
+var TokenDelimiters = map[byte]struct{}{
+	'(':  {},
+	')':  {},
+	'{':  {},
+	'}':  {},
+	'[':  {},
+	']':  {},
+	'"':  {},
+	'\'': {},
+	':':  {},
+	';':  {},
+	',':  {},
+	'.':  {},
+	'?':  {},
+	'!':  {},
 }
 
-var MidSentencePunctuation = map[byte]struct{}{
-	':': {},
-	';': {},
-	',': {},
-}
-
-var EndSentencePunctuation = map[byte]struct{}{
-	'.': {},
-	'?': {},
-	'!': {},
-}
-
-func IsEndSentencePunctuation(b byte) bool {
-	_, ok := EndSentencePunctuation[b]
-	return ok
-}
-
-func IsMidSentencePunctuation(b byte) bool {
-	_, ok := MidSentencePunctuation[b]
-	return ok
-}
-
-func IsEnclosingCharacter(b byte) bool {
-	_, ok := EnclosingCharacters[b]
+func IsTokenDelimiter(b byte) bool {
+	_, ok := TokenDelimiters[b]
 	return ok
 }
 
@@ -54,36 +41,43 @@ func RemoveFirstChar(in string) string {
 	return in[1:]
 }
 
-func Normalize(snippet *pb.Snippet) bool {
+func NormalizeSnippet(snippet *pb.Snippet) bool {
+	if snippet == nil {
+		return false
+	}
+
+	var sentenceEnd bool
+	var offset uint32
+	snippet.Token, sentenceEnd, offset = NormalizeString(snippet.Token)
+	snippet.Offset += offset
+
+	return sentenceEnd
+}
+
+func NormalizeString(token string) (normalizedToken string, sentenceEnd bool, offset uint32) {
 
 	// Check length so we dont get a seg fault
-	if snippet == nil || len(snippet.Token) == 0 {
-		return false
-	} else if len(snippet.Token) == 1 {
-		return IsEndSentencePunctuation(snippet.Token[0])
+	if len(token) == 0 {
+		return "", false, 0
+	} else if len(token) == 1 {
+		return "", IsTokenDelimiter(token[0]), offset
 	}
 
 	// remove quotes, brackets etc. from start and increase offset if so.
-	if IsEnclosingCharacter(snippet.Token[0]) {
-		snippet.Offset += 1
-		snippet.Token = RemoveFirstChar(snippet.Token)
+	if IsTokenDelimiter(token[0]) {
+		offset += 1
+		token = RemoveFirstChar(token)
 	}
 
 	// remove quotes, brackets etc. from end
-	if IsEnclosingCharacter(LastChar(snippet.Token)) {
-		snippet.Token = RemoveLastChar(snippet.Token)
-	}
-
-	// Remove mid or end sentence punctuation.
-	var sentenceEnd bool
-	if IsMidSentencePunctuation(LastChar(snippet.Token)) {
-		snippet.Token = RemoveLastChar(snippet.Token)
-	} else if IsEndSentencePunctuation(LastChar(snippet.Token)) {
+	if IsTokenDelimiter(LastChar(token)) {
+		token = RemoveLastChar(token)
 		sentenceEnd = true
-		snippet.Token = RemoveLastChar(snippet.Token)
 	}
 
 	// normalise the bytes to NFKC
-	snippet.Token = norm.NFKC.String(snippet.Token)
-	return sentenceEnd
+	token = norm.NFKC.String(token)
+	normalizedToken = strings.ToLower(token)
+
+	return normalizedToken, sentenceEnd, offset
 }
