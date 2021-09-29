@@ -37,7 +37,7 @@ func (s *RecognizerSuite) Test_recognizer_Recognize() {
 	mockStream, snippets := testhelpers.NewMockRecognizeServerStream("hello", "my", "name", "is", "jeff")
 	v := &requestVars{}
 	for i, snippet := range snippets {
-		compoundTokens := getCompoundSnippets(v, snippet)
+		compoundTokens, _ := getCompoundSnippets(v, snippet)
 		mockGetPipeline.On("Size").Return(i).Once()
 		for _, token := range compoundTokens {
 			mockGetPipeline.On("Get", token).Once()
@@ -247,7 +247,7 @@ func (s *RecognizerSuite) Test_recogniser_getCompoundTokens() {
 	}
 	for _, tt := range tests {
 		s.T().Log(tt.name)
-		got := getCompoundSnippets(tt.args.vars, tt.args.token)
+		got, _ := getCompoundSnippets(tt.args.vars, tt.args.token)
 		s.ElementsMatch(tt.want, got)
 		s.ElementsMatch(tt.args.vars.snippetHistory, tt.wantVars.snippetHistory)
 		s.ElementsMatch(tt.args.vars.tokenHistory, tt.wantVars.tokenHistory)

@@ -7,7 +7,7 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
-var TokenDelimiters = map[byte]byte{
+var EnclosingCharacters = map[byte]byte{
 	'(':  ')',
 	')':  '(',
 	'{':  '}',
@@ -22,6 +22,17 @@ var TokenDelimiters = map[byte]byte{
 	'.':  0,
 	'?':  0,
 	'!':  0,
+}
+
+var TokenDelimiters = map[byte]struct{}{
+	')': {},
+	']': {},
+	'}': {},
+	'?': {},
+	'!': {},
+	'.': {},
+	':': {},
+	';': {},
 }
 
 func LastChar(in string) byte {
@@ -66,12 +77,13 @@ func NormalizeString(token string) (normalizedToken string, sentenceEnd bool, of
 	// Check length so we dont get a seg fault
 	if len(token) == 0 {
 		return "", false, 0
-	} else if _, ok := TokenDelimiters[token[0]]; ok && len(token) == 1 {
-		return "", true, offset
+	} else if _, ok := EnclosingCharacters[token[0]]; ok && len(token) == 1 {
+		_, ok := TokenDelimiters[token[0]]
+		return "", ok, offset
 	}
 
 	// remove quotes, brackets etc. from start and increase offset if so.
-	if counterpart, ok := TokenDelimiters[token[0]]; ok {
+	if counterpart, ok := EnclosingCharacters[token[0]]; ok {
 		removeLastChar := false
 		removeFirstChar := true
 		if counterpart != 0 {
@@ -97,7 +109,7 @@ func NormalizeString(token string) (normalizedToken string, sentenceEnd bool, of
 	}
 
 	// remove quotes, brackets etc. from end
-	if counterpart, ok := TokenDelimiters[LastChar(token)]; ok {
+	if counterpart, ok := EnclosingCharacters[LastChar(token)]; ok {
 		removeLastChar := true
 		if counterpart != 0 {
 			for _, b := range token {
@@ -108,8 +120,8 @@ func NormalizeString(token string) (normalizedToken string, sentenceEnd bool, of
 			}
 		}
 		if removeLastChar {
+			_, sentenceEnd = TokenDelimiters[LastChar(token)]
 			token = RemoveLastChar(token)
-			sentenceEnd = true
 		}
 	}
 
