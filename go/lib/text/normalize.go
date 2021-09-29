@@ -83,6 +83,8 @@ func NormalizeString(token string) (normalizedToken string, compoundTokenEnd boo
 	}
 
 	// remove quotes, brackets etc. from start and increase offset if so.
+	// If we find the counterpart character (e.g. "]" being the counterpart of "[")
+	// within the token, we don't remove it.
 	if counterpart, ok := EnclosingCharacters[token[0]]; ok {
 		removeLastChar := false
 		removeFirstChar := true
