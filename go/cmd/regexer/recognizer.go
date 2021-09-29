@@ -1,13 +1,13 @@
 package main
 
 import (
-	"github.com/rs/zerolog/log"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 	"io"
 	"io/ioutil"
 	"regexp"
 
+	"github.com/rs/zerolog/log"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 	"gopkg.in/yaml.v2"
 )
 
@@ -52,7 +52,7 @@ func getRegexps() (map[string]*regexp.Regexp, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var regexpStringMap map[string]string
 	if err := yaml.Unmarshal(b, &regexpStringMap); err != nil {
 		return nil, err
