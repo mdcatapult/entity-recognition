@@ -181,17 +181,15 @@ func (s *RecognizerSuite) Test_recogniser_getCompoundTokens() {
 			name: "end of sentence (for last token)",
 			args: args{
 				vars: &requestVars{
-					snippetHistory: testhelpers.Snips("got", "stuff", "in", "it."),
-					tokenHistory:   []string{"got", "stuff", "in", "it."},
-					sentenceEnd:    true,
+					snippetHistory:   []*pb.Snippet{},
+					tokenHistory:     []string{},
 				},
 				token: testhelpers.Snip("Hello", 0),
 			},
 			want: testhelpers.Snips("hello"),
 			wantVars: &requestVars{
-				snippetHistory: testhelpers.Snips("hello"),
-				tokenHistory:   []string{"hello"},
-				sentenceEnd:    false,
+				snippetHistory:   testhelpers.Snips("hello"),
+				tokenHistory:     []string{"hello"},
 			},
 		},
 		{
@@ -205,9 +203,8 @@ func (s *RecognizerSuite) Test_recogniser_getCompoundTokens() {
 			},
 			want: testhelpers.Snips("hello", "got hello"),
 			wantVars: &requestVars{
-				snippetHistory: testhelpers.Snips("got", "hello"),
-				tokenHistory:   []string{"got", "hello"},
-				sentenceEnd:    true,
+				snippetHistory:   []*pb.Snippet{},
+				tokenHistory:     []string{},
 			},
 		},
 		{
@@ -251,6 +248,5 @@ func (s *RecognizerSuite) Test_recogniser_getCompoundTokens() {
 		s.ElementsMatch(tt.want, got)
 		s.ElementsMatch(tt.args.vars.snippetHistory, tt.wantVars.snippetHistory)
 		s.ElementsMatch(tt.args.vars.tokenHistory, tt.wantVars.tokenHistory)
-		s.Equal(tt.args.vars.sentenceEnd, tt.wantVars.sentenceEnd)
 	}
 }

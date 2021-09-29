@@ -12,9 +12,7 @@ import (
 var disallowedNodes = map[string]struct{}{
 	"area":     {},
 	"audio":    {},
-	"body":     {},
 	"head":     {},
-	"html":     {},
 	"link":     {},
 	"meta":     {},
 	"noscript": {},

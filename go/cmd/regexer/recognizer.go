@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/rs/zerolog/log"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 	"io"
 	"io/ioutil"
@@ -16,6 +17,7 @@ type recogniser struct {
 }
 
 func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
+	log.Info().Msg("received request")
 	// listen for tokens
 	for {
 		token, err := stream.Recv()

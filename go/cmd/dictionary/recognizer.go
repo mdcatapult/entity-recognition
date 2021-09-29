@@ -21,7 +21,6 @@ type requestVars struct {
 	tokenCacheMisses []*pb.Snippet
 	snippetHistory   []*pb.Snippet
 	tokenHistory     []string
-	sentenceEnd      bool
 	stream           pb.Recognizer_RecognizeServer
 	pipe             remote.GetPipeline
 }
@@ -47,17 +46,10 @@ func (r *recogniser) newResultHandler(vars *requestVars) func(snippet *pb.Snippe
 	}
 }
 
-func getCompoundSnippets(vars *requestVars, snippet *pb.Snippet) ([]*pb.Snippet, bool) {
-	// If sentenceEnd is true, we can save some redis queries by resetting the token history.
-	if vars.sentenceEnd {
-		vars.snippetHistory = []*pb.Snippet{}
-		vars.tokenHistory = []string{}
-		vars.sentenceEnd = false
-	}
-
+func getCompoundSnippets(vars *requestVars, snippet *pb.Snippet) (snippets []*pb.Snippet, skipToken bool) {
 	// normalise the token (remove enclosing punctuation and enforce NFKC encoding).
-	// sentenceEnd is true if the last byte in the token is one of '.', '?', or '!'.
-	vars.sentenceEnd = text.NormalizeAndLowercaseSnippet(snippet)
+	// compoundTokenEnd is true if the last byte in the token is one of '.', '?', or '!'.
+	compoundTokenEnd := text.NormalizeAndLowercaseSnippet(snippet)
 	if len(snippet.Token) == 0 {
 		return nil, true
 	}
@@ -72,14 +64,21 @@ func getCompoundSnippets(vars *requestVars, snippet *pb.Snippet) ([]*pb.Snippet,
 	}
 
 	// construct the compound tokens to query against redis.
-	compoundSnippets := make([]*pb.Snippet, len(vars.snippetHistory))
+	snippets = make([]*pb.Snippet, len(vars.snippetHistory))
 	for i, historicalToken := range vars.snippetHistory {
-		compoundSnippets[i] = &pb.Snippet{
+		snippets[i] = &pb.Snippet{
 			Token:  strings.Join(vars.tokenHistory[i:], " "),
 			Offset: historicalToken.GetOffset(),
 		}
 	}
-	return compoundSnippets, false
+
+	// If compoundTokenEnd is true, we can save some redis queries by resetting the token history.
+	if compoundTokenEnd {
+		vars.snippetHistory = []*pb.Snippet{}
+		vars.tokenHistory = []string{}
+	}
+
+	return snippets, false
 }
 
 func (r *recogniser) findOrQueueSnippet(vars *requestVars, token *pb.Snippet) error {
@@ -120,7 +119,6 @@ func (r *recogniser) initializeRequest(stream pb.Recognizer_RecognizeServer) *re
 		tokenCacheMisses: make([]*pb.Snippet, config.PipelineSize),
 		snippetHistory:   []*pb.Snippet{},
 		tokenHistory:     []string{},
-		sentenceEnd:      false,
 		stream:           stream,
 		pipe:             r.remoteCache.NewGetPipeline(config.PipelineSize),
 	}

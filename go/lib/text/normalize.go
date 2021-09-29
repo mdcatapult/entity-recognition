@@ -48,9 +48,9 @@ func RemoveFirstChar(in string) string {
 }
 
 func NormalizeAndLowercaseSnippet(snippet *pb.Snippet) bool {
-	sentenceEnd := NormalizeSnippet(snippet)
+	compoundTokenEnd := NormalizeSnippet(snippet)
 	snippet.Token = strings.ToLower(snippet.Token)
-	return sentenceEnd
+	return compoundTokenEnd
 }
 
 func NormalizeSnippet(snippet *pb.Snippet) bool {
@@ -58,21 +58,21 @@ func NormalizeSnippet(snippet *pb.Snippet) bool {
 		return false
 	}
 
-	var sentenceEnd bool
+	var compoundTokenEnd bool
 	var offset uint32
-	snippet.Token, sentenceEnd, offset = NormalizeString(snippet.Token)
+	snippet.Token, compoundTokenEnd, offset = NormalizeString(snippet.Token)
 	snippet.Offset += offset
 
-	return sentenceEnd
+	return compoundTokenEnd
 }
 
-func NormalizeAndLowercaseString(token string) (normalizedToken string, sentenceEnd bool, offset uint32) {
-	normalizedToken, sentenceEnd, offset = NormalizeString(token)
+func NormalizeAndLowercaseString(token string) (normalizedToken string, compoundTokenEnd bool, offset uint32) {
+	normalizedToken, compoundTokenEnd, offset = NormalizeString(token)
 	normalizedToken = strings.ToLower(normalizedToken)
 	return
 }
 
-func NormalizeString(token string) (normalizedToken string, sentenceEnd bool, offset uint32) {
+func NormalizeString(token string) (normalizedToken string, compoundTokenEnd bool, offset uint32) {
 
 	// Check length so we dont get a seg fault
 	if len(token) == 0 {
@@ -120,7 +120,7 @@ func NormalizeString(token string) (normalizedToken string, sentenceEnd bool, of
 			}
 		}
 		if removeLastChar {
-			_, sentenceEnd = TokenDelimiters[LastChar(token)]
+			_, compoundTokenEnd = TokenDelimiters[LastChar(token)]
 			token = RemoveLastChar(token)
 		}
 	}
@@ -128,5 +128,5 @@ func NormalizeString(token string) (normalizedToken string, sentenceEnd bool, of
 	// normalise the bytes to NFKC
 	normalizedToken = norm.NFKC.String(token)
 
-	return normalizedToken, sentenceEnd, offset
+	return normalizedToken, compoundTokenEnd, offset
 }
