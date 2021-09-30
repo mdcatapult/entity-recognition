@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNormalizeString(t *testing.T) {
+func TestNormalizeAndLowercaseString(t *testing.T) {
 	tests := []struct {
 		name                string
 		inputToken          string
@@ -56,13 +56,41 @@ func TestNormalizeString(t *testing.T) {
 			expectedSentenceEnd: false,
 			expectedOffset:      0,
 		},
+		{
+			name: "starts with enclosing character and contains its counterpart",
+			inputToken: "(a)-hydroxycarbamide",
+			expectedToken: "(a)-hydroxycarbamide",
+			expectedSentenceEnd: false,
+			expectedOffset: 0,
+		},
+		{
+			name: "starts with enclosing character and ends with its counterpart",
+			inputToken: "'hello'",
+			expectedToken: "hello",
+			expectedSentenceEnd: false,
+			expectedOffset: 1,
+		},
+		{
+			name: "ends with enclosing character and contains its counterpart",
+			inputToken: "hydroxycarbamide-(a)",
+			expectedToken: "hydroxycarbamide-(a)",
+			expectedSentenceEnd: false,
+			expectedOffset: 0,
+		},
+		{
+			name: "ends with enclosing character that is not a token delimiter",
+			inputToken: "hello,",
+			expectedToken: "hello",
+			expectedSentenceEnd: false,
+			expectedOffset: 0,
+		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			actualToken, actualSentenceEnd, actualOffset := NormalizeString(tt.inputToken)
-			assert.Equal(t, tt.expectedToken, actualToken)
-			assert.Equal(t, tt.expectedSentenceEnd, actualSentenceEnd)
-			assert.Equal(t, tt.expectedOffset, actualOffset)
-		})
+		t.Log(tt.name)
+
+		actualToken, actualSentenceEnd, actualOffset := NormalizeAndLowercaseString(tt.inputToken)
+		assert.Equal(t, tt.expectedToken, actualToken)
+		assert.Equal(t, tt.expectedSentenceEnd, actualSentenceEnd)
+		assert.Equal(t, tt.expectedOffset, actualOffset)
 	}
 }

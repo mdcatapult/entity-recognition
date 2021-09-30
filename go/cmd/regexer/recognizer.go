@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"regexp"
 
+	"github.com/rs/zerolog/log"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 	"gopkg.in/yaml.v2"
@@ -16,6 +17,7 @@ type recogniser struct {
 }
 
 func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
+	log.Info().Msg("received request")
 	// listen for tokens
 	for {
 		token, err := stream.Recv()
@@ -50,7 +52,7 @@ func getRegexps() (map[string]*regexp.Regexp, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var regexpStringMap map[string]string
 	if err := yaml.Unmarshal(b, &regexpStringMap); err != nil {
 		return nil, err

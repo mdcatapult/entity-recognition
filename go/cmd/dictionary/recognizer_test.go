@@ -37,7 +37,7 @@ func (s *RecognizerSuite) Test_recognizer_Recognize() {
 	mockStream, snippets := testhelpers.NewMockRecognizeServerStream("hello", "my", "name", "is", "jeff")
 	v := &requestVars{}
 	for i, snippet := range snippets {
-		compoundTokens := getCompoundSnippets(v, snippet)
+		compoundTokens, _ := getCompoundSnippets(v, snippet)
 		mockGetPipeline.On("Size").Return(i).Once()
 		for _, token := range compoundTokens {
 			mockGetPipeline.On("Get", token).Once()
@@ -181,17 +181,15 @@ func (s *RecognizerSuite) Test_recogniser_getCompoundTokens() {
 			name: "end of sentence (for last token)",
 			args: args{
 				vars: &requestVars{
-					snippetHistory: testhelpers.Snips("got", "stuff", "in", "it."),
-					tokenHistory:   []string{"got", "stuff", "in", "it."},
-					sentenceEnd:    true,
+					snippetHistory:   []*pb.Snippet{},
+					tokenHistory:     []string{},
 				},
 				token: testhelpers.Snip("Hello", 0),
 			},
 			want: testhelpers.Snips("hello"),
 			wantVars: &requestVars{
-				snippetHistory: testhelpers.Snips("hello"),
-				tokenHistory:   []string{"hello"},
-				sentenceEnd:    false,
+				snippetHistory:   testhelpers.Snips("hello"),
+				tokenHistory:     []string{"hello"},
 			},
 		},
 		{
@@ -205,9 +203,8 @@ func (s *RecognizerSuite) Test_recogniser_getCompoundTokens() {
 			},
 			want: testhelpers.Snips("hello", "got hello"),
 			wantVars: &requestVars{
-				snippetHistory: testhelpers.Snips("got", "hello"),
-				tokenHistory:   []string{"got", "hello"},
-				sentenceEnd:    true,
+				snippetHistory:   []*pb.Snippet{},
+				tokenHistory:     []string{},
 			},
 		},
 		{
@@ -247,10 +244,9 @@ func (s *RecognizerSuite) Test_recogniser_getCompoundTokens() {
 	}
 	for _, tt := range tests {
 		s.T().Log(tt.name)
-		got := getCompoundSnippets(tt.args.vars, tt.args.token)
+		got, _ := getCompoundSnippets(tt.args.vars, tt.args.token)
 		s.ElementsMatch(tt.want, got)
 		s.ElementsMatch(tt.args.vars.snippetHistory, tt.wantVars.snippetHistory)
 		s.ElementsMatch(tt.args.vars.tokenHistory, tt.wantVars.tokenHistory)
-		s.Equal(tt.args.vars.sentenceEnd, tt.wantVars.sentenceEnd)
 	}
 }
