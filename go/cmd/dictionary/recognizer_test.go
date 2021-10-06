@@ -34,7 +34,8 @@ func (s *RecognizerSuite) Test_recognizer_Recognize() {
 	s.remoteCache = mockDBClient
 	mockGetPipeline := &mocks.GetPipeline{}
 	mockDBClient.On("NewGetPipeline", testConfig.PipelineSize).Return(mockGetPipeline).Times(2)
-	mockStream, snippets := testhelpers.NewMockRecognizeServerStream("hello", "my", "name", "is", "jeff")
+	snippets := testhelpers.Snips("hello", "my", "name", "is", "jeff")
+	mockStream := testhelpers.NewMockRecognizeServerStream(snippets...)
 	v := &requestVars{}
 	for i, snippet := range snippets {
 		compoundTokens, _ := getCompoundSnippets(v, snippet)
@@ -59,7 +60,7 @@ func (s *RecognizerSuite) Test_recogniser_queryToken() {
 	s.remoteCache = mockDBClient
 	mockGetPipeline := &mocks.GetPipeline{}
 	mockDBClient.On("NewGetPipeline", testConfig.PipelineSize).Return(mockGetPipeline).Once()
-	mockStream, _ := testhelpers.NewMockRecognizeServerStream("hello", "my", "name", "is", "jeff")
+	mockStream := testhelpers.NewMockRecognizeServerStream(testhelpers.Snips("hello", "my", "name", "is", "jeff")...)
 	notInDB := &pb.Snippet{
 		Token: "not in db",
 	}

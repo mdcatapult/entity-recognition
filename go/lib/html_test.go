@@ -2,32 +2,66 @@ package lib
 
 import (
 	"bytes"
+	"github.com/stretchr/testify/assert"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"io"
 	"testing"
 )
 
+
+
 func TestHtmlToText(t *testing.T) {
 	type args struct {
-		r         io.Reader
-		onSnippet func(snippet *pb.Snippet) error
+		r io.Reader
 	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name  string
+		args  args
+		want    []*pb.Snippet
+		wantErr error
 	}{
 		{
-			name: "",
+			name: "empty body",
 			args: args{
 				r: bytes.NewBufferString(""),
-				onSnippet: func(snippet *pb.Snippet) error {
-
+			},
+			want: []*pb.Snippet{},
+			wantErr: nil,
+		},
+		{
+			name: "includes break",
+			args: args{
+				r: bytes.NewBufferString("  <body>  x<sup>2</sup> <strike>hello</strike><br/>dave</body>"),
+			},
+			want: []*pb.Snippet{
+				{
+					Token: "    x2 hello\n",
+					Offset: 10,
+				},
+				{
+					Token: "dave",
+					Offset: 53,
 				},
 			},
+			wantErr: nil,
 		},
 	}
 	for _, tt := range tests {
-
+		i := 0
+		gotSnips, gotErrs := HtmlToText(tt.args.r)
+		Loop:
+			for {
+				select {
+				case s := <-gotSnips:
+					if i >= len(tt.want) {
+						t.FailNow()
+					}
+					assert.EqualValues(t, tt.want[i], s)
+					i++
+				case err := <-gotErrs:
+					assert.Equal(t, tt.wantErr, err)
+					break Loop
+				}
+			}
 	}
 }
