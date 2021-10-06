@@ -83,11 +83,20 @@ func (s *htmlStack) pop() {
 	s.Remove(e)
 }
 
-// HtmlToText Uses the html parser from the golang standard lib to get sequential
+func HtmlToTextWithCallback()
+
+// HtmlToText is a convenience function so that the caller doesn't need to instantiate
+// a channel.
+func HtmlToText(r io.Reader) (<-chan *pb.Snippet, error) {
+	var snips chan *pb.Snippet
+	return snips, htmlToText(r, snips)
+}
+
+// htmlToText Uses the html parser from the golang standard lib to get sequential
 // tokens. We keep track of the current html tag so we know whether to include the
-// text or not. When we reach an end tag (i.e. </p>), call onSnippet on the contents
-// of the buffer. Additionally, add line breaks where appropriate.
-func HtmlToText(r io.Reader, onSnippet func(snippet *pb.Snippet) error) error {
+// text or not. When we reach an end tag (i.e. </p>), send the snippet to the snips
+// channel. Additionally, add line breaks where appropriate.
+func htmlToText(r io.Reader, snips chan *pb.Snippet) error {
 	htmlTokenizer := html.NewTokenizer(r)
 	var position uint32
 	var stack htmlStack
@@ -121,11 +130,9 @@ Loop:
 				if err != nil && err != io.EOF {
 					return err
 				}
-				if err = onSnippet(&pb.Snippet{
+				snips <- &pb.Snippet{
 					Token:  string(bufferBytes),
 					Offset: stack.top().start,
-				}); err != nil {
-					return err
 				}
 			}
 			position += uint32(len(html.UnescapeString(string(htmlTokenBytes))))
