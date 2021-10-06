@@ -74,17 +74,6 @@ func (s *htmlStack) push(tag htmlTag) {
 	}
 }
 
-func (s *htmlStack) top() htmlTag {
-	if s.List == nil {
-		s.List = list.New()
-	}
-	e := s.Front()
-	if e == nil {
-		return htmlTag{}
-	}
-	return e.Value.(htmlTag)
-}
-
 func (s *htmlStack) pop() {
 	e := s.Front()
 	if s.disallowed && s.Len() == s.disallowedDepth {
@@ -237,7 +226,6 @@ Loop:
 		errs <- err
 	}
 	errs <- nil
-	return
 }
 
 // StripLeft returns a byte slice equal to the given byte slice with all leading whitespace characters removed,
