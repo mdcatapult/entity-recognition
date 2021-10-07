@@ -45,6 +45,19 @@ func TestHtmlToText(t *testing.T) {
 			},
 			wantErr: nil,
 		},
+		{
+			name: "only sends snippets at specific line break nodes",
+			args: args {
+				r: bytes.NewBufferString("<p>acetyl<emph>car</emph>nitine</p>"),
+			},
+			want: []*pb.Snippet{
+				{
+					Token: "acetylcarnitine\n",
+					Offset: 3,
+				},
+			},
+			wantErr: nil,
+		},
 	}
 	for _, tt := range tests {
 		i := 0
