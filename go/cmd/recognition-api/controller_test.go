@@ -95,9 +95,14 @@ func (s *ControllerSuite) Test_controller_TokenizeHTML() {
 }
 
 func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
-	testhelpers.UseOffsets()
-	defer testhelpers.DoNotUseOffsets()
-	mockRecognizer_RecognizeClient, _ := testhelpers.NewMockRecognizeClientStream("hello", "my", "name", "is", "jeff")
+	buf := bytes.NewBuffer([]byte("<p>hello my name is jeff</p>"))
+	mockRecognizer_RecognizeClient := testhelpers.NewMockRecognizeClientStream(
+		testhelpers.Snip("hello", 3),
+		testhelpers.Snip("my", 9),
+		testhelpers.Snip("name", 12),
+		testhelpers.Snip("is", 17),
+		testhelpers.Snip("jeff", 20),
+	)
 	foundEntity := &pb.RecognizedEntity{
 		Entity:      "found entity",
 		Position:    2312,
@@ -111,7 +116,6 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 	mockRecognizerClient.On("Recognize", mock.AnythingOfType("*context.emptyCtx")).Return(mockRecognizer_RecognizeClient, nil).Once()
 	s.controller.clients = []pb.RecognizerClient{mockRecognizerClient}
 
-	buf := bytes.NewBuffer([]byte("<p>hello my name is jeff</p>"))
 	type args struct {
 		reader io.Reader
 	}

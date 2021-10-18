@@ -20,7 +20,7 @@ func (c controller) HTMLToText(reader io.Reader) ([]byte, error) {
 		data = append(data, snippet.GetToken()...)
 		return nil
 	}
-	if err := lib.HtmlToText(reader, onSnippet); err != nil {
+	if err := lib.HtmlToTextWithCallback(reader, onSnippet); err != nil {
 		return nil, err
 	}
 
@@ -33,13 +33,16 @@ func (c controller) TokenizeHTML(reader io.Reader) ([]*pb.Snippet, error) {
 	var tokens []*pb.Snippet
 	onSnippet := func(snippet *pb.Snippet) error {
 		return text.Tokenize(snippet, func(snippet *pb.Snippet) error {
-			tokens = append(tokens, snippet)
+			text.NormalizeSnippet(snippet)
+			if len(snippet.Token) > 0 {
+				tokens = append(tokens, snippet)
+			}
 			return nil
 		})
 	}
 
 	// Call htmlToText with our callback
-	if err := lib.HtmlToText(reader, onSnippet); err != nil {
+	if err := lib.HtmlToTextWithCallback(reader, onSnippet); err != nil {
 		return nil, err
 	}
 
@@ -96,7 +99,7 @@ func (c controller) RecognizeInHTML(reader io.Reader) ([]*pb.RecognizedEntity, e
 		})
 	}
 
-	if err := lib.HtmlToText(reader, onSnippet); err != nil {
+	if err := lib.HtmlToTextWithCallback(reader, onSnippet); err != nil {
 		return nil, err
 	}
 
