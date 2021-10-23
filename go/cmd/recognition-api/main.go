@@ -25,8 +25,7 @@ type recognitionAPIConfig struct {
 	} `mapstructure:"grpc_recognisers"`
 	HttpRecognisers map[string]struct{
 		Type string
-		Host string
-		Port int
+		Url string
 	} `mapstructure:"http_recognisers"`
 }
 

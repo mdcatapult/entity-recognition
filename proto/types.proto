@@ -10,7 +10,8 @@ message Snippet {
 message RecognizedEntity {
     string entity = 1;
     uint32 position = 2;
-    string dictionary = 3;
-    map<string,string> identifiers = 4;
-    bytes metadata = 5;
+    string xpath = 3;
+    string dictionary = 4;
+    map<string,string> identifiers = 5;
+    bytes metadata = 6;
 }
