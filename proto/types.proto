@@ -4,6 +4,7 @@ option go_package = "gitlab.mdcatapult.io/software-engineering/entity-recognitio
 message Snippet {
     string token = 1;
     uint32 offset = 2;
+    string xpath = 3;
 }
 
 message RecognizedEntity {
@@ -11,5 +12,5 @@ message RecognizedEntity {
     uint32 position = 2;
     string dictionary = 3;
     map<string,string> identifiers = 4;
-    map<string,string> metadata = 5;
+    bytes metadata = 5;
 }

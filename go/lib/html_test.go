@@ -78,3 +78,46 @@ func TestHtmlToText(t *testing.T) {
 			}
 	}
 }
+
+func Test_htmlStack_xpath(t *testing.T) {
+	testStack := func(tags ...*htmlTag) htmlStack {
+		stack := htmlStack{}
+		for _, tag := range tags {
+			stack.push(tag)
+		}
+		return stack
+	}
+	tests := []struct {
+		stack htmlStack
+		expected   string
+	}{
+		{
+			expected: "/html/body/main/article/*[1]",
+			stack: testStack(&htmlTag{
+				name:     "html",
+				start:    0,
+				children: 0,
+			}, &htmlTag{
+				name:     "body",
+				start:    0,
+				children: 0,
+			}, &htmlTag{
+				name:     "main",
+				start:    0,
+				children: 0,
+			}, &htmlTag{
+				name:     "article",
+				start:    0,
+				children: 0,
+			}, &htmlTag{
+				name:     "section",
+				start:    0,
+				children: 2,
+			}),
+		},
+	}
+	for _, tt := range tests {
+		actual := tt.stack.xpath()
+		assert.Equal(t, tt.expected, actual)
+	}
+}

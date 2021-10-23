@@ -3,6 +3,7 @@ package lib
 import (
 	"bytes"
 	"container/list"
+	"fmt"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"golang.org/x/net/html"
 	"io"
@@ -59,12 +60,18 @@ type htmlStack struct {
 type htmlTag struct {
 	name  string
 	start uint32
+	children int
 }
 
-func (s *htmlStack) push(tag htmlTag) {
+func (s *htmlStack) push(tag *htmlTag) {
 	if s.List == nil {
 		s.List = list.New()
 	}
+
+	if front := s.List.Front(); front != nil {
+		front.Value.(*htmlTag).children++
+	}
+
 	s.PushFront(tag)
 	if !s.disallowed {
 		if _, ok := disallowedNodes[tag.name]; ok {
@@ -81,6 +88,21 @@ func (s *htmlStack) pop() {
 		s.disallowedDepth = 0
 	}
 	s.Remove(e)
+}
+
+func (s *htmlStack) xpath() string {
+	element := s.List.Back()
+	var path string
+	for {
+		if element.Prev() != nil {
+			path = fmt.Sprintf("%s/%s", path, element.Value.(*htmlTag).name)
+		} else {
+			path = fmt.Sprintf("%s/*[%d]", path, element.Next().Value.(*htmlTag).children)
+			break
+		}
+		element = element.Prev()
+	}
+	return path
 }
 
 func HtmlToTextWithCallback(r io.Reader, onSnippet func(*pb.Snippet) error) error {
@@ -168,6 +190,7 @@ Loop:
 						currentSnippet = &pb.Snippet{
 							Token:  "",
 							Offset: position,
+							Xpath: stack.xpath(),
 						}
 					}
 				}
@@ -182,7 +205,7 @@ Loop:
 
 			// Push the tag onto the stack.
 			tn, _ := htmlTokenizer.TagName()
-			stack.push(htmlTag{name: string(tn), start: position})
+			stack.push(&htmlTag{name: string(tn), start: position})
 
 			// Send a snippet if we are about to enter a disallowed tree.
 			if stack.disallowed && !stackWasPreviouslyDisallowed && currentSnippet != nil {
@@ -212,10 +235,13 @@ Loop:
 			// If we are at a linebreak node, not in a disallowed DOM tree, and the current snippet is not nil,
 			// write a newline to the snippet and send it.
 			tn, _ := htmlTokenizer.TagName()
+			stack.push(&htmlTag{name: string(tn), start: position})
 			if _, breakLine := linebreakNodes[string(tn)]; breakLine && !stack.disallowed && currentSnippet != nil {
 				buf.Write([]byte{'\n'})
 				sendSnip()
 			}
+
+			stack.pop()
 			position += uint32(len(htmlTokenBytes))
 		default:
 			htmlTokenBytes := htmlTokenizer.Raw()
