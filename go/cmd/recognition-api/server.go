@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"errors"
-	"io"
-
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"io"
 )
 
 type HttpError struct {
@@ -34,7 +36,35 @@ func (s server) RegisterRoutes(r *gin.Engine) {
 }
 
 func (s server) RecognizeInHTML(c *gin.Context) {
-	entities, err := s.controller.RecognizeInHTML(c.Request.Body)
+	requestedRecognisers, _ := c.GetQueryArray("recogniser")
+
+	recognisers := make(map[string]Options)
+	for _, recogniser := range requestedRecognisers {
+		recognisers[recogniser] = Options{}
+
+		header := c.GetHeader(fmt.Sprintf("x-%s", recogniser))
+		if header == "" {
+			continue
+		}
+
+		b, err := base64.StdEncoding.DecodeString(header)
+		if err != nil {
+			handleError(c, HttpError{
+				code:  400,
+				error: errors.New("invalid request header - must be base64 encoded"),
+			}); return
+		}
+
+		var opts Options
+		if err := json.Unmarshal(b, &opts); err != nil {
+			handleError(c, HttpError{
+				code:  400,
+				error: errors.New("invalid request header - must be valid json (base64 encoded)"),
+			}); return
+		}
+		recognisers[recogniser] = opts
+	}
+	entities, err := s.controller.RecognizeInHTML(c.Request.Body, recognisers)
 	if err != nil {
 		handleError(c, err)
 		return

@@ -1,8 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	http_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/http-recogniser"
 	"io"
+	"io/ioutil"
 	"sync"
 
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
@@ -10,8 +14,13 @@ import (
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 )
 
+type Options struct {
+	HttpOptions http_recogniser.Options `json:"http_options"`
+}
+
 type controller struct {
-	clients []pb.RecognizerClient
+	grpcRecogniserClients map[string]pb.RecognizerClient
+	httpRecogniserClients map[string]http_recogniser.Client
 }
 
 func (c controller) HTMLToText(reader io.Reader) ([]byte, error) {
@@ -49,26 +58,41 @@ func (c controller) TokenizeHTML(reader io.Reader) ([]*pb.Snippet, error) {
 	return tokens, nil
 }
 
-func (c controller) RecognizeInHTML(reader io.Reader) ([]*pb.RecognizedEntity, error) {
+func (c controller) RecognizeInHTML(reader io.Reader, opts map[string]Options) ([]*pb.RecognizedEntity, error) {
 
-	// Instantiate streaming clients for all of our recognisers
+	// Instantiate streaming grpcRecogniserClients for all of our recognisers
 	var err error
-	recognisers := make([]pb.Recognizer_RecognizeClient, len(c.clients))
-	for i, client := range c.clients {
-		recognisers[i], err = client.Recognize(context.Background())
+	grpcRecognisers := make(map[string]pb.Recognizer_RecognizeClient)
+	httpRecognisers := make(map[string]http_recogniser.Options)
+	for name, options := range opts {
+		if grpcClient, ok := c.grpcRecogniserClients[name]; ok {
+			grpcRecognisers[name], err = grpcClient.Recognize(context.Background())
+		} else if _, ok := c.httpRecogniserClients[name]; ok {
+			httpRecognisers[name] = options.HttpOptions
+		} else {
+			return nil, HttpError{
+				code:  400,
+				error: fmt.Errorf("recogniser '%s' does not exist", name),
+			}
+		}
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	// For each recogniser, instantiate a goroutine which listens for entities
-	// and appends them to a slice. The mutex is necessary for thread safety when
-	// manipulating the slice. If there is an error, send it to the error channel.
+	body, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return nil, err
+	}
+
 	// When complete, send nil to the error channel.
-	errChan := make(chan error, len(c.clients))
+	// manipulating the slice. If there is an error, send it to the error channel.
+	// and appends them to a slice. The mutex is necessary for thread safety when
+	// For each recogniser, instantiate a goroutine which listens for entities
+	errChan := make(chan error, len(opts))
 	entities := make([]*pb.RecognizedEntity, 0, 1000)
 	var mut sync.Mutex
-	for _, recogniser := range recognisers {
+	for _, recogniser := range grpcRecognisers {
 		go func(recogniser pb.Recognizer_RecognizeClient) {
 			for {
 				entity, err := recogniser.Recv()
@@ -86,11 +110,25 @@ func (c controller) RecognizeInHTML(reader io.Reader) ([]*pb.RecognizedEntity, e
 		}(recogniser)
 	}
 
+	httpResponses := make(chan []*pb.RecognizedEntity)
+	go func(){
+		for range httpRecognisers {
+			resp := <-httpResponses
+			mut.Lock()
+			entities = append(entities, resp...)
+			mut.Unlock()
+		}
+	}()
+
+	for name, options := range httpRecognisers {
+		go c.httpRecogniserClients[name].Recognise(bytes.NewReader(body), options, httpResponses, errChan)
+	}
+
 	// Callback to the html to text function. Tokenize each block of text
 	// and send every token to every recogniser.
 	onSnippet := func(snippet *pb.Snippet) error {
 		return text.Tokenize(snippet, func(snippet *pb.Snippet) error {
-			for _, recogniser := range recognisers {
+			for _, recogniser := range grpcRecognisers {
 				if err := recogniser.Send(snippet); err != nil {
 					return err
 				}
@@ -99,14 +137,14 @@ func (c controller) RecognizeInHTML(reader io.Reader) ([]*pb.RecognizedEntity, e
 		})
 	}
 
-	if err := lib.HtmlToTextWithCallback(reader, onSnippet); err != nil {
+	if err := lib.HtmlToTextWithCallback(bytes.NewReader(body), onSnippet); err != nil {
 		return nil, err
 	}
 
 	// HtmlToText blocks until it is complete, so at this point the callback
 	// will not be called again, and it is safe to call CloseSend on the recognisers
 	// to close the stream (this doesn't stop us receiving entities).
-	for _, recogniser := range recognisers {
+	for _, recogniser := range grpcRecognisers {
 		if err := recogniser.CloseSend(); err != nil {
 			return nil, err
 		}
@@ -115,7 +153,7 @@ func (c controller) RecognizeInHTML(reader io.Reader) ([]*pb.RecognizedEntity, e
 	// This for loop will block execution until all of the go routines
 	// we spawned above have sent either nil or an error on the error
 	// channel. If there is no error on any channel, we can continue.
-	for range recognisers {
+	for range opts {
 		if err = <-errChan; err != nil {
 			return nil, err
 		}

@@ -114,7 +114,7 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 
 	mockRecognizerClient := &mocks.RecognizerClient{}
 	mockRecognizerClient.On("Recognize", mock.AnythingOfType("*context.emptyCtx")).Return(mockRecognizer_RecognizeClient, nil).Once()
-	s.controller.clients = []pb.RecognizerClient{mockRecognizerClient}
+	s.controller.grpcRecogniserClients = []pb.RecognizerClient{mockRecognizerClient}
 
 	type args struct {
 		reader io.Reader

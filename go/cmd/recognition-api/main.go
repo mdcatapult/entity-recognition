@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	http_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/http-recogniser"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -18,10 +19,15 @@ type recognitionAPIConfig struct {
 	Server   struct {
 		HttpPort int `mapstructure:"http_port"`
 	}
-	Recognizers map[string]struct {
-		Host     string
-		GrpcPort int `mapstructure:"grpc_port"`
-	}
+	GrpcRecognizers map[string]struct {
+		Host string
+		Port int
+	} `mapstructure:"grpc_recognisers"`
+	HttpRecognisers map[string]struct{
+		Type string
+		Host string
+		Port int
+	} `mapstructure:"http_recognisers"`
 }
 
 var config recognitionAPIConfig
@@ -44,25 +50,35 @@ func main() {
 
 	// for each recogniser in the config, instantiate a client and save the connection
 	// so that we can close it later.
-	clients := make([]pb.RecognizerClient, len(config.Recognizers))
-	connections := make([]*grpc.ClientConn, len(config.Recognizers))
-	i := 0
-	for name, r := range config.Recognizers {
+	clients := make(map[string]pb.RecognizerClient, len(config.GrpcRecognizers))
+	connections := make(map[string]*grpc.ClientConn, len(config.GrpcRecognizers))
+	for name, conf := range config.GrpcRecognizers {
 		log.Info().Str("recognizer", name).Msg("connecting...")
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		conn, err := grpc.DialContext(ctx, fmt.Sprintf("%s:%d", r.Host, r.GrpcPort), opts...)
+		conn, err := grpc.DialContext(ctx, fmt.Sprintf("%s:%d", conf.Host, conf.Port), opts...)
 		if err != nil {
 			log.Fatal().Err(err).Send()
 		}
 		cancel()
-		connections[i] = conn
-		clients[i] = pb.NewRecognizerClient(conn)
-		i++
+		connections[name] = conn
+		clients[name] = pb.NewRecognizerClient(conn)
 	}
+
+	httpClients := make(map[string]http_recogniser.Client)
+	for name, conf := range config.HttpRecognisers {
+		switch conf.Type {
+		case "dummy":
+			httpClients[name] = http_recogniser.DummyClient{}
+		}
+	}
+
 
 	r := gin.New()
 	r.Use(gin.LoggerWithFormatter(lib.JsonLogFormatter))
-	c := controller{clients: clients}
+	c := controller{
+		grpcRecogniserClients: clients,
+		httpRecogniserClients: httpClients,
+	}
 	s := server{controller: c}
 	s.RegisterRoutes(r)
 	if err := r.Run(fmt.Sprintf(":%d", config.Server.HttpPort)); err != nil {
