@@ -53,7 +53,7 @@ type esResponse struct {
 	} `json:"responses"`
 }
 
-func NewElasticsearchClient(conf ElasticsearchConfig) (Client, error) {
+func NewElasticsearchClient(conf ElasticsearchConfig) (RemoteCacheClient, error) {
 	c, err := elasticsearch.NewClient(elasticsearch.Config{
 		Addresses: []string{fmt.Sprintf("http://%s:%d", conf.Host, conf.Port)},
 	})

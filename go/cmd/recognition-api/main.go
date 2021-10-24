@@ -63,7 +63,7 @@ func main() {
 		clients[name] = pb.NewRecognizerClient(conn)
 	}
 
-	httpClients := make(map[string]http_recogniser.Client)
+	httpClients := make(map[string]http_recogniser.HttpRecogniserClient)
 	for name, conf := range config.HttpRecognisers {
 		switch conf.Type {
 		case http_recogniser.DummyType:

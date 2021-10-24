@@ -13,7 +13,7 @@ import (
 
 type recogniser struct {
 	pb.UnimplementedRecognizerServer
-	remoteCache remote.Client
+	remoteCache remote.RemoteCacheClient
 }
 
 type requestVars struct {

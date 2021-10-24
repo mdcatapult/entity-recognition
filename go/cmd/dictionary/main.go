@@ -60,8 +60,8 @@ func main() {
 	}
 
 	// Get a redis client
-	var remoteCache remote.Client
-	var localCache local.Client
+	var remoteCache remote.RemoteCacheClient
+	var localCache local.LocalCacheClient
 	var err error
 	switch config.CacheType {
 	case cache.Redis:

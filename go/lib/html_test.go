@@ -35,12 +35,19 @@ func TestHtmlToText(t *testing.T) {
 			},
 			want: []*pb.Snippet{
 				{
-					Token: "    x2 hello\n",
-					Offset: 10,
+					Token: "\n",
+					Offset: 16,
+					Xpath: "/html/*[1]",
 				},
 				{
-					Token: "dave",
-					Offset: 53,
+					Token: "\n",
+					Offset: 32,
+					Xpath: "/html/*[2]",
+				},
+				{
+					Token: "  x2 hello\ndave\n",
+					Offset: 8,
+					Xpath: "/html",
 				},
 			},
 			wantErr: nil,
@@ -52,14 +59,21 @@ func TestHtmlToText(t *testing.T) {
 			},
 			want: []*pb.Snippet{
 				{
+					Token: "\n",
+					Offset: 15,
+					Xpath: "/html/*[1]",
+				},
+				{
 					Token: "acetylcarnitine\n",
 					Offset: 3,
+					Xpath: "/html",
 				},
 			},
 			wantErr: nil,
 		},
 	}
 	for _, tt := range tests {
+		t.Log(tt.name)
 		i := 0
 		gotSnips, gotErrs := HtmlToText(tt.args.r)
 		Loop:
@@ -92,23 +106,23 @@ func Test_htmlStack_xpath(t *testing.T) {
 		expected   string
 	}{
 		{
-			expected: "/html/body/main/article/*[1]",
+			expected: "/html/*[2]/*[4]/*[5]/*[3]",
 			stack: testStack(&htmlTag{
 				name:     "html",
 				start:    0,
-				children: 0,
+				children: 1,
 			}, &htmlTag{
 				name:     "body",
 				start:    0,
-				children: 0,
+				children: 3,
 			}, &htmlTag{
 				name:     "main",
 				start:    0,
-				children: 0,
+				children: 4,
 			}, &htmlTag{
 				name:     "article",
 				start:    0,
-				children: 0,
+				children: 2,
 			}, &htmlTag{
 				name:     "section",
 				start:    0,

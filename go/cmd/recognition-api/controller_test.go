@@ -97,11 +97,11 @@ func (s *ControllerSuite) Test_controller_TokenizeHTML() {
 func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 	buf := bytes.NewBuffer([]byte("<p>hello my name is jeff</p>"))
 	mockRecognizer_RecognizeClient := testhelpers.NewMockRecognizeClientStream(
-		testhelpers.Snip("hello", 3),
-		testhelpers.Snip("my", 9),
-		testhelpers.Snip("name", 12),
-		testhelpers.Snip("is", 17),
-		testhelpers.Snip("jeff", 20),
+		testhelpers.Snip("hello", 3, "/html"),
+		testhelpers.Snip("my", 9, "/html"),
+		testhelpers.Snip("name", 12, "/html"),
+		testhelpers.Snip("is", 17, "/html"),
+		testhelpers.Snip("jeff", 20, "/html"),
 	)
 	foundEntity := &pb.RecognizedEntity{
 		Entity:      "found entity",
@@ -114,7 +114,7 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 
 	mockRecognizerClient := &mocks.RecognizerClient{}
 	mockRecognizerClient.On("Recognize", mock.AnythingOfType("*context.emptyCtx")).Return(mockRecognizer_RecognizeClient, nil).Once()
-	s.controller.grpcRecogniserClients = []pb.RecognizerClient{mockRecognizerClient}
+	s.controller.grpcRecogniserClients = map[string]pb.RecognizerClient{"mock": mockRecognizerClient}
 
 	type args struct {
 		reader io.Reader
@@ -136,7 +136,10 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 	}
 	for _, tt := range tests {
 		s.T().Log(tt.name)
-		got, gotErr := s.controller.RecognizeInHTML(tt.args.reader)
+		opts := map[string]Options{
+			"mock": {},
+		}
+		got, gotErr := s.controller.RecognizeInHTML(tt.args.reader, opts)
 		s.ElementsMatch(tt.want, got)
 		s.Equal(tt.wantErr, gotErr)
 	}

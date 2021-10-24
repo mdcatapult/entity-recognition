@@ -21,7 +21,7 @@ type Options struct {
 
 type controller struct {
 	grpcRecogniserClients map[string]pb.RecognizerClient
-	httpRecogniserClients map[string]http_recogniser.Client
+	httpRecogniserClients map[string]http_recogniser.HttpRecogniserClient
 }
 
 func (c controller) HTMLToText(reader io.Reader) ([]byte, error) {

@@ -54,7 +54,7 @@ func main() {
 	}
 
 	// Get a redis client
-	var dbClient remote.Client
+	var dbClient remote.RemoteCacheClient
 	var err error
 	switch config.BackendDatabase {
 	case cache.Redis:
@@ -151,7 +151,7 @@ func addToPipe(entry dict.Entry, pipe remote.SetPipeline) error {
 	return nil
 }
 
-func awaitDB(dbClient remote.Client) {
+func awaitDB(dbClient remote.RemoteCacheClient) {
 	for !dbClient.Ready() {
 		log.Info().Msg("database is not ready, waiting...")
 		time.Sleep(5 * time.Second)

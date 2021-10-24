@@ -30,7 +30,7 @@ func (s *RecognizerSuite) SetupSuite() {
 }
 
 func (s *RecognizerSuite) Test_recognizer_Recognize() {
-	mockDBClient := &mocks.Client{}
+	mockDBClient := &mocks.RemoteCacheClient{}
 	s.remoteCache = mockDBClient
 	mockGetPipeline := &mocks.GetPipeline{}
 	mockDBClient.On("NewGetPipeline", testConfig.PipelineSize).Return(mockGetPipeline).Times(2)
@@ -56,7 +56,7 @@ func (s *RecognizerSuite) Test_recognizer_Recognize() {
 
 func (s *RecognizerSuite) Test_recogniser_queryToken() {
 
-	mockDBClient := &mocks.Client{}
+	mockDBClient := &mocks.RemoteCacheClient{}
 	s.remoteCache = mockDBClient
 	mockGetPipeline := &mocks.GetPipeline{}
 	mockDBClient.On("NewGetPipeline", testConfig.PipelineSize).Return(mockGetPipeline).Once()
@@ -185,7 +185,7 @@ func (s *RecognizerSuite) Test_recogniser_getCompoundTokens() {
 					snippetHistory:   []*pb.Snippet{},
 					tokenHistory:     []string{},
 				},
-				token: testhelpers.Snip("Hello", 0),
+				token: testhelpers.Snip("Hello", 0, ""),
 			},
 			want: testhelpers.Snips("hello"),
 			wantVars: &requestVars{
@@ -200,7 +200,7 @@ func (s *RecognizerSuite) Test_recogniser_getCompoundTokens() {
 					snippetHistory: testhelpers.Snips("got"),
 					tokenHistory:   []string{"got"},
 				},
-				token: testhelpers.Snip("Hello.", 0),
+				token: testhelpers.Snip("Hello.", 0, ""),
 			},
 			want: testhelpers.Snips("hello", "got hello"),
 			wantVars: &requestVars{
@@ -215,7 +215,7 @@ func (s *RecognizerSuite) Test_recogniser_getCompoundTokens() {
 					tokenHistory:   []string{"old"},
 					snippetHistory: testhelpers.Snips("old"),
 				},
-				token: testhelpers.Snip("new", 0),
+				token: testhelpers.Snip("new", 0, ""),
 			},
 			want: testhelpers.Snips("old new", "new"),
 			wantVars: &requestVars{
@@ -230,7 +230,7 @@ func (s *RecognizerSuite) Test_recogniser_getCompoundTokens() {
 					tokenHistory:   []string{"old", "new", "black", "white", "quavers"},
 					snippetHistory: testhelpers.Snips("old", "new", "black", "white", "quavers"),
 				},
-				token: testhelpers.Snip("latest", 0),
+				token: testhelpers.Snip("latest", 0, ""),
 			},
 			want: testhelpers.Snips("latest",
 				"quavers latest",

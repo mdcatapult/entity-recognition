@@ -6,14 +6,14 @@ import (
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache"
 )
 
-func New() Client {
+func New() LocalCacheClient {
 	return &local{
 		store: make(map[string]*cache.Lookup),
 		mut:   &sync.RWMutex{},
 	}
 }
 
-type Client interface {
+type LocalCacheClient interface {
 	Get(key string) *cache.Lookup
 	Set(key string, lookup *cache.Lookup)
 	Delete(key string)

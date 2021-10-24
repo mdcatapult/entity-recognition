@@ -17,7 +17,7 @@ type Options struct {
 	QueryParameters url.Values `json:"query_parameters"`
 }
 
-type Client interface {
+type HttpRecogniserClient interface {
 	Recognise(reader io.Reader, opts Options, snippets chan []*pb.RecognizedEntity, errors chan error)
 }
 

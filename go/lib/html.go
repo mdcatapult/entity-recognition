@@ -41,6 +41,7 @@ var nonBreakingNodes = map[string]struct{}{
 	"big": {},
 	"small": {},
 	"a": {},
+	"emph": {},
 }
 
 type htmlStack struct {
@@ -93,6 +94,7 @@ func (s *htmlStack) collectText(text []byte) {
 	if s.List == nil {
 		s.List = list.New()
 	}
+
 	if s != nil && s.Front() != nil {
 		var tag *htmlTag
 		if s.appendMode {
@@ -105,6 +107,10 @@ func (s *htmlStack) collectText(text []byte) {
 }
 
 func (s *htmlStack) pop(callback func(tag *htmlTag) error) error {
+	if s.List == nil {
+		s.List = list.New()
+	}
+
 	e := s.Front()
 	if e == nil {
 		return io.EOF
@@ -233,9 +239,9 @@ Loop:
 
 			// Push the tag onto the stack.
 			tn, _ := htmlTokenizer.TagName()
+			position += uint32(len(htmlTokenBytes))
 			stack.push(&htmlTag{name: string(tn), start: position})
 
-			position += uint32(len(htmlTokenBytes))
 		case html.EndTagToken:
 			// Must read this first. Other read methods mutate the current token.
 			htmlTokenBytes := htmlTokenizer.Raw()
@@ -254,6 +260,9 @@ Loop:
 			// If we are at a linebreak node, not in a disallowed DOM tree, and the current snippet is not nil,
 			// write a newline to the snippet and send it.
 			tn, _ := htmlTokenizer.TagName()
+			if string(tn) == "br" {
+				stack.collectText([]byte{'\n'})
+			}
 			stack.push(&htmlTag{name: string(tn), start: position})
 			_ = stack.pop(func(tag *htmlTag) error {return nil})
 			position += uint32(len(htmlTokenBytes))
