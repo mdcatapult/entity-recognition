@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"container/list"
 	"fmt"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
-	"golang.org/x/net/html"
 	"io"
 	"unicode"
+
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
+	"golang.org/x/net/html"
 )
 
 var disallowedNodes = map[string]struct{}{
@@ -25,28 +26,28 @@ var disallowedNodes = map[string]struct{}{
 }
 
 var nonBreakingNodes = map[string]struct{}{
-	"span": {},
-	"sub": {},
-	"sup": {},
-	"b": {},
-	"del": {},
-	"i": {},
-	"ins": {},
-	"mark": {},
-	"q": {},
-	"s": {},
+	"span":   {},
+	"sub":    {},
+	"sup":    {},
+	"b":      {},
+	"del":    {},
+	"i":      {},
+	"ins":    {},
+	"mark":   {},
+	"q":      {},
+	"s":      {},
 	"strike": {},
 	"strong": {},
-	"u": {},
-	"big": {},
-	"small": {},
-	"a": {},
-	"emph": {},
+	"u":      {},
+	"big":    {},
+	"small":  {},
+	"a":      {},
+	"emph":   {},
 }
 
 type htmlStack struct {
 	*list.List
-	disallowed bool
+	disallowed      bool
 	disallowedDepth int
 	appendMode      bool
 	appendModeTag   *htmlTag
@@ -54,11 +55,11 @@ type htmlStack struct {
 }
 
 type htmlTag struct {
-	name  string
-	start uint32
-	children int
+	name      string
+	start     uint32
+	children  int
 	innerText []byte
-	xpath string
+	xpath     string
 }
 
 func (s *htmlStack) push(tag *htmlTag) {
@@ -70,11 +71,10 @@ func (s *htmlStack) push(tag *htmlTag) {
 		front.Value.(*htmlTag).children++
 	}
 
-
 	if !s.appendMode {
 		if _, ok := nonBreakingNodes[tag.name]; ok {
 			s.appendMode = true
-			s.appendModeDepth = s.Len()+1
+			s.appendModeDepth = s.Len() + 1
 			s.appendModeTag = s.Front().Value.(*htmlTag)
 		}
 	}
@@ -264,7 +264,7 @@ Loop:
 				stack.collectText([]byte{'\n'})
 			}
 			stack.push(&htmlTag{name: string(tn), start: position})
-			_ = stack.pop(func(tag *htmlTag) error {return nil})
+			_ = stack.pop(func(tag *htmlTag) error { return nil })
 			position += uint32(len(htmlTokenBytes))
 		default:
 			htmlTokenBytes := htmlTokenizer.Raw()

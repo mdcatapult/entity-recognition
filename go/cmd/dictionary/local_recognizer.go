@@ -10,7 +10,7 @@ import (
 
 type localRecogniser struct {
 	pb.UnimplementedRecognizerServer
-	localCache local.LocalCacheClient
+	localCache local.Client
 }
 
 func initializeRequest(stream pb.Recognizer_RecognizeServer) *requestVars {

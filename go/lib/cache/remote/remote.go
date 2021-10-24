@@ -5,7 +5,7 @@ import (
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache"
 )
 
-type RemoteCacheClient interface {
+type Client interface {
 	NewGetPipeline(size int) GetPipeline
 	NewSetPipeline(size int) SetPipeline
 	Ready() bool

@@ -31,7 +31,7 @@ endif
 # Generates all mocks with mockery.
 .PHONY: mocks
 mocks: require-mockery
-	mockery --all --case underscore --output ./go/gen/mocks
+	mockery --all --case underscore --output ./go/gen/mocks --keeptree --dir go
 
 # Check for protoc and plugins, error if not present and link to install instructions.
 .PHONY: require-protoc

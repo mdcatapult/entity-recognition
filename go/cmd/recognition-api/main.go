@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
-	http_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/http-recogniser"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
+	http_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/http-recogniser"
 	"google.golang.org/grpc"
 )
 
@@ -23,9 +23,9 @@ type recognitionAPIConfig struct {
 		Host string
 		Port int
 	} `mapstructure:"grpc_recognisers"`
-	HttpRecognisers map[string]struct{
+	HttpRecognisers map[string]struct {
 		Type http_recogniser.RecogniserType
-		Url string
+		Url  string
 	} `mapstructure:"http_recognisers"`
 }
 
@@ -63,7 +63,7 @@ func main() {
 		clients[name] = pb.NewRecognizerClient(conn)
 	}
 
-	httpClients := make(map[string]http_recogniser.HttpRecogniserClient)
+	httpClients := make(map[string]http_recogniser.Client)
 	for name, conf := range config.HttpRecognisers {
 		switch conf.Type {
 		case http_recogniser.DummyType:
@@ -72,7 +72,6 @@ func main() {
 			httpClients[name] = http_recogniser.Leadmine{Url: conf.Url}
 		}
 	}
-
 
 	r := gin.New()
 	r.Use(gin.LoggerWithFormatter(lib.JsonLogFormatter))

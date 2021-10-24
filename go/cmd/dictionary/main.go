@@ -5,14 +5,13 @@ import (
 	"net"
 	"os"
 
+	"github.com/rs/zerolog/log"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache/local"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache/remote"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/dict"
-
-	"github.com/rs/zerolog/log"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"google.golang.org/grpc"
 )
 
@@ -60,8 +59,8 @@ func main() {
 	}
 
 	// Get a redis client
-	var remoteCache remote.RemoteCacheClient
-	var localCache local.LocalCacheClient
+	var remoteCache remote.Client
+	var localCache local.Client
 	var err error
 	switch config.CacheType {
 	case cache.Redis:

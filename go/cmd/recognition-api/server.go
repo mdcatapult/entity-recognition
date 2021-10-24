@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
+
+	"github.com/gin-gonic/gin"
 )
 
 type HttpError struct {
@@ -52,7 +53,8 @@ func (s server) RecognizeInHTML(c *gin.Context) {
 			handleError(c, HttpError{
 				code:  400,
 				error: errors.New("invalid request header - must be base64 encoded"),
-			}); return
+			})
+			return
 		}
 
 		var opts Options
@@ -60,7 +62,8 @@ func (s server) RecognizeInHTML(c *gin.Context) {
 			handleError(c, HttpError{
 				code:  400,
 				error: errors.New("invalid request header - must be valid json (base64 encoded)"),
-			}); return
+			})
+			return
 		}
 		recognisers[recogniser] = opts
 	}

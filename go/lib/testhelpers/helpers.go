@@ -3,7 +3,7 @@ package testhelpers
 import (
 	"io"
 
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 )
 

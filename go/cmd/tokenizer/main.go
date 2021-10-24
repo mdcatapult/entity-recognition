@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 	"io"
 	"net"
 
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 	"google.golang.org/grpc"
 )
 

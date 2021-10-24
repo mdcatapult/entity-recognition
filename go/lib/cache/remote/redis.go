@@ -14,7 +14,7 @@ type RedisConfig struct {
 	Port int
 }
 
-func NewRedisClient(conf RedisConfig) RemoteCacheClient {
+func NewRedisClient(conf RedisConfig) Client {
 	return &redisClient{
 		Client: redis.NewClient(&redis.Options{
 			Addr: fmt.Sprintf("%s:%d", conf.Host, conf.Port)}),

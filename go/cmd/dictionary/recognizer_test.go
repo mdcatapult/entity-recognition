@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks"
+	mocks "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks/lib/cache/remote"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/testhelpers"
@@ -30,7 +30,7 @@ func (s *RecognizerSuite) SetupSuite() {
 }
 
 func (s *RecognizerSuite) Test_recognizer_Recognize() {
-	mockDBClient := &mocks.RemoteCacheClient{}
+	mockDBClient := &mocks.Client{}
 	s.remoteCache = mockDBClient
 	mockGetPipeline := &mocks.GetPipeline{}
 	mockDBClient.On("NewGetPipeline", testConfig.PipelineSize).Return(mockGetPipeline).Times(2)
@@ -56,7 +56,7 @@ func (s *RecognizerSuite) Test_recognizer_Recognize() {
 
 func (s *RecognizerSuite) Test_recogniser_queryToken() {
 
-	mockDBClient := &mocks.RemoteCacheClient{}
+	mockDBClient := &mocks.Client{}
 	s.remoteCache = mockDBClient
 	mockGetPipeline := &mocks.GetPipeline{}
 	mockDBClient.On("NewGetPipeline", testConfig.PipelineSize).Return(mockGetPipeline).Once()
@@ -182,15 +182,15 @@ func (s *RecognizerSuite) Test_recogniser_getCompoundTokens() {
 			name: "end of sentence (for last token)",
 			args: args{
 				vars: &requestVars{
-					snippetHistory:   []*pb.Snippet{},
-					tokenHistory:     []string{},
+					snippetHistory: []*pb.Snippet{},
+					tokenHistory:   []string{},
 				},
 				token: testhelpers.Snip("Hello", 0, ""),
 			},
 			want: testhelpers.Snips("hello"),
 			wantVars: &requestVars{
-				snippetHistory:   testhelpers.Snips("hello"),
-				tokenHistory:     []string{"hello"},
+				snippetHistory: testhelpers.Snips("hello"),
+				tokenHistory:   []string{"hello"},
 			},
 		},
 		{
@@ -204,8 +204,8 @@ func (s *RecognizerSuite) Test_recogniser_getCompoundTokens() {
 			},
 			want: testhelpers.Snips("hello", "got hello"),
 			wantVars: &requestVars{
-				snippetHistory:   []*pb.Snippet{},
-				tokenHistory:     []string{},
+				snippetHistory: []*pb.Snippet{},
+				tokenHistory:   []string{},
 			},
 		},
 		{

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	http_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/http-recogniser"
 	"io"
 	"io/ioutil"
 	"sync"
@@ -12,6 +11,7 @@ import (
 
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
+	http_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/http-recogniser"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 )
 
@@ -21,7 +21,7 @@ type Options struct {
 
 type controller struct {
 	grpcRecogniserClients map[string]pb.RecognizerClient
-	httpRecogniserClients map[string]http_recogniser.HttpRecogniserClient
+	httpRecogniserClients map[string]http_recogniser.Client
 }
 
 func (c controller) HTMLToText(reader io.Reader) ([]byte, error) {
@@ -112,7 +112,7 @@ func (c controller) RecognizeInHTML(reader io.Reader, opts map[string]Options) (
 	}
 
 	httpResponses := make(chan []*pb.RecognizedEntity)
-	go func(){
+	go func() {
 		for range httpRecognisers {
 			resp := <-httpResponses
 			mut.Lock()
