@@ -12,11 +12,10 @@ type DictConfig struct {
 }
 
 type Entry struct {
-	Synonyms []string
+	Synonyms    []string
 	Identifiers map[string]string
-	Metadata map[string]interface{}
+	Metadata    map[string]interface{}
 }
-
 
 type Format string
 
@@ -33,7 +32,7 @@ type Reader interface {
 func Read(format Format, file *os.File) (chan Entry, chan error, error) {
 	switch format {
 	case PubchemDictionaryFormat:
-		entries, errors :=  NewPubchemReader().Read(file)
+		entries, errors := NewPubchemReader().Read(file)
 		return entries, errors, nil
 	case LeadmineDictionaryFormat:
 		entries, errors := NewLeadmineReader().Read(file)
@@ -54,7 +53,8 @@ func ReadWithCallback(file *os.File, format Format, onEntry func(entry Entry) er
 		return err
 	}
 
-	Listen: for {
+Listen:
+	for {
 		select {
 		case err := <-errors:
 			if err != nil {

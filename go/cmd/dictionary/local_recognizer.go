@@ -15,9 +15,9 @@ type localRecogniser struct {
 
 func initializeRequest(stream pb.Recognizer_RecognizeServer) *requestVars {
 	return &requestVars{
-		snippetHistory:   []*pb.Snippet{},
-		tokenHistory:     []string{},
-		stream:           stream,
+		snippetHistory: []*pb.Snippet{},
+		tokenHistory:   []string{},
+		stream:         stream,
 	}
 }
 

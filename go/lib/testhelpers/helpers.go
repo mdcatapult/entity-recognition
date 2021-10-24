@@ -3,7 +3,7 @@ package testhelpers
 import (
 	"io"
 
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks/gen/pb"
+	mocks "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 )
 
@@ -19,7 +19,7 @@ func Snip(tok string, offset uint32, xpath string) *pb.Snippet {
 	return &pb.Snippet{
 		Token:  tok,
 		Offset: offset,
-		Xpath: xpath,
+		Xpath:  xpath,
 	}
 }
 

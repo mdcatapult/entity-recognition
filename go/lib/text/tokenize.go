@@ -52,7 +52,7 @@ func Tokenize(snippet *pb.Snippet, onToken func(*pb.Snippet) error) error {
 			token := &pb.Snippet{
 				Token:  string(currentToken),
 				Offset: snippet.GetOffset() + position,
-				Xpath: snippet.Xpath,
+				Xpath:  snippet.Xpath,
 			}
 			err := onToken(token)
 			if err != nil {
@@ -76,7 +76,7 @@ func Tokenize(snippet *pb.Snippet, onToken func(*pb.Snippet) error) error {
 		pbEntity := &pb.Snippet{
 			Token:  string(currentToken),
 			Offset: snippet.GetOffset() + position,
-			Xpath: snippet.Xpath,
+			Xpath:  snippet.Xpath,
 		}
 		err := onToken(pbEntity)
 		if err != nil {
