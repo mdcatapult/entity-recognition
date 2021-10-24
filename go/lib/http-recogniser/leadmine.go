@@ -36,10 +36,10 @@ func (d Leadmine) UrlWithOpts(opts Options) string {
 
 func (d Leadmine) Recognise(reader io.Reader, opts Options, entities chan []*pb.RecognizedEntity, errs chan error) {
 	snips := make(map[int]*pb.Snippet)
-	var text bytes.Buffer
+	var text []byte
 	err := lib.HtmlToTextWithCallback(reader, func(snippet *pb.Snippet) error {
-		snips[len(snippet.GetToken())] = snippet
-		text.WriteString(snippet.GetToken())
+		snips[len(text)+len([]byte(snippet.GetToken()))] = snippet
+		text = append(text, snippet.GetToken()...)
 		return nil
 	})
 	if err != nil {
@@ -47,7 +47,7 @@ func (d Leadmine) Recognise(reader io.Reader, opts Options, entities chan []*pb.
 		return
 	}
 
-	req, err := http.NewRequest(http.MethodGet, d.UrlWithOpts(opts), &text)
+	req, err := http.NewRequest(http.MethodPost, d.UrlWithOpts(opts), bytes.NewReader(text))
 	if err != nil {
 		errs <- err
 		return
@@ -75,16 +75,52 @@ func (d Leadmine) Recognise(reader io.Reader, opts Options, entities chan []*pb.
 		errs <- err
 		return
 	}
+
+	for _, leadmineEntity := range leadmineResponse.Entities {
+		for {
+			if text[leadmineEntity.Beg] == leadmineEntity.EntityText[0] {
+				textIsEqual := true
+				for i := leadmineEntity.Beg; i < leadmineEntity.End; i++ {
+					if text[i] != leadmineEntity.EntityText[i - leadmineEntity.Beg]	{
+						textIsEqual = false
+						break
+					}
+				}
+				if textIsEqual {
+					break
+				}
+			}
+			leadmineEntity.Beg++
+			leadmineEntity.End++
+		}
+	}
+
 	var recognisedEntities []*pb.RecognizedEntity
-	for _, entity := range leadmineResponse.entities {
-		position := entity.beg
+	for _, entity := range leadmineResponse.Entities {
+		inc := entity.Beg
+		dec := entity.Beg
 		var snip *pb.Snippet
 		var ok bool
-		for snip, ok = snips[position]; !ok; position-- {}
+		for {
+			snip, ok = snips[inc]
+			if ok {
+				if strings.Contains(snip.GetToken(), entity.EntityText) {
+					break
+				}
+			}
+			snip, ok = snips[dec]
+			if ok {
+				if strings.Contains(snip.GetToken(), entity.EntityText) {
+					break
+				}
+			}
+			inc++
+			dec--
+		}
 
 		metadata, err := json.Marshal(LeadmineMetadata{
-			resolvedEntity:  entity.resolvedEntity,
-			recognisingDict: entity.recognisingDict,
+			ResolvedEntity:  entity.ResolvedEntity,
+			RecognisingDict: entity.RecognisingDict,
 		})
 		if err != nil {
 			errs <- err
@@ -92,10 +128,10 @@ func (d Leadmine) Recognise(reader io.Reader, opts Options, entities chan []*pb.
 		}
 
 		recognisedEntities = append(recognisedEntities, &pb.RecognizedEntity{
-			Entity:      entity.entityText,
-			Position:    snip.Offset + uint32(entity.beg) - uint32(position),
+			Entity:      entity.EntityText,
+			Position:    snip.Offset + uint32(entity.Beg) - uint32(inc),
 			Xpath: 		 snip.Xpath,
-			Dictionary:  entity.entityGroup,
+			Dictionary:  entity.EntityGroup,
 			Identifiers: nil,
 			Metadata:    metadata,
 		})
@@ -106,32 +142,34 @@ func (d Leadmine) Recognise(reader io.Reader, opts Options, entities chan []*pb.
 }
 
 type LeadmineResponse struct {
-	created  string
-	entities []struct {
-		beg                   int
-		begInNormalizedDoc    int
-		end                   int
-		endInNormalizedDoc    int
-		entityText            string
-		possiblyCorrectedText string
-		recognisingDict       RecognisingDict
-		resolvedEntity string
-		sectionType    string
-		entityGroup    string
-	}
+	Created  string `json:"created"`
+	Entities []*LeadmineEntity `json:"entities"`
+}
+
+type LeadmineEntity struct {
+	Beg                   int `json:"beg"`
+	BegInNormalizedDoc    int `json:"begInNormalizedDoc"`
+	End                   int `json:"end"`
+	EndInNormalizedDoc    int `json:"endInNormalizedDoc"`
+	EntityText            string `json:"entityText"`
+	PossiblyCorrectedText string `json:"possiblyCorrectedText"`
+	RecognisingDict       RecognisingDict `json:"recognisingDict"`
+	ResolvedEntity string `json:"resolvedEntity"`
+	SectionType    string `json:"sectionType"`
+	EntityGroup    string `json:"entityGroup"`
 }
 
 type RecognisingDict struct {
-	enforceBracketing            bool
-	entityType                   string
-	htmlColor                    string
-	maxCorrectionDistance        int
-	minimumCorrectedEntityLength int
-	minimumEntityLength          int
-	source                       string
+	EnforceBracketing            bool `json:"enforceBracketing"`
+	EntityType                   string `json:"entityType"`
+	HtmlColor                    string `json:"htmlColor"`
+	MaxCorrectionDistance        int `json:"maxCorrectionDistance"`
+	MinimumCorrectedEntityLength int `json:"minimumCorrectedEntityLength"`
+	MinimumEntityLength          int `json:"minimumEntityLength"`
+	Source                       string `json:"source"`
 }
 
 type LeadmineMetadata struct {
-	resolvedEntity string
-	recognisingDict RecognisingDict
+	ResolvedEntity string `json:"resolvedEntity"`
+	RecognisingDict RecognisingDict
 }

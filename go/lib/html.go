@@ -24,43 +24,40 @@ var disallowedNodes = map[string]struct{}{
 	"video":    {},
 }
 
-var linebreakNodes = map[string]struct{}{
-	"ol":         {},
-	"ul":         {},
-	"li":         {},
-	"table":      {},
-	"tbody":      {},
-	"tr":         {},
-	"th":         {},
-	"br":         {},
-	"h1":         {},
-	"h2":         {},
-	"h3":         {},
-	"h4":         {},
-	"h5":         {},
-	"h6":         {},
-	"p":          {},
-	"section":    {},
-	"header":     {},
-	"article":    {},
-	"aside":      {},
-	"summary":    {},
-	"figure":     {},
-	"figcaption": {},
-	"footer":     {},
-	"nav":        {},
+var nonBreakingNodes = map[string]struct{}{
+	"span": {},
+	"sub": {},
+	"sup": {},
+	"b": {},
+	"del": {},
+	"i": {},
+	"ins": {},
+	"mark": {},
+	"q": {},
+	"s": {},
+	"strike": {},
+	"strong": {},
+	"u": {},
+	"big": {},
+	"small": {},
+	"a": {},
 }
 
 type htmlStack struct {
 	*list.List
 	disallowed bool
 	disallowedDepth int
+	appendMode      bool
+	appendModeTag   *htmlTag
+	appendModeDepth int
 }
 
 type htmlTag struct {
 	name  string
 	start uint32
 	children int
+	innerText []byte
+	xpath string
 }
 
 func (s *htmlStack) push(tag *htmlTag) {
@@ -72,7 +69,18 @@ func (s *htmlStack) push(tag *htmlTag) {
 		front.Value.(*htmlTag).children++
 	}
 
+
+	if !s.appendMode {
+		if _, ok := nonBreakingNodes[tag.name]; ok {
+			s.appendMode = true
+			s.appendModeDepth = s.Len()+1
+			s.appendModeTag = s.Front().Value.(*htmlTag)
+		}
+	}
+
 	s.PushFront(tag)
+	tag.xpath = s.xpath()
+
 	if !s.disallowed {
 		if _, ok := disallowedNodes[tag.name]; ok {
 			s.disallowed = true
@@ -81,26 +89,57 @@ func (s *htmlStack) push(tag *htmlTag) {
 	}
 }
 
-func (s *htmlStack) pop() {
+func (s *htmlStack) collectText(text []byte) {
+	if s.List == nil {
+		s.List = list.New()
+	}
+	if s != nil && s.Front() != nil {
+		var tag *htmlTag
+		if s.appendMode {
+			tag = s.appendModeTag
+		} else {
+			tag = s.Front().Value.(*htmlTag)
+		}
+		tag.innerText = append(tag.innerText, text...)
+	}
+}
+
+func (s *htmlStack) pop(callback func(tag *htmlTag) error) error {
 	e := s.Front()
+	if e == nil {
+		return io.EOF
+	}
 	if s.disallowed && s.Len() == s.disallowedDepth {
 		s.disallowed = false
 		s.disallowedDepth = 0
 	}
+	if s.appendMode && s.Len() == s.appendModeDepth {
+		s.appendMode = false
+		s.appendModeDepth = 0
+		s.appendModeTag = nil
+	}
+	tag := e.Value.(*htmlTag)
+
 	s.Remove(e)
+	if !s.appendMode {
+		return callback(tag)
+	}
+
+	return nil
 }
 
 func (s *htmlStack) xpath() string {
 	element := s.List.Back()
-	var path string
+	var path = "/html"
 	for {
-		if element.Prev() != nil {
-			path = fmt.Sprintf("%s/%s", path, element.Value.(*htmlTag).name)
-		} else {
+		if element.Next() != nil {
 			path = fmt.Sprintf("%s/*[%d]", path, element.Next().Value.(*htmlTag).children)
+		}
+		if element.Prev() != nil {
+			element = element.Prev()
+		} else {
 			break
 		}
-		element = element.Prev()
 	}
 	return path
 }
@@ -142,20 +181,15 @@ func htmlToText(r io.Reader, snips chan *pb.Snippet, errs chan error) {
 	htmlTokenizer := html.NewTokenizer(r)
 	var position uint32
 	var stack htmlStack
-	buf := bytes.NewBuffer([]byte{})
-	var currentSnippet *pb.Snippet
 
-	// Function to send current snippet on the channel and
-	// reset values necessary values.
-	sendSnip := func() {
-		bufBytes, err := buf.ReadBytes(0)
-		if err != nil && err != io.EOF {
-			errs <- err
-			return
+	stackPopCallback := func(tag *htmlTag) error {
+		tag.innerText = append(tag.innerText, '\n')
+		snips <- &pb.Snippet{
+			Token:  string(tag.innerText),
+			Offset: tag.start,
+			Xpath:  tag.xpath,
 		}
-		currentSnippet.Token = string(bufBytes)
-		snips <- currentSnippet
-		currentSnippet = nil
+		return nil
 	}
 
 Loop:
@@ -164,8 +198,14 @@ Loop:
 		switch htmlToken {
 		case html.ErrorToken:
 			// If we have a final snippet, send it!
-			if currentSnippet != nil {
-				sendSnip()
+			for {
+				err := stack.pop(stackPopCallback)
+				if err == io.EOF {
+					break
+				} else if err != nil {
+					errs <- err
+					return
+				}
 			}
 
 			break Loop
@@ -176,24 +216,14 @@ Loop:
 			// Only write to the buffer if we are not under any disallowed nodes.
 			if !stack.disallowed {
 				// Write the text to the buffer.
-				buf.Write(htmlTokenBytes)
+				stack.collectText(htmlTokenBytes)
 
 				// If the bytes are not composed only of whitespace.
-				strippedBytes, nRemoved := StripLeft(htmlTokenBytes)
-				if len(strippedBytes) > 0 {
-					// increment the position by the amount of removed whitespace characters.
-					position += uint32(nRemoved)
-
-					// Instantiate a new snippet if it is nil (i.e. we've just sent
-					// the last one).
-					if currentSnippet == nil {
-						currentSnippet = &pb.Snippet{
-							Token:  "",
-							Offset: position,
-							Xpath: stack.xpath(),
-						}
-					}
-				}
+				//strippedBytes, nRemoved := StripLeft(htmlTokenBytes)
+				//if len(strippedBytes) > 0 {
+				//	// increment the position by the amount of removed whitespace characters.
+				//	position += uint32(nRemoved)
+				//}
 			}
 
 			position += uint32(len(htmlTokenBytes))
@@ -201,32 +231,21 @@ Loop:
 			// Must read this first. Other read methods mutate the current token.
 			htmlTokenBytes := htmlTokenizer.Raw()
 
-			stackWasPreviouslyDisallowed := stack.disallowed
-
 			// Push the tag onto the stack.
 			tn, _ := htmlTokenizer.TagName()
 			stack.push(&htmlTag{name: string(tn), start: position})
-
-			// Send a snippet if we are about to enter a disallowed tree.
-			if stack.disallowed && !stackWasPreviouslyDisallowed && currentSnippet != nil {
-				sendSnip()
-			}
 
 			position += uint32(len(htmlTokenBytes))
 		case html.EndTagToken:
 			// Must read this first. Other read methods mutate the current token.
 			htmlTokenBytes := htmlTokenizer.Raw()
 
-			// If we are at a linebreak node, not in a disallowed DOM tree, and the current snippet is not nil,
-			// write a newline to the snippet and send it.
-			tn, _ := htmlTokenizer.TagName()
-			if _, breakLine := linebreakNodes[string(tn)]; breakLine && !stack.disallowed && currentSnippet != nil {
-				buf.Write([]byte{'\n'})
-				sendSnip()
+			// Remove this tag from the stack.
+			if err := stack.pop(stackPopCallback); err != nil && err != io.EOF {
+				errs <- err
+				return
 			}
 
-			// Remove this tag from the stack.
-			stack.pop()
 			position += uint32(len(htmlTokenBytes))
 		case html.SelfClosingTagToken:
 			// Must read this first. Other read methods mutate the current token.
@@ -236,12 +255,7 @@ Loop:
 			// write a newline to the snippet and send it.
 			tn, _ := htmlTokenizer.TagName()
 			stack.push(&htmlTag{name: string(tn), start: position})
-			if _, breakLine := linebreakNodes[string(tn)]; breakLine && !stack.disallowed && currentSnippet != nil {
-				buf.Write([]byte{'\n'})
-				sendSnip()
-			}
-
-			stack.pop()
+			_ = stack.pop(func(tag *htmlTag) error {return nil})
 			position += uint32(len(htmlTokenBytes))
 		default:
 			htmlTokenBytes := htmlTokenizer.Raw()

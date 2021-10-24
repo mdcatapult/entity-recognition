@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"sync"
+	"time"
 
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
@@ -158,6 +159,11 @@ func (c controller) RecognizeInHTML(reader io.Reader, opts map[string]Options) (
 			return nil, err
 		}
 	}
+
+	// Http recognisers send "nil" on the error channel immediately after sending their response.
+	// This doesn't give the controller quite enough time to unlock the mutex and append the result
+	// so we're just sleeping a little to let it catch up.
+	time.Sleep(10 * time.Millisecond)
 
 	return entities, nil
 }

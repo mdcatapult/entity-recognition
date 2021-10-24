@@ -68,6 +68,8 @@ func main() {
 		switch conf.Type {
 		case "dummy":
 			httpClients[name] = http_recogniser.DummyClient{}
+		case "leadmine":
+			httpClients[name] = http_recogniser.Leadmine{Url: conf.Url}
 		}
 	}
 
