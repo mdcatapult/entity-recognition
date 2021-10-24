@@ -24,7 +24,7 @@ type recognitionAPIConfig struct {
 		Port int
 	} `mapstructure:"grpc_recognisers"`
 	HttpRecognisers map[string]struct{
-		Type string
+		Type http_recogniser.RecogniserType
 		Url string
 	} `mapstructure:"http_recognisers"`
 }
@@ -66,9 +66,9 @@ func main() {
 	httpClients := make(map[string]http_recogniser.Client)
 	for name, conf := range config.HttpRecognisers {
 		switch conf.Type {
-		case "dummy":
+		case http_recogniser.DummyType:
 			httpClients[name] = http_recogniser.DummyClient{}
-		case "leadmine":
+		case http_recogniser.LeadmineType:
 			httpClients[name] = http_recogniser.Leadmine{Url: conf.Url}
 		}
 	}

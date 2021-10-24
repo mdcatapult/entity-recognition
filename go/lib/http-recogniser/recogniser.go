@@ -6,6 +6,13 @@ import (
 	"net/url"
 )
 
+type RecogniserType string
+
+const (
+	LeadmineType RecogniserType = "leadmine"
+	DummyType RecogniserType = "dummy"
+)
+
 type Options struct {
 	QueryParameters url.Values `json:"query_parameters"`
 }
