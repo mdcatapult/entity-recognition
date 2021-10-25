@@ -37,6 +37,7 @@ func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 					Entity:     token.GetToken(),
 					Position:   token.GetOffset(),
 					Dictionary: name,
+					Xpath: token.GetXpath(),
 				})
 				if err != nil {
 					return err

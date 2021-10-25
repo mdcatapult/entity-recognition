@@ -1,24 +1,32 @@
 package http_recogniser
 
 import (
-	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 	"strings"
 
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
-
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 )
 
-type Leadmine struct {
-	Url string
+func NewLeadmineClient(url string) Client {
+	return leadmine{
+		Url:        url,
+		httpClient: http.DefaultClient,
+	}
 }
 
-func (d Leadmine) UrlWithOpts(opts Options) string {
+type leadmine struct {
+	Url string
+	httpClient lib.HttpClient
+}
+
+func (d leadmine) UrlWithOpts(opts Options) string {
 	if len(opts.QueryParameters) == 0 {
 		return d.Url
 	}
@@ -35,12 +43,13 @@ func (d Leadmine) UrlWithOpts(opts Options) string {
 	return d.Url + "?" + paramStr[1:]
 }
 
-func (d Leadmine) Recognise(reader io.Reader, opts Options, entities chan []*pb.RecognizedEntity, errs chan error) {
+func (d leadmine) Recognise(reader io.Reader, opts Options, entities chan []*pb.RecognizedEntity, errs chan error) {
 	snips := make(map[int]*pb.Snippet)
-	var text []byte
+	var text string
+
 	err := lib.HtmlToTextWithCallback(reader, func(snippet *pb.Snippet) error {
-		snips[len(text)+len([]byte(snippet.GetToken()))] = snippet
-		text = append(text, snippet.GetToken()...)
+		snips[len(text)] = snippet
+		text += snippet.GetToken()
 		return nil
 	})
 	if err != nil {
@@ -48,13 +57,13 @@ func (d Leadmine) Recognise(reader io.Reader, opts Options, entities chan []*pb.
 		return
 	}
 
-	req, err := http.NewRequest(http.MethodPost, d.UrlWithOpts(opts), bytes.NewReader(text))
+	req, err := http.NewRequest(http.MethodPost, d.UrlWithOpts(opts), strings.NewReader(text))
 	if err != nil {
 		errs <- err
 		return
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := d.httpClient.Do(req)
 	if err != nil {
 		errs <- err
 		return
@@ -77,46 +86,50 @@ func (d Leadmine) Recognise(reader io.Reader, opts Options, entities chan []*pb.
 		return
 	}
 
+	var correctedLeadmineEntities []LeadmineEntity
+	done := make(map[string]struct{})
 	for _, leadmineEntity := range leadmineResponse.Entities {
-		for {
-			if text[leadmineEntity.Beg] == leadmineEntity.EntityText[0] {
-				textIsEqual := true
-				for i := leadmineEntity.Beg; i < leadmineEntity.End; i++ {
-					if text[i] != leadmineEntity.EntityText[i-leadmineEntity.Beg] {
-						textIsEqual = false
-						break
-					}
-				}
-				if textIsEqual {
-					break
-				}
-			}
-			leadmineEntity.Beg++
-			leadmineEntity.End++
+		if _, ok := done[leadmineEntity.EntityText]; ok {
+			continue
+		}
+		done[leadmineEntity.EntityText] = struct{}{}
+
+		// Only regex for the text (no extra stuff like word boundaries) because
+		// it slows things down considerably.
+		r, err := regexp.Compile(leadmineEntity.EntityText)
+		if err != nil {
+			errs <- err
+			return
+		}
+
+		matches := r.FindAllStringIndex(text, -1)
+		for _, match := range matches {
+			entity := *leadmineEntity
+			entity.Beg = match[0]
+			entity.BegInNormalizedDoc = match[0]
+			entity.End = match[1]
+			entity.EndInNormalizedDoc = match[1]
+			correctedLeadmineEntities = append(correctedLeadmineEntities, entity)
 		}
 	}
 
 	var recognisedEntities []*pb.RecognizedEntity
-	for _, entity := range leadmineResponse.Entities {
-		inc := entity.Beg
+	for _, entity := range correctedLeadmineEntities {
 		dec := entity.Beg
+		position := 0
 		var snip *pb.Snippet
 		var ok bool
 		for {
-			snip, ok = snips[inc]
-			if ok {
-				if strings.Contains(snip.GetToken(), entity.EntityText) {
-					break
-				}
-			}
 			snip, ok = snips[dec]
 			if ok {
 				if strings.Contains(snip.GetToken(), entity.EntityText) {
 					break
+				} else {
+					errs <- errors.New("entity not in snippet - FIX ME")
 				}
 			}
-			inc++
 			dec--
+			position++
 		}
 
 		metadata, err := json.Marshal(LeadmineMetadata{
@@ -130,7 +143,7 @@ func (d Leadmine) Recognise(reader io.Reader, opts Options, entities chan []*pb.
 
 		recognisedEntities = append(recognisedEntities, &pb.RecognizedEntity{
 			Entity:      entity.EntityText,
-			Position:    snip.Offset + uint32(entity.Beg) - uint32(inc),
+			Position:    uint32(position),
 			Xpath:       snip.Xpath,
 			Dictionary:  entity.EntityGroup,
 			Identifiers: nil,

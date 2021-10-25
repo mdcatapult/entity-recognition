@@ -69,7 +69,7 @@ func main() {
 		case http_recogniser.DummyType:
 			httpClients[name] = http_recogniser.DummyClient{}
 		case http_recogniser.LeadmineType:
-			httpClients[name] = http_recogniser.Leadmine{Url: conf.Url}
+			httpClients[name] = http_recogniser.NewLeadmineClient(conf.Url)
 		}
 	}
 

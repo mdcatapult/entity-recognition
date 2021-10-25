@@ -36,6 +36,7 @@ func (r *recogniser) newResultHandler(vars *requestVars) func(snippet *pb.Snippe
 			Position:    snippet.GetOffset(),
 			Dictionary:  lookup.Dictionary,
 			Identifiers: lookup.Identifiers,
+			Xpath: snippet.GetXpath(),
 		}
 
 		if err := vars.stream.Send(entity); err != nil {

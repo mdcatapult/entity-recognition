@@ -26,9 +26,9 @@ func TestControllerSuite(t *testing.T) {
 }
 
 func (s *ControllerSuite) Test_controller_HTMLToText() {
-	acetylcarnitineHTML, err := os.Open("resources/acetylcarnitine.html")
+	acetylcarnitineHTML, err := os.Open("../../resources/acetylcarnitine.html")
 	s.Require().Nil(err)
-	acetylcarnitineRawFile, err := os.Open("resources/acetylcarnitine.txt")
+	acetylcarnitineRawFile, err := os.Open("../../resources/acetylcarnitine.txt")
 	s.Require().Nil(err)
 	acetylcarnitineRAWBytes, err := ioutil.ReadAll(acetylcarnitineRawFile)
 	s.Require().Nil(err)
@@ -60,9 +60,9 @@ func (s *ControllerSuite) Test_controller_HTMLToText() {
 }
 
 func (s *ControllerSuite) Test_controller_TokenizeHTML() {
-	acetylcarnitineHTML, err := os.Open("resources/acetylcarnitine.html")
+	acetylcarnitineHTML, err := os.Open("../../resources/acetylcarnitine.html")
 	s.Require().Nil(err)
-	acetylcarnitineTokensFile, err := os.Open("resources/acetylcarnitine-tokens.json")
+	acetylcarnitineTokensFile, err := os.Open("../../resources/acetylcarnitine-tokens.json")
 	s.Require().Nil(err)
 	acetylcarnitineTokensBytes, err := ioutil.ReadAll(acetylcarnitineTokensFile)
 	s.Require().Nil(err)
