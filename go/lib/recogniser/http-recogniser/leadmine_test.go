@@ -17,7 +17,6 @@ import (
 
 type leadmineSuite struct {
 	suite.Suite
-	leadmine leadmine
 }
 
 func TestLeadmineSuite(t *testing.T) {
@@ -31,6 +30,7 @@ func (s *leadmineSuite) TestRecognise() {
 
 	// Set up http mock client to return the leadmine response data
 	leadmineResponseFile, err := os.Open("../../../resources/leadmine-response.json")
+	s.Require().Nil(err)
 	mockHttpClient := &mocks.HttpClient{}
 	mockHttpClient.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
 		StatusCode: http.StatusOK,
@@ -55,6 +55,7 @@ func (s *leadmineSuite) TestRecognise() {
 	s.Require().Nil(err)
 	var expectedEntities []*pb.RecognizedEntity
 	err = json.Unmarshal(b, &expectedEntities)
+	s.Require().Nil(err)
 
 	wg.Wait()
 	s.Nil(testLeadmine.err)
