@@ -3,13 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
+	grpc_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser/grpc-recogniser"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser/http-recogniser"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
-	http_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/http-recogniser"
 	"google.golang.org/grpc"
 )
 
@@ -24,7 +26,7 @@ type recognitionAPIConfig struct {
 		Port int
 	} `mapstructure:"grpc_recognisers"`
 	HttpRecognisers map[string]struct {
-		Type http_recogniser.RecogniserType
+		Type http_recogniser.Type
 		Url  string
 	} `mapstructure:"http_recognisers"`
 }
@@ -49,8 +51,7 @@ func main() {
 
 	// for each recogniser in the config, instantiate a client and save the connection
 	// so that we can close it later.
-	clients := make(map[string]pb.RecognizerClient, len(config.GrpcRecognizers))
-	connections := make(map[string]*grpc.ClientConn, len(config.GrpcRecognizers))
+	recogniserClients := make(map[string]recogniser.Client)
 	for name, conf := range config.GrpcRecognizers {
 		log.Info().Str("recognizer", name).Msg("connecting...")
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -59,34 +60,24 @@ func main() {
 			log.Fatal().Err(err).Send()
 		}
 		cancel()
-		connections[name] = conn
-		clients[name] = pb.NewRecognizerClient(conn)
+		recogniserClients[name] = grpc_recogniser.New(pb.NewRecognizerClient(conn))
 	}
 
-	httpClients := make(map[string]http_recogniser.Client)
 	for name, conf := range config.HttpRecognisers {
 		switch conf.Type {
-		case http_recogniser.DummyType:
-			httpClients[name] = http_recogniser.DummyClient{}
 		case http_recogniser.LeadmineType:
-			httpClients[name] = http_recogniser.NewLeadmineClient(conf.Url)
+			recogniserClients[name] = http_recogniser.NewLeadmineClient(conf.Url)
 		}
 	}
 
 	r := gin.New()
 	r.Use(gin.LoggerWithFormatter(lib.JsonLogFormatter))
 	c := controller{
-		grpcRecogniserClients: clients,
-		httpRecogniserClients: httpClients,
+		recognisers: recogniserClients,
 	}
 	s := server{controller: c}
 	s.RegisterRoutes(r)
 	if err := r.Run(fmt.Sprintf(":%d", config.Server.HttpPort)); err != nil {
-		for _, conn := range connections {
-			if err := conn.Close(); err != nil {
-				log.Fatal().Err(err).Send()
-			}
-		}
 		log.Fatal().Err(err).Send()
 	}
 }

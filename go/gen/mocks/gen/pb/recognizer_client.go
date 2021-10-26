@@ -17,8 +17,8 @@ type RecognizerClient struct {
 	mock.Mock
 }
 
-// Recognize provides a mock function with given fields: ctx, opts
-func (_m *RecognizerClient) Recognize(ctx context.Context, opts ...grpc.CallOption) (pb.Recognizer_RecognizeClient, error) {
+// GetStream provides a mock function with given fields: ctx, opts
+func (_m *RecognizerClient) GetStream(ctx context.Context, opts ...grpc.CallOption) (pb.Recognizer_GetStreamClient, error) {
 	_va := make([]interface{}, len(opts))
 	for _i := range opts {
 		_va[_i] = opts[_i]
@@ -28,12 +28,12 @@ func (_m *RecognizerClient) Recognize(ctx context.Context, opts ...grpc.CallOpti
 	_ca = append(_ca, _va...)
 	ret := _m.Called(_ca...)
 
-	var r0 pb.Recognizer_RecognizeClient
-	if rf, ok := ret.Get(0).(func(context.Context, ...grpc.CallOption) pb.Recognizer_RecognizeClient); ok {
+	var r0 pb.Recognizer_GetStreamClient
+	if rf, ok := ret.Get(0).(func(context.Context, ...grpc.CallOption) pb.Recognizer_GetStreamClient); ok {
 		r0 = rf(ctx, opts...)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(pb.Recognizer_RecognizeClient)
+			r0 = ret.Get(0).(pb.Recognizer_GetStreamClient)
 		}
 	}
 

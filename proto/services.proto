@@ -8,5 +8,5 @@ service Tokenizer {
 }
 
 service Recognizer {
-    rpc Recognize (stream Snippet) returns (stream RecognizedEntity);
+    rpc GetStream (stream Snippet) returns (stream RecognizedEntity);
 }

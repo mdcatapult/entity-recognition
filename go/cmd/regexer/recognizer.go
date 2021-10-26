@@ -16,7 +16,7 @@ type recogniser struct {
 	regexps map[string]*regexp.Regexp
 }
 
-func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
+func (r recogniser) GetStream(stream pb.Recognizer_GetStreamServer) error {
 	log.Info().Msg("received request")
 	// listen for tokens
 	for {

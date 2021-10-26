@@ -1,27 +1,16 @@
 package main
 
 import (
-	"bytes"
-	"context"
-	"fmt"
-	"io"
-	"io/ioutil"
-	"sync"
-	"time"
-
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
-	http_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/http-recogniser"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
+	"io"
+	"sync"
 )
 
-type Options struct {
-	HttpOptions http_recogniser.Options `json:"http_options"`
-}
-
 type controller struct {
-	grpcRecogniserClients map[string]pb.RecognizerClient
-	httpRecogniserClients map[string]http_recogniser.Client
+	recognisers map[string]recogniser.Client
 }
 
 func (c controller) HTMLToText(reader io.Reader) ([]byte, error) {
@@ -59,111 +48,50 @@ func (c controller) TokenizeHTML(reader io.Reader) ([]*pb.Snippet, error) {
 	return tokens, nil
 }
 
-func (c controller) RecognizeInHTML(reader io.Reader, opts map[string]Options) ([]*pb.RecognizedEntity, error) {
+func (c controller) RecognizeInHTML(reader io.Reader, opts map[string]lib.RecogniserOptions) ([]*pb.RecognizedEntity, error) {
 
-	// Instantiate streaming grpcRecogniserClients for all of our recognisers
-	var err error
-	grpcRecognisers := make(map[string]pb.Recognizer_RecognizeClient)
-	httpRecognisers := make(map[string]http_recogniser.Options)
-	for name, options := range opts {
-		if grpcClient, ok := c.grpcRecogniserClients[name]; ok {
-			grpcRecognisers[name], err = grpcClient.Recognize(context.Background())
-		} else if _, ok := c.httpRecogniserClients[name]; ok {
-			httpRecognisers[name] = options.HttpOptions
-		} else {
-			return nil, HttpError{
-				code:  400,
-				error: fmt.Errorf("recogniser '%s' does not exist", name),
-			}
-		}
+	wg := &sync.WaitGroup{}
+	channels := make(map[string]chan lib.SnipReaderValue)
+	for recogniserName, recogniserOptions := range opts {
+		channels[recogniserName] = make(chan lib.SnipReaderValue)
+		err := c.recognisers[recogniserName].Recognise(channels[recogniserName], recogniserOptions, wg)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	body, err := ioutil.ReadAll(reader)
+	err := lib.HtmlToTextWithCallback(reader, func (snippet *pb.Snippet) error {
+		SendToAll(lib.SnipReaderValue{Snippet: snippet}, opts, channels)
+		return nil
+	})
 	if err != nil {
-		return nil, err
+		// Send the error to all recognisers. They should clean themselves up and call
+		// done on the waitgroup, then we'll return the error after wg.Wait.
+		SendToAll(lib.SnipReaderValue{Err: err}, opts, channels)
 	}
 
-	// When complete, send nil to the error channel.
-	// manipulating the slice. If there is an error, send it to the error channel.
-	// and appends them to a slice. The mutex is necessary for thread safety when
-	// For each recogniser, instantiate a goroutine which listens for entities
-	errChan := make(chan error, len(opts))
-	entities := make([]*pb.RecognizedEntity, 0, 1000)
-	var mut sync.Mutex
-	for _, recogniser := range grpcRecognisers {
-		go func(recogniser pb.Recognizer_RecognizeClient) {
-			for {
-				entity, err := recogniser.Recv()
-				if err == io.EOF {
-					errChan <- nil
-					return
-				} else if err != nil {
-					errChan <- err
-					return
-				}
-				mut.Lock()
-				entities = append(entities, entity)
-				mut.Unlock()
-			}
-		}(recogniser)
-	}
+	// Send io.EOF so the recognisers know they've received the last value.
+	SendToAll(lib.SnipReaderValue{Err: io.EOF}, opts, channels)
 
-	httpResponses := make(chan []*pb.RecognizedEntity)
-	go func() {
-		for range httpRecognisers {
-			resp := <-httpResponses
-			mut.Lock()
-			entities = append(entities, resp...)
-			mut.Unlock()
-		}
-	}()
-
-	for name, options := range httpRecognisers {
-		go c.httpRecogniserClients[name].Recognise(bytes.NewReader(body), options, httpResponses, errChan)
-	}
-
-	// Callback to the html to text function. Tokenize each block of text
-	// and send every token to every recogniser.
-	onSnippet := func(snippet *pb.Snippet) error {
-		return text.Tokenize(snippet, func(snippet *pb.Snippet) error {
-			for _, recogniser := range grpcRecognisers {
-				if err := recogniser.Send(snippet); err != nil {
-					return err
-				}
-			}
-			return nil
-		})
-	}
-
-	if err := lib.HtmlToTextWithCallback(bytes.NewReader(body), onSnippet); err != nil {
-		return nil, err
-	}
-
-	// HtmlToText blocks until it is complete, so at this point the callback
-	// will not be called again, and it is safe to call CloseSend on the recognisers
-	// to close the stream (this doesn't stop us receiving entities).
-	for _, recogniser := range grpcRecognisers {
-		if err := recogniser.CloseSend(); err != nil {
+	wg.Wait()
+	length := 0
+	for recogniserName := range opts {
+		if err := c.recognisers[recogniserName].Err(); err != nil {
 			return nil, err
 		}
+		length += len(c.recognisers[recogniserName].Result())
 	}
 
-	// This for loop will block execution until all of the go routines
-	// we spawned above have sent either nil or an error on the error
-	// channel. If there is no error on any channel, we can continue.
-	for range opts {
-		if err = <-errChan; err != nil {
-			return nil, err
-		}
+	recognisedEntities := make([]*pb.RecognizedEntity, 0, length)
+	for recogniserName := range opts {
+		recognisedEntities = append(recognisedEntities, c.recognisers[recogniserName].Result()...)
 	}
 
-	// Http recognisers send "nil" on the error channel immediately after sending their response.
-	// This doesn't give the controller quite enough time to unlock the mutex and append the result
-	// so we're just sleeping a little to let it catch up.
-	time.Sleep(10 * time.Millisecond)
+	return recognisedEntities, nil
+}
 
-	return entities, nil
+func SendToAll(snipReaderValue lib.SnipReaderValue, opts map[string]lib.RecogniserOptions, channels map[string]chan lib.SnipReaderValue) {
+	for recogniserName := range opts {
+		channels[recogniserName] <- snipReaderValue
+	}
 }

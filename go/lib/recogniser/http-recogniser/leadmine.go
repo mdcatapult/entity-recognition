@@ -4,31 +4,47 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strings"
+	"sync"
 
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
 )
 
-func NewLeadmineClient(url string) Client {
-	return leadmine{
+func NewLeadmineClient(url string) recogniser.Client {
+	return &leadmine{
 		Url:        url,
 		httpClient: http.DefaultClient,
 	}
 }
 
 type leadmine struct {
-	Url string
+	Url        string
 	httpClient lib.HttpClient
+	err        error
+	entities   []*pb.RecognizedEntity
 }
 
-func (d leadmine) UrlWithOpts(opts Options) string {
+func (l *leadmine) reset() {
+	l.err = nil
+	l.entities = nil
+}
+
+func (l *leadmine) Err() error {
+	return l.err
+}
+
+func (l *leadmine) Result() []*pb.RecognizedEntity {
+	return l.entities
+}
+
+func (l *leadmine) urlWithOpts(opts lib.RecogniserOptions) string {
 	if len(opts.QueryParameters) == 0 {
-		return d.Url
+		return l.Url
 	}
 
 	sep := func(key string) string {
@@ -40,49 +56,62 @@ func (d leadmine) UrlWithOpts(opts Options) string {
 		paramStr += sep(key) + strings.Join(values, sep(key))
 	}
 
-	return d.Url + "?" + paramStr[1:]
+	return l.Url + "?" + paramStr[1:]
 }
 
-func (d leadmine) Recognise(reader io.Reader, opts Options, entities chan []*pb.RecognizedEntity, errs chan error) {
+func (l *leadmine) handleError(err error) {
+	l.err = err
+}
+
+func (l *leadmine) Recognise(snipReaderValues <-chan lib.SnipReaderValue, opts lib.RecogniserOptions, wg *sync.WaitGroup) error {
+	l.reset()
+	go l.recognise(snipReaderValues, opts, wg)
+	return nil
+}
+
+func (l *leadmine) recognise(snipReaderValues <-chan lib.SnipReaderValue, opts lib.RecogniserOptions, wg *sync.WaitGroup) {
+	wg.Add(1)
+	defer wg.Done()
+
 	snips := make(map[int]*pb.Snippet)
 	var text string
 
-	err := lib.HtmlToTextWithCallback(reader, func(snippet *pb.Snippet) error {
+	err := lib.ReadSnippets(snipReaderValues, func(snippet *pb.Snippet) error {
 		snips[len(text)] = snippet
 		text += snippet.GetToken()
 		return nil
 	})
 	if err != nil {
-		errs <- err
+		l.handleError(err)
 		return
 	}
 
-	req, err := http.NewRequest(http.MethodPost, d.UrlWithOpts(opts), strings.NewReader(text))
+	req, err := http.NewRequest(http.MethodPost, l.urlWithOpts(opts), strings.NewReader(text))
 	if err != nil {
-		errs <- err
+		l.handleError(err)
 		return
 	}
 
-	resp, err := d.httpClient.Do(req)
+	resp, err := l.httpClient.Do(req)
 	if err != nil {
-		errs <- err
+		l.handleError(err)
 		return
 	}
 
 	if resp.StatusCode != 200 {
-		errs <- err
+		l.handleError(err)
 		return
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		errs <- err
+		l.handleError(err)
 		return
 	}
 
 	var leadmineResponse LeadmineResponse
 	if err := json.Unmarshal(b, &leadmineResponse); err != nil {
-		errs <- err
+		l.handleError(err)
 		return
 	}
 
@@ -98,7 +127,7 @@ func (d leadmine) Recognise(reader io.Reader, opts Options, entities chan []*pb.
 		// it slows things down considerably.
 		r, err := regexp.Compile(leadmineEntity.EntityText)
 		if err != nil {
-			errs <- err
+			l.handleError(err)
 			return
 		}
 
@@ -125,7 +154,7 @@ func (d leadmine) Recognise(reader io.Reader, opts Options, entities chan []*pb.
 				if strings.Contains(snip.GetToken(), entity.EntityText) {
 					break
 				} else {
-					errs <- errors.New("entity not in snippet - FIX ME")
+					l.handleError(errors.New("entity not in snippet - FIX ME"))
 				}
 			}
 			dec--
@@ -137,7 +166,7 @@ func (d leadmine) Recognise(reader io.Reader, opts Options, entities chan []*pb.
 			RecognisingDict: entity.RecognisingDict,
 		})
 		if err != nil {
-			errs <- err
+			l.handleError(err)
 			return
 		}
 
@@ -151,8 +180,7 @@ func (d leadmine) Recognise(reader io.Reader, opts Options, entities chan []*pb.
 		})
 	}
 
-	entities <- recognisedEntities
-	errs <- nil
+	l.entities = recognisedEntities
 }
 
 type LeadmineResponse struct {

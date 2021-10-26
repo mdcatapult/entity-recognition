@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	mocks "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks/lib"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -41,10 +42,10 @@ func (s *leadmineSuite) TestRecognise() {
 	// Set up some channels and other function arguments
 	testEntityChannel := make(chan []*pb.RecognizedEntity)
 	testErrorChannel := make(chan error)
-	testOptions := Options{}
+	testOptions := lib.RecogniserOptions{}
 
 	// Call the function we're testing!
-	go testLeadmine.Recognise(sourceHtml, testOptions, testEntityChannel, testErrorChannel)
+	testLeadmine.Recognise(sourceHtml, testOptions, testEntityChannel, testErrorChannel)
 
 	// Get the expected response from resources.
 	b, err := ioutil.ReadFile("../../resources/converted-leadmine-response.json")
@@ -69,21 +70,23 @@ func (s *leadmineSuite) TestUrlWithOpts() {
 	tests := []struct {
 		name     string
 		url      string
-		opts     Options
+		opts     lib.RecogniserOptions
 		expected string
 	}{
 		{
 			name:     "no query parameters",
 			url:      "https://leadmine.wopr.inf.mdc/chemical-entities/entities",
-			opts:     Options{},
+			opts:     lib.RecogniserOptions{},
 			expected: "https://leadmine.wopr.inf.mdc/chemical-entities/entities",
 		},
 		{
 			name: "one query parameter",
 			url: "https://leadmine.wopr.inf.mdc/chemical-entities/entities",
-			opts: Options{
-				QueryParameters: map[string][]string{
-					"inchi": {"true"},
+			opts: lib.RecogniserOptions{
+				HttpOptions: lib.HttpOptions{
+					QueryParameters: map[string][]string{
+						"inchi": {"true"},
+					},
 				},
 			},
 			expected: "https://leadmine.wopr.inf.mdc/chemical-entities/entities?inchi=true",
@@ -91,10 +94,12 @@ func (s *leadmineSuite) TestUrlWithOpts() {
 		{
 			name: "multiple query parameters",
 			url: "https://leadmine.wopr.inf.mdc/chemical-entities/entities",
-			opts: Options{
-				QueryParameters: map[string][]string{
-					"inchi": {"true", "yes"},
-					"hello": {"dave"},
+			opts: lib.RecogniserOptions{
+				HttpOptions: lib.HttpOptions{
+					QueryParameters: map[string][]string{
+						"inchi": {"true", "yes"},
+						"hello": {"dave"},
+					},
 				},
 			},
 			expected: "https://leadmine.wopr.inf.mdc/chemical-entities/entities?inchi=true&inchi=yes&hello=dave",
@@ -103,7 +108,7 @@ func (s *leadmineSuite) TestUrlWithOpts() {
 	for _, tt := range tests {
 		s.T().Log(tt.name)
 		leadmine := leadmine{Url: tt.url}
-		actual := leadmine.UrlWithOpts(tt.opts)
+		actual := leadmine.urlWithOpts(tt.opts)
 		s.Equal(tt.expected, actual)
 	}
 }

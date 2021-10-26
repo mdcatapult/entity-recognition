@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"io"
 
 	"github.com/gin-gonic/gin"
@@ -39,9 +40,9 @@ func (s server) RegisterRoutes(r *gin.Engine) {
 func (s server) RecognizeInHTML(c *gin.Context) {
 	requestedRecognisers, _ := c.GetQueryArray("recogniser")
 
-	recognisers := make(map[string]Options)
+	recognisers := make(map[string]lib.RecogniserOptions)
 	for _, recogniser := range requestedRecognisers {
-		recognisers[recogniser] = Options{}
+		recognisers[recogniser] = lib.RecogniserOptions{}
 
 		header := c.GetHeader(fmt.Sprintf("x-%s", recogniser))
 		if header == "" {
@@ -57,7 +58,7 @@ func (s server) RecognizeInHTML(c *gin.Context) {
 			return
 		}
 
-		var opts Options
+		var opts lib.RecogniserOptions
 		if err := json.Unmarshal(b, &opts); err != nil {
 			handleError(c, HttpError{
 				code:  400,

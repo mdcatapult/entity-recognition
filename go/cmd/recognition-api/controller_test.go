@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
 	"io"
 	"io/ioutil"
 	"os"
@@ -136,7 +137,7 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 	}
 	for _, tt := range tests {
 		s.T().Log(tt.name)
-		opts := map[string]Options{
+		opts := map[string]recogniser.Options{
 			"mock": {},
 		}
 		got, gotErr := s.controller.RecognizeInHTML(tt.args.reader, opts)

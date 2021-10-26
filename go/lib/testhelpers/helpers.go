@@ -23,8 +23,8 @@ func Snip(tok string, offset uint32, xpath string) *pb.Snippet {
 	}
 }
 
-func NewMockRecognizeServerStream(snippets ...*pb.Snippet) *mocks.Recognizer_RecognizeServer {
-	stream := &mocks.Recognizer_RecognizeServer{}
+func NewMockRecognizeServerStream(snippets ...*pb.Snippet) *mocks.Recognizer_GetStreamServer {
+	stream := &mocks.Recognizer_GetStreamServer{}
 	for _, snippet := range snippets {
 		stream.On("Recv").Return(snippet, nil).Once()
 	}
@@ -32,8 +32,8 @@ func NewMockRecognizeServerStream(snippets ...*pb.Snippet) *mocks.Recognizer_Rec
 	return stream
 }
 
-func NewMockRecognizeClientStream(snippets ...*pb.Snippet) *mocks.Recognizer_RecognizeClient {
-	stream := &mocks.Recognizer_RecognizeClient{}
+func NewMockRecognizeClientStream(snippets ...*pb.Snippet) *mocks.Recognizer_GetStreamClient {
+	stream := &mocks.Recognizer_GetStreamClient{}
 	for _, snippet := range snippets {
 		stream.On("Send", snippet).Return(nil).Once()
 	}

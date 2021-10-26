@@ -47,7 +47,7 @@ func (s *RecognizerSuite) Test_recognizer_Recognize() {
 	mockGetPipeline.On("Size").Return(len(snippets)).Once()
 	mockGetPipeline.On("ExecGet", mock.Anything).Return(nil)
 
-	err := s.Recognize(mockStream)
+	err := s.GetStream(mockStream)
 	s.Nil(err)
 	mockDBClient.AssertExpectations(s.T())
 	mockGetPipeline.AssertExpectations(s.T())
@@ -105,57 +105,57 @@ func (s *RecognizerSuite) Test_recogniser_queryToken() {
 			name: "in cache, not in db",
 			args: args{
 				vars: &requestVars{
-					tokenCache: tokenCache,
+					snippetCache: tokenCache,
 				},
 				token: notInDB,
 			},
 			wantErr: nil,
 			wantVars: &requestVars{
-				tokenCache: tokenCache,
+				snippetCache: tokenCache,
 			},
 		},
 		{
 			name: "in cache, not yet queried db (cache miss)",
 			args: args{
 				vars: &requestVars{
-					tokenCache: tokenCache,
+					snippetCache: tokenCache,
 				},
 				token: cacheMiss,
 			},
 			wantErr: nil,
 			wantVars: &requestVars{
-				tokenCache:       tokenCache,
-				tokenCacheMisses: []*pb.Snippet{cacheMiss},
+				snippetCache:       tokenCache,
+				snippetCacheMisses: []*pb.Snippet{cacheMiss},
 			},
 		},
 		{
 			name: "in cache with value",
 			args: args{
 				vars: &requestVars{
-					tokenCache: tokenCache,
-					stream:     mockStream,
+					snippetCache: tokenCache,
+					stream:       mockStream,
 				},
 				token: inDB,
 			},
 			wantErr: nil,
 			wantVars: &requestVars{
-				tokenCache: tokenCache,
-				stream:     mockStream,
+				snippetCache: tokenCache,
+				stream:       mockStream,
 			},
 		},
 		{
 			name: "not in cache",
 			args: args{
 				vars: &requestVars{
-					tokenCache: tokenCache,
-					pipe:       mockGetPipeline,
+					snippetCache: tokenCache,
+					pipe:         mockGetPipeline,
 				},
 				token: notInCache,
 			},
 			wantErr: nil,
 			wantVars: &requestVars{
-				tokenCache: tokenCacheWithMissingToken,
-				pipe:       mockGetPipeline,
+				snippetCache: tokenCacheWithMissingToken,
+				pipe:         mockGetPipeline,
 			},
 		},
 	}

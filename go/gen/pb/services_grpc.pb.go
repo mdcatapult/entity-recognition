@@ -4,7 +4,6 @@ package pb
 
 import (
 	context "context"
-
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -137,7 +136,7 @@ var Tokenizer_ServiceDesc = grpc.ServiceDesc{
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RecognizerClient interface {
-	Recognize(ctx context.Context, opts ...grpc.CallOption) (Recognizer_RecognizeClient, error)
+	GetStream(ctx context.Context, opts ...grpc.CallOption) (Recognizer_GetStreamClient, error)
 }
 
 type recognizerClient struct {
@@ -148,30 +147,30 @@ func NewRecognizerClient(cc grpc.ClientConnInterface) RecognizerClient {
 	return &recognizerClient{cc}
 }
 
-func (c *recognizerClient) Recognize(ctx context.Context, opts ...grpc.CallOption) (Recognizer_RecognizeClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Recognizer_ServiceDesc.Streams[0], "/Recognizer/Recognize", opts...)
+func (c *recognizerClient) GetStream(ctx context.Context, opts ...grpc.CallOption) (Recognizer_GetStreamClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Recognizer_ServiceDesc.Streams[0], "/Recognizer/GetStream", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &recognizerRecognizeClient{stream}
+	x := &recognizerGetStreamClient{stream}
 	return x, nil
 }
 
-type Recognizer_RecognizeClient interface {
+type Recognizer_GetStreamClient interface {
 	Send(*Snippet) error
 	Recv() (*RecognizedEntity, error)
 	grpc.ClientStream
 }
 
-type recognizerRecognizeClient struct {
+type recognizerGetStreamClient struct {
 	grpc.ClientStream
 }
 
-func (x *recognizerRecognizeClient) Send(m *Snippet) error {
+func (x *recognizerGetStreamClient) Send(m *Snippet) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *recognizerRecognizeClient) Recv() (*RecognizedEntity, error) {
+func (x *recognizerGetStreamClient) Recv() (*RecognizedEntity, error) {
 	m := new(RecognizedEntity)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -183,7 +182,7 @@ func (x *recognizerRecognizeClient) Recv() (*RecognizedEntity, error) {
 // All implementations must embed UnimplementedRecognizerServer
 // for forward compatibility
 type RecognizerServer interface {
-	Recognize(Recognizer_RecognizeServer) error
+	GetStream(Recognizer_GetStreamServer) error
 	mustEmbedUnimplementedRecognizerServer()
 }
 
@@ -191,8 +190,8 @@ type RecognizerServer interface {
 type UnimplementedRecognizerServer struct {
 }
 
-func (UnimplementedRecognizerServer) Recognize(Recognizer_RecognizeServer) error {
-	return status.Errorf(codes.Unimplemented, "method Recognize not implemented")
+func (UnimplementedRecognizerServer) GetStream(Recognizer_GetStreamServer) error {
+	return status.Errorf(codes.Unimplemented, "method GetStream not implemented")
 }
 func (UnimplementedRecognizerServer) mustEmbedUnimplementedRecognizerServer() {}
 
@@ -207,25 +206,25 @@ func RegisterRecognizerServer(s grpc.ServiceRegistrar, srv RecognizerServer) {
 	s.RegisterService(&Recognizer_ServiceDesc, srv)
 }
 
-func _Recognizer_Recognize_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(RecognizerServer).Recognize(&recognizerRecognizeServer{stream})
+func _Recognizer_GetStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(RecognizerServer).GetStream(&recognizerGetStreamServer{stream})
 }
 
-type Recognizer_RecognizeServer interface {
+type Recognizer_GetStreamServer interface {
 	Send(*RecognizedEntity) error
 	Recv() (*Snippet, error)
 	grpc.ServerStream
 }
 
-type recognizerRecognizeServer struct {
+type recognizerGetStreamServer struct {
 	grpc.ServerStream
 }
 
-func (x *recognizerRecognizeServer) Send(m *RecognizedEntity) error {
+func (x *recognizerGetStreamServer) Send(m *RecognizedEntity) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *recognizerRecognizeServer) Recv() (*Snippet, error) {
+func (x *recognizerGetStreamServer) Recv() (*Snippet, error) {
 	m := new(Snippet)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -242,8 +241,8 @@ var Recognizer_ServiceDesc = grpc.ServiceDesc{
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "Recognize",
-			Handler:       _Recognizer_Recognize_Handler,
+			StreamName:    "GetStream",
+			Handler:       _Recognizer_GetStream_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},

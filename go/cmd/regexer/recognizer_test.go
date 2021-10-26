@@ -29,7 +29,7 @@ func (s *RecognizerSuite) Test_recogniser_Recognize() {
 	}
 	mockStream.On("Send", foundEntity).Return(nil).Once()
 	type args struct {
-		stream pb.Recognizer_RecognizeServer
+		stream pb.Recognizer_GetStreamServer
 	}
 	tests := []struct {
 		name    string
@@ -44,7 +44,7 @@ func (s *RecognizerSuite) Test_recogniser_Recognize() {
 	}
 	for _, tt := range tests {
 		s.T().Log(tt.name)
-		gotErr := s.recogniser.Recognize(tt.args.stream)
+		gotErr := s.recogniser.GetStream(tt.args.stream)
 		s.Equal(tt.wantErr, gotErr)
 	}
 	mockStream.AssertExpectations(s.T())

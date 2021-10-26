@@ -13,7 +13,7 @@ type localRecogniser struct {
 	localCache local.Client
 }
 
-func initializeRequest(stream pb.Recognizer_RecognizeServer) *requestVars {
+func initializeRequest(stream pb.Recognizer_GetStreamServer) *requestVars {
 	return &requestVars{
 		snippetHistory: []*pb.Snippet{},
 		tokenHistory:   []string{},
@@ -21,7 +21,7 @@ func initializeRequest(stream pb.Recognizer_RecognizeServer) *requestVars {
 	}
 }
 
-func (r *localRecogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
+func (r *localRecogniser) Recognize(stream pb.Recognizer_GetStreamServer) error {
 	vars := initializeRequest(stream)
 	log.Info().Msg("received request")
 
