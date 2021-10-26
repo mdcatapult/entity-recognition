@@ -4,17 +4,19 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/stretchr/testify/mock"
+	mock_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks/lib/recogniser"
+	mock_snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks/lib/snippet-reader"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/html"
 	"io"
 	"io/ioutil"
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
-	mocks "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/testhelpers"
 )
 
 type ControllerSuite struct {
@@ -33,6 +35,7 @@ func (s *ControllerSuite) Test_controller_HTMLToText() {
 	s.Require().Nil(err)
 	acetylcarnitineRAWBytes, err := ioutil.ReadAll(acetylcarnitineRawFile)
 	s.Require().Nil(err)
+	s.html = html.SnippetReader{}
 
 	type args struct {
 		reader io.Reader
@@ -70,6 +73,7 @@ func (s *ControllerSuite) Test_controller_TokenizeHTML() {
 	var acetylcarnitineTokens []*pb.Snippet
 	err = json.Unmarshal(acetylcarnitineTokensBytes, &acetylcarnitineTokens)
 	s.Require().Nil(err)
+	s.html = html.SnippetReader{}
 
 	type args struct {
 		reader io.Reader
@@ -96,54 +100,34 @@ func (s *ControllerSuite) Test_controller_TokenizeHTML() {
 }
 
 func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
-	buf := bytes.NewBuffer([]byte("<p>hello my name is jeff</p>"))
-	mockRecognizer_RecognizeClient := testhelpers.NewMockRecognizeClientStream(
-		testhelpers.Snip("hello", 3, "/html"),
-		testhelpers.Snip("my", 9, "/html"),
-		testhelpers.Snip("name", 12, "/html"),
-		testhelpers.Snip("is", 17, "/html"),
-		testhelpers.Snip("jeff", 20, "/html"),
-	)
-	foundEntity := &pb.RecognizedEntity{
-		Entity:      "found entity",
-		Position:    2312,
-		Dictionary:  "test",
-		Identifiers: map[string]string{"many": "", "things": ""},
-	}
-	mockRecognizer_RecognizeClient.On("Recv").Return(foundEntity, nil).Once()
-	mockRecognizer_RecognizeClient.On("Recv").Return(nil, io.EOF).Once()
-
-	mockRecognizerClient := &mocks.RecognizerClient{}
-	mockRecognizerClient.On("Recognize", mock.AnythingOfType("*context.emptyCtx")).Return(mockRecognizer_RecognizeClient, nil).Once()
-	s.controller.grpcRecogniserClients = map[string]pb.RecognizerClient{"mock": mockRecognizerClient}
-
-	type args struct {
-		reader io.Reader
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    []*pb.RecognizedEntity
-		wantErr error
-	}{
+	foundEntities := []*pb.RecognizedEntity{
 		{
-			name: "happy path",
-			args: args{
-				reader: buf,
-			},
-			want:    []*pb.RecognizedEntity{foundEntity},
-			wantErr: nil,
+			Entity:      "found entity",
+			Position:    2312,
+			Dictionary:  "test",
+			Identifiers: map[string]string{"many": "", "things": ""},
 		},
 	}
-	for _, tt := range tests {
-		s.T().Log(tt.name)
-		opts := map[string]recogniser.Options{
-			"mock": {},
-		}
-		got, gotErr := s.controller.RecognizeInHTML(tt.args.reader, opts)
-		s.ElementsMatch(tt.want, got)
-		s.Equal(tt.wantErr, gotErr)
+
+	mockRecogniser := &mock_recogniser.Client{}
+	mockRecogniser.On("Recognise",
+		mock.AnythingOfType("<-chan snippet_reader.Value"),
+		lib.RecogniserOptions{},
+		mock.AnythingOfType("*sync.WaitGroup"),
+	).Return(nil)
+	mockRecogniser.On("Err").Return(nil)
+	mockRecogniser.On("Result").Return(foundEntities)
+	s.controller.recognisers = map[string]recogniser.Client{"mock": mockRecogniser}
+
+	mockSnippetReader := &mock_snippet_reader.Client{}
+	mockSnippetReader.On("ReadSnippetsWithCallback", mock.Anything, mock.Anything).Return(nil)
+	s.html = mockSnippetReader
+
+	buf := bytes.NewBuffer([]byte("<p>hello my name is jeff</p>"))
+	opts := map[string]lib.RecogniserOptions{
+		"mock": {},
 	}
-	mockRecognizerClient.AssertExpectations(s.T())
-	mockRecognizer_RecognizeClient.AssertExpectations(s.T())
+	entities, err := s.controller.RecognizeInHTML(buf, opts)
+	s.ElementsMatch(foundEntities, entities)
+	s.Nil(err)
 }

@@ -7,9 +7,11 @@ import (
 	mocks "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks/lib"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/html"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"sync"
 	"testing"
 )
 
@@ -24,11 +26,11 @@ func TestLeadmineSuite(t *testing.T) {
 
 func (s *leadmineSuite) TestRecognise() {
 	// Get reader of file to "recognise" in
-	sourceHtml, err := os.Open("../../resources/acetylcarnitine.html")
+	sourceHtml, err := os.Open("../../../resources/acetylcarnitine.html")
 	s.Require().Nil(err)
 
 	// Set up http mock client to return the leadmine response data
-	leadmineResponseFile, err := os.Open("../../resources/leadmine-response.json")
+	leadmineResponseFile, err := os.Open("../../../resources/leadmine-response.json")
 	mockHttpClient := &mocks.HttpClient{}
 	mockHttpClient.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
 		StatusCode: http.StatusOK,
@@ -39,31 +41,24 @@ func (s *leadmineSuite) TestRecognise() {
 		httpClient: mockHttpClient,
 	}
 
-	// Set up some channels and other function arguments
-	testEntityChannel := make(chan []*pb.RecognizedEntity)
-	testErrorChannel := make(chan error)
+	// Set up function arguments
+	snipChan := html.SnippetReader{}.ReadSnippets(sourceHtml)
 	testOptions := lib.RecogniserOptions{}
+	wg := &sync.WaitGroup{}
 
 	// Call the function we're testing!
-	testLeadmine.Recognise(sourceHtml, testOptions, testEntityChannel, testErrorChannel)
+	err = testLeadmine.Recognise(snipChan, testOptions, wg)
+	s.Nil(err)
 
 	// Get the expected response from resources.
-	b, err := ioutil.ReadFile("../../resources/converted-leadmine-response.json")
+	b, err := ioutil.ReadFile("../../../resources/converted-leadmine-response.json")
 	s.Require().Nil(err)
 	var expectedEntities []*pb.RecognizedEntity
 	err = json.Unmarshal(b, &expectedEntities)
 
-	// Wait for both channels to return something and assert they are what we expect.
-Loop:
-	for {
-		select {
-		case entities := <-testEntityChannel:
-			s.EqualValues(expectedEntities, entities)
-		case err := <-testErrorChannel:
-			s.Nil(err)
-			break Loop
-		}
-	}
+	wg.Wait()
+	s.Nil(testLeadmine.err)
+	s.EqualValues(expectedEntities, testLeadmine.entities)
 }
 
 func (s *leadmineSuite) TestUrlWithOpts() {

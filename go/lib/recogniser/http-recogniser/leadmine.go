@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
 	"io/ioutil"
 	"net/http"
 	"regexp"
@@ -63,20 +64,20 @@ func (l *leadmine) handleError(err error) {
 	l.err = err
 }
 
-func (l *leadmine) Recognise(snipReaderValues <-chan lib.SnipReaderValue, opts lib.RecogniserOptions, wg *sync.WaitGroup) error {
+func (l *leadmine) Recognise(snipReaderValues <-chan snippet_reader.Value, opts lib.RecogniserOptions, wg *sync.WaitGroup) error {
 	l.reset()
 	go l.recognise(snipReaderValues, opts, wg)
 	return nil
 }
 
-func (l *leadmine) recognise(snipReaderValues <-chan lib.SnipReaderValue, opts lib.RecogniserOptions, wg *sync.WaitGroup) {
+func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, opts lib.RecogniserOptions, wg *sync.WaitGroup) {
 	wg.Add(1)
 	defer wg.Done()
 
 	snips := make(map[int]*pb.Snippet)
 	var text string
 
-	err := lib.ReadSnippets(snipReaderValues, func(snippet *pb.Snippet) error {
+	err := snippet_reader.ReadChannelWithCallback(snipReaderValues, func(snippet *pb.Snippet) error {
 		snips[len(text)] = snippet
 		text += snippet.GetToken()
 		return nil

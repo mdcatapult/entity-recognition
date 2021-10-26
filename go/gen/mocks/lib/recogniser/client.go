@@ -8,6 +8,8 @@ import (
 
 	pb "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 
+	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
+
 	sync "sync"
 )
 
@@ -31,11 +33,11 @@ func (_m *Client) Err() error {
 }
 
 // Recognise provides a mock function with given fields: _a0, _a1, _a2
-func (_m *Client) Recognise(_a0 <-chan lib.SnipReaderValue, _a1 lib.RecogniserOptions, _a2 *sync.WaitGroup) error {
+func (_m *Client) Recognise(_a0 <-chan snippet_reader.Value, _a1 lib.RecogniserOptions, _a2 *sync.WaitGroup) error {
 	ret := _m.Called(_a0, _a1, _a2)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(<-chan lib.SnipReaderValue, lib.RecogniserOptions, *sync.WaitGroup) error); ok {
+	if rf, ok := ret.Get(0).(func(<-chan snippet_reader.Value, lib.RecogniserOptions, *sync.WaitGroup) error); ok {
 		r0 = rf(_a0, _a1, _a2)
 	} else {
 		r0 = ret.Error(0)

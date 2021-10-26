@@ -5,6 +5,7 @@ import (
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 	"io"
 	"sync"
@@ -26,7 +27,7 @@ type grpcRecogniser struct {
 	stream pb.Recognizer_GetStreamClient
 }
 
-func(g *grpcRecogniser) Recognise(snipReaderValues <-chan lib.SnipReaderValue, _ lib.RecogniserOptions, wg *sync.WaitGroup) error {
+func(g *grpcRecogniser) Recognise(snipReaderValues <-chan snippet_reader.Value, _ lib.RecogniserOptions, wg *sync.WaitGroup) error {
 	g.reset()
 
 	var err error
@@ -46,7 +47,7 @@ func (g *grpcRecogniser) reset() {
 	g.stream = nil
 }
 
-func (g *grpcRecogniser) recognise(snipReaderValues <-chan lib.SnipReaderValue, wg *sync.WaitGroup) {
+func (g *grpcRecogniser) recognise(snipReaderValues <-chan snippet_reader.Value, wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -62,7 +63,7 @@ func (g *grpcRecogniser) recognise(snipReaderValues <-chan lib.SnipReaderValue, 
 		}
 	}()
 
-	err := lib.ReadSnippets(snipReaderValues, func (snippet *pb.Snippet) error {
+	err := snippet_reader.ReadChannelWithCallback(snipReaderValues, func (snippet *pb.Snippet) error {
 		return text.Tokenize(snippet, func(snippet *pb.Snippet) error {
 			if err := g.stream.Send(snippet); err != nil {
 				return err

@@ -6,6 +6,7 @@ import (
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
 	grpc_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser/grpc-recogniser"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser/http-recogniser"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/html"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -74,6 +75,7 @@ func main() {
 	r.Use(gin.LoggerWithFormatter(lib.JsonLogFormatter))
 	c := controller{
 		recognisers: recogniserClients,
+		html: html.SnippetReader{},
 	}
 	s := server{controller: c}
 	s.RegisterRoutes(r)

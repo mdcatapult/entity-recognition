@@ -1,7 +1,8 @@
-package lib
+package html
 
 import (
 	"bytes"
+	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
 	"io"
 	"testing"
 
@@ -16,7 +17,7 @@ func TestHtmlToText(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []*pb.Snippet
+		want    []snippet_reader.Value
 		wantErr error
 	}{
 		{
@@ -24,7 +25,9 @@ func TestHtmlToText(t *testing.T) {
 			args: args{
 				r: bytes.NewBufferString(""),
 			},
-			want:    []*pb.Snippet{},
+			want:    []snippet_reader.Value{
+				{Err: io.EOF},
+			},
 			wantErr: nil,
 		},
 		{
@@ -32,23 +35,12 @@ func TestHtmlToText(t *testing.T) {
 			args: args{
 				r: bytes.NewBufferString("  <body>  x<sup>2</sup> <strike>hello</strike><br/>dave</body>"),
 			},
-			want: []*pb.Snippet{
-				{
-					Token:  "\n",
-					Offset: 16,
-					Xpath:  "/html/*[1]",
-				},
-				{
-					Token:  "\n",
-					Offset: 32,
-					Xpath:  "/html/*[2]",
-				},
+			want: wrapSnips([]*pb.Snippet{
 				{
 					Token:  "  x2 hello\ndave\n",
 					Offset: 8,
-					Xpath:  "/html",
-				},
-			},
+					Xpath:  "/body",
+				}}...),
 			wantErr: nil,
 		},
 		{
@@ -56,38 +48,27 @@ func TestHtmlToText(t *testing.T) {
 			args: args{
 				r: bytes.NewBufferString("<p>acetyl<emph>car</emph>nitine</p>"),
 			},
-			want: []*pb.Snippet{
-				{
-					Token:  "\n",
-					Offset: 15,
-					Xpath:  "/html/*[1]",
-				},
-				{
-					Token:  "acetylcarnitine\n",
-					Offset: 3,
-					Xpath:  "/html",
-				},
-			},
+			want: wrapSnips([]*pb.Snippet{
+					{
+						Token:  "acetylcarnitine\n",
+						Offset: 3,
+						Xpath:  "/p",
+					},
+				}...),
 			wantErr: nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Log(tt.name)
+		vals := ReadSnippets(tt.args.r)
+
 		i := 0
-		gotSnips, gotErrs := HtmlToText(tt.args.r)
-	Loop:
-		for {
-			select {
-			case s := <-gotSnips:
-				if i >= len(tt.want) {
-					t.FailNow()
-				}
-				assert.EqualValues(t, tt.want[i], s)
-				i++
-			case err := <-gotErrs:
-				assert.Equal(t, tt.wantErr, err)
-				break Loop
+		for val := range vals {
+			assert.EqualValues(t, tt.want[i], val)
+			if val.Err != nil {
+				break
 			}
+			i++
 		}
 	}
 }
@@ -133,4 +114,13 @@ func Test_htmlStack_xpath(t *testing.T) {
 		actual := tt.stack.xpath()
 		assert.Equal(t, tt.expected, actual)
 	}
+}
+
+func wrapSnips(snips ...*pb.Snippet) []snippet_reader.Value {
+	var values []snippet_reader.Value
+	for _, snip := range snips {
+		values = append(values, snippet_reader.Value{Snippet: snip})
+	}
+	values = append(values, snippet_reader.Value{Err: io.EOF})
+	return values
 }

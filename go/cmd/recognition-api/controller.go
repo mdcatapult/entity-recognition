@@ -4,6 +4,7 @@ import (
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 	"io"
 	"sync"
@@ -11,6 +12,7 @@ import (
 
 type controller struct {
 	recognisers map[string]recogniser.Client
+	html        snippet_reader.Client
 }
 
 func (c controller) HTMLToText(reader io.Reader) ([]byte, error) {
@@ -19,7 +21,7 @@ func (c controller) HTMLToText(reader io.Reader) ([]byte, error) {
 		data = append(data, snippet.GetToken()...)
 		return nil
 	}
-	if err := lib.HtmlToTextWithCallback(reader, onSnippet); err != nil {
+	if err := c.html.ReadSnippetsWithCallback(reader, onSnippet); err != nil {
 		return nil, err
 	}
 
@@ -27,7 +29,7 @@ func (c controller) HTMLToText(reader io.Reader) ([]byte, error) {
 }
 
 func (c controller) TokenizeHTML(reader io.Reader) ([]*pb.Snippet, error) {
-	// This is a callback which is executed when the lib.HtmlToText function reaches some kind
+	// This is a callback which is executed when the lib.ReadSnippets function reaches some kind
 	// of delimiter, e.g. </br>. Here we tokenize the output and append that to our token slice.
 	var tokens []*pb.Snippet
 	onSnippet := func(snippet *pb.Snippet) error {
@@ -41,7 +43,7 @@ func (c controller) TokenizeHTML(reader io.Reader) ([]*pb.Snippet, error) {
 	}
 
 	// Call htmlToText with our callback
-	if err := lib.HtmlToTextWithCallback(reader, onSnippet); err != nil {
+	if err := c.html.ReadSnippetsWithCallback(reader, onSnippet); err != nil {
 		return nil, err
 	}
 
@@ -51,27 +53,24 @@ func (c controller) TokenizeHTML(reader io.Reader) ([]*pb.Snippet, error) {
 func (c controller) RecognizeInHTML(reader io.Reader, opts map[string]lib.RecogniserOptions) ([]*pb.RecognizedEntity, error) {
 
 	wg := &sync.WaitGroup{}
-	channels := make(map[string]chan lib.SnipReaderValue)
+	channels := make(map[string]chan snippet_reader.Value)
 	for recogniserName, recogniserOptions := range opts {
-		channels[recogniserName] = make(chan lib.SnipReaderValue)
+		channels[recogniserName] = make(chan snippet_reader.Value)
 		err := c.recognisers[recogniserName].Recognise(channels[recogniserName], recogniserOptions, wg)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	err := lib.HtmlToTextWithCallback(reader, func (snippet *pb.Snippet) error {
-		SendToAll(lib.SnipReaderValue{Snippet: snippet}, opts, channels)
+	err := c.html.ReadSnippetsWithCallback(reader, func (snippet *pb.Snippet) error {
+		SendToAll(snippet_reader.Value{Snippet: snippet}, opts, channels)
 		return nil
 	})
 	if err != nil {
 		// Send the error to all recognisers. They should clean themselves up and call
 		// done on the waitgroup, then we'll return the error after wg.Wait.
-		SendToAll(lib.SnipReaderValue{Err: err}, opts, channels)
+		SendToAll(snippet_reader.Value{Err: err}, opts, channels)
 	}
-
-	// Send io.EOF so the recognisers know they've received the last value.
-	SendToAll(lib.SnipReaderValue{Err: io.EOF}, opts, channels)
 
 	wg.Wait()
 	length := 0
@@ -90,7 +89,7 @@ func (c controller) RecognizeInHTML(reader io.Reader, opts map[string]lib.Recogn
 	return recognisedEntities, nil
 }
 
-func SendToAll(snipReaderValue lib.SnipReaderValue, opts map[string]lib.RecogniserOptions, channels map[string]chan lib.SnipReaderValue) {
+func SendToAll(snipReaderValue snippet_reader.Value, opts map[string]lib.RecogniserOptions, channels map[string]chan snippet_reader.Value) {
 	for recogniserName := range opts {
 		channels[recogniserName] <- snipReaderValue
 	}
