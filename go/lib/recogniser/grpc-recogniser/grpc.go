@@ -2,13 +2,14 @@ package grpc_recogniser
 
 import (
 	"context"
+	"io"
+	"sync"
+
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
+	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
-	"io"
-	"sync"
 )
 
 func New(client pb.RecognizerClient) recogniser.Client {
@@ -21,13 +22,13 @@ func New(client pb.RecognizerClient) recogniser.Client {
 }
 
 type grpcRecogniser struct {
-	client pb.RecognizerClient
-	err error
+	client   pb.RecognizerClient
+	err      error
 	entities []*pb.RecognizedEntity
-	stream pb.Recognizer_GetStreamClient
+	stream   pb.Recognizer_GetStreamClient
 }
 
-func(g *grpcRecogniser) Recognise(snipReaderValues <-chan snippet_reader.Value, _ lib.RecogniserOptions, wg *sync.WaitGroup) error {
+func (g *grpcRecogniser) Recognise(snipReaderValues <-chan snippet_reader.Value, _ lib.RecogniserOptions, wg *sync.WaitGroup) error {
 	g.reset()
 
 	var err error
@@ -63,7 +64,7 @@ func (g *grpcRecogniser) recognise(snipReaderValues <-chan snippet_reader.Value,
 		}
 	}()
 
-	err := snippet_reader.ReadChannelWithCallback(snipReaderValues, func (snippet *pb.Snippet) error {
+	err := snippet_reader.ReadChannelWithCallback(snipReaderValues, func(snippet *pb.Snippet) error {
 		return text.Tokenize(snippet, func(snippet *pb.Snippet) error {
 			if err := g.stream.Send(snippet); err != nil {
 				return err
@@ -75,17 +76,16 @@ func (g *grpcRecogniser) recognise(snipReaderValues <-chan snippet_reader.Value,
 		g.err = err
 	}
 
-
 	if err := g.stream.CloseSend(); err != nil {
 		g.err = err
 		return
 	}
 }
 
-func(g *grpcRecogniser) Err() error {
+func (g *grpcRecogniser) Err() error {
 	return g.err
 }
 
-func(g *grpcRecogniser) Result() []*pb.RecognizedEntity {
+func (g *grpcRecogniser) Result() []*pb.RecognizedEntity {
 	return g.entities
 }

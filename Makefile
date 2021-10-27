@@ -59,4 +59,4 @@ run: build
 
 .PHONY: format
 format: require-go
-	dirs=$$(go list -f {{.Dir}} ./...) && for d in $$dirs; do goimports -w $$d/*.go; done
+	find ./go -type f -name '*.go' -exec ./scripts/goimports.sh {} \;

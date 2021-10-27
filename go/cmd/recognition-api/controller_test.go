@@ -3,12 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/mock"
-	mock_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks/lib/recogniser"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
-	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/html"
 	"io"
 	"io/ioutil"
 	"os"
@@ -16,8 +10,14 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+	mock_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks/lib/recogniser"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
+	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/html"
 )
 
 type ControllerSuite struct {
@@ -113,9 +113,9 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 	}
 
 	sentSnippet := &pb.Snippet{
-		Token: "found entity\n",
+		Token:  "found entity\n",
 		Offset: 3,
-		Xpath: "/p",
+		Xpath:  "/p",
 	}
 
 	reader := strings.NewReader("<p>found entity</p>")

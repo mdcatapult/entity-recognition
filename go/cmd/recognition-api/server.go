@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"io"
 
 	"github.com/gin-gonic/gin"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 )
 
 type HttpError struct {

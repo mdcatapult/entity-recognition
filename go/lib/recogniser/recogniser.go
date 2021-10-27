@@ -1,10 +1,11 @@
 package recogniser
 
 import (
+	"sync"
+
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
-	"sync"
+	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
 )
 
 type Client interface {
@@ -12,5 +13,3 @@ type Client interface {
 	Err() error
 	Result() []*pb.RecognizedEntity
 }
-
-

@@ -1,8 +1,9 @@
 package snippet_reader
 
 import (
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"io"
+
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 )
 
 type Client interface {
@@ -12,7 +13,7 @@ type Client interface {
 
 type Value struct {
 	Snippet *pb.Snippet
-	Err error
+	Err     error
 }
 
 func ReadChannelWithCallback(snipReaderValues <-chan Value, callback func(snippet *pb.Snippet) error) error {

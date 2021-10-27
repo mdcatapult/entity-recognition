@@ -1,10 +1,11 @@
 package html
 
 import (
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
-	"golang.org/x/net/html"
 	"io"
+
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
+	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
+	"golang.org/x/net/html"
 )
 
 var disallowedNodes = map[string]struct{}{
@@ -41,7 +42,8 @@ var nonBreakingNodes = map[string]struct{}{
 	"emph":   {},
 }
 
-type SnippetReader struct {}
+type SnippetReader struct{}
+
 func (SnippetReader) ReadSnippets(r io.Reader) <-chan snippet_reader.Value {
 	return ReadSnippets(r)
 }

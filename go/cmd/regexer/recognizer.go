@@ -37,7 +37,7 @@ func (r recogniser) GetStream(stream pb.Recognizer_GetStreamServer) error {
 					Entity:     token.GetToken(),
 					Position:   token.GetOffset(),
 					Dictionary: name,
-					Xpath: token.GetXpath(),
+					Xpath:      token.GetXpath(),
 				})
 				if err != nil {
 					return err

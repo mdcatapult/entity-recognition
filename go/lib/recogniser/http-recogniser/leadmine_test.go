@@ -2,17 +2,18 @@ package http_recogniser
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"sync"
+	"testing"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	mocks "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks/lib"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/html"
-	"io/ioutil"
-	"net/http"
-	"os"
-	"sync"
-	"testing"
 )
 
 type leadmineSuite struct {
@@ -77,7 +78,7 @@ func (s *leadmineSuite) TestUrlWithOpts() {
 		},
 		{
 			name: "one query parameter",
-			url: "https://leadmine.wopr.inf.mdc/chemical-entities/entities",
+			url:  "https://leadmine.wopr.inf.mdc/chemical-entities/entities",
 			opts: lib.RecogniserOptions{
 				HttpOptions: lib.HttpOptions{
 					QueryParameters: map[string][]string{
@@ -89,7 +90,7 @@ func (s *leadmineSuite) TestUrlWithOpts() {
 		},
 		{
 			name: "multiple query parameters",
-			url: "https://leadmine.wopr.inf.mdc/chemical-entities/entities",
+			url:  "https://leadmine.wopr.inf.mdc/chemical-entities/entities",
 			opts: lib.RecogniserOptions{
 				HttpOptions: lib.HttpOptions{
 					QueryParameters: map[string][]string{

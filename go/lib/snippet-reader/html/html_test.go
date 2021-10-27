@@ -2,12 +2,12 @@ package html
 
 import (
 	"bytes"
-	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
 	"io"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
+	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
 )
 
 func TestHtmlToText(t *testing.T) {
@@ -25,7 +25,7 @@ func TestHtmlToText(t *testing.T) {
 			args: args{
 				r: bytes.NewBufferString(""),
 			},
-			want:    []snippet_reader.Value{
+			want: []snippet_reader.Value{
 				{Err: io.EOF},
 			},
 			wantErr: nil,
@@ -49,12 +49,12 @@ func TestHtmlToText(t *testing.T) {
 				r: bytes.NewBufferString("<p>acetyl<emph>car</emph>nitine</p>"),
 			},
 			want: wrapSnips([]*pb.Snippet{
-					{
-						Token:  "acetylcarnitine\n",
-						Offset: 3,
-						Xpath:  "/p",
-					},
-				}...),
+				{
+					Token:  "acetylcarnitine\n",
+					Offset: 3,
+					Xpath:  "/p",
+				},
+			}...),
 			wantErr: nil,
 		},
 	}

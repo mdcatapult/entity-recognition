@@ -20,9 +20,9 @@ type requestVars struct {
 	snippetCache       map[*pb.Snippet]*cache.Lookup
 	snippetCacheMisses []*pb.Snippet
 	snippetHistory     []*pb.Snippet
-	tokenHistory     []string
-	stream           pb.Recognizer_GetStreamServer
-	pipe             remote.GetPipeline
+	tokenHistory       []string
+	stream             pb.Recognizer_GetStreamServer
+	pipe               remote.GetPipeline
 }
 
 func newEntity(snippet *pb.Snippet, lookup *cache.Lookup) *pb.RecognizedEntity {
@@ -31,7 +31,7 @@ func newEntity(snippet *pb.Snippet, lookup *cache.Lookup) *pb.RecognizedEntity {
 		Position:    snippet.GetOffset(),
 		Dictionary:  lookup.Dictionary,
 		Identifiers: lookup.Identifiers,
-		Xpath: snippet.GetXpath(),
+		Xpath:       snippet.GetXpath(),
 	}
 }
 

@@ -8,7 +8,6 @@ type Lookup struct {
 	Identifiers map[string]string `json:"identifiers,omitempty"`
 	Metadata    json.RawMessage   `json:"metadata"`
 }
-
 type Type string
 
 const (

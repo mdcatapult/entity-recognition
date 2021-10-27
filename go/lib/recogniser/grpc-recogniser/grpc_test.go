@@ -1,14 +1,15 @@
 package grpc_recogniser
 
 import (
-	"github.com/stretchr/testify/assert"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/html"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/testhelpers"
 	"io"
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/html"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/testhelpers"
 )
 
 func Test_grpcRecogniser_recognise(t *testing.T) {
@@ -16,7 +17,7 @@ func Test_grpcRecogniser_recognise(t *testing.T) {
 		Entity:      "found entity",
 		Position:    3,
 		Dictionary:  "test",
-		Xpath: "/p",
+		Xpath:       "/p",
 		Identifiers: map[string]string{"many": "", "things": ""},
 	}
 	foundEntities := []*pb.RecognizedEntity{foundEntity}
@@ -44,4 +45,3 @@ func Test_grpcRecogniser_recognise(t *testing.T) {
 	assert.Nil(t, testRecogniser.err)
 	assert.EqualValues(t, foundEntities, testRecogniser.entities)
 }
-
