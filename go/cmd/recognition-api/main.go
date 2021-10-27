@@ -75,7 +75,7 @@ func main() {
 	r.Use(gin.LoggerWithFormatter(lib.JsonLogFormatter))
 	c := controller{
 		recognisers: recogniserClients,
-		html: html.SnippetReader{},
+		htmlReader: html.SnippetReader{},
 	}
 	s := server{controller: c}
 	s.RegisterRoutes(r)

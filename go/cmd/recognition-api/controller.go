@@ -5,6 +5,7 @@ import (
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/html"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 	"io"
 	"sync"
@@ -12,7 +13,7 @@ import (
 
 type controller struct {
 	recognisers map[string]recogniser.Client
-	html        snippet_reader.Client
+	htmlReader  snippet_reader.Client
 }
 
 func (c controller) HTMLToText(reader io.Reader) ([]byte, error) {
@@ -21,7 +22,7 @@ func (c controller) HTMLToText(reader io.Reader) ([]byte, error) {
 		data = append(data, snippet.GetToken()...)
 		return nil
 	}
-	if err := c.html.ReadSnippetsWithCallback(reader, onSnippet); err != nil {
+	if err := html.ReadSnippetsWithCallback(reader, onSnippet); err != nil {
 		return nil, err
 	}
 
@@ -43,7 +44,7 @@ func (c controller) TokenizeHTML(reader io.Reader) ([]*pb.Snippet, error) {
 	}
 
 	// Call htmlToText with our callback
-	if err := c.html.ReadSnippetsWithCallback(reader, onSnippet); err != nil {
+	if err := html.ReadSnippetsWithCallback(reader, onSnippet); err != nil {
 		return nil, err
 	}
 
@@ -62,14 +63,12 @@ func (c controller) RecognizeInHTML(reader io.Reader, opts map[string]lib.Recogn
 		}
 	}
 
-	err := c.html.ReadSnippetsWithCallback(reader, func (snippet *pb.Snippet) error {
-		SendToAll(snippet_reader.Value{Snippet: snippet}, opts, channels)
-		return nil
-	})
-	if err != nil {
-		// Send the error to all recognisers. They should clean themselves up and call
-		// done on the waitgroup, then we'll return the error after wg.Wait.
-		SendToAll(snippet_reader.Value{Err: err}, opts, channels)
+	snippetReaderValues := html.ReadSnippets(reader)
+	for snippetReaderValue := range snippetReaderValues {
+		SendToAll(snippetReaderValue, channels)
+		if snippetReaderValue.Err != nil {
+			break
+		}
 	}
 
 	wg.Wait()
@@ -89,8 +88,8 @@ func (c controller) RecognizeInHTML(reader io.Reader, opts map[string]lib.Recogn
 	return recognisedEntities, nil
 }
 
-func SendToAll(snipReaderValue snippet_reader.Value, opts map[string]lib.RecogniserOptions, channels map[string]chan snippet_reader.Value) {
-	for recogniserName := range opts {
-		channels[recogniserName] <- snipReaderValue
+func SendToAll(snipReaderValue snippet_reader.Value, channels map[string]chan snippet_reader.Value) {
+	for _, channel := range channels {
+		channel <- snipReaderValue
 	}
 }

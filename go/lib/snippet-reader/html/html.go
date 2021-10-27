@@ -90,10 +90,8 @@ func htmlToText(r io.Reader, snips chan snippet_reader.Value) {
 		htmlToken := htmlTokenizer.Next()
 		switch htmlToken {
 		case html.ErrorToken:
-			if err := htmlTokenizer.Err(); err != nil {
-				// The html tokenizer returns an io.EOF when finished.
-				snips <- snippet_reader.Value{Err: err}
-			}
+			// The html tokenizer returns an io.EOF when finished.
+			snips <- snippet_reader.Value{Err: htmlTokenizer.Err()}
 		case html.TextToken:
 			htmlTokenBytes := htmlTokenizer.Text()
 
