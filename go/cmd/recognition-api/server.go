@@ -40,7 +40,7 @@ func (s server) RegisterRoutes(r *gin.Engine) {
 func (s server) RecognizeInHTML(c *gin.Context) {
 	requestedRecognisers, ok := c.GetQueryArray("recogniser")
 	if !ok {
-		handleError(c, NewHttpError(400, errors.New("recogniser query parameters must be set")))
+		handleError(c, NewHttpError(400, errors.New("you must set at least one recogniser query parameter")))
 		return
 	}
 

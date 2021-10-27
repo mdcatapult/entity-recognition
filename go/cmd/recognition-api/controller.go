@@ -8,7 +8,6 @@ import (
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
 	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/html"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 )
 
@@ -23,7 +22,7 @@ func (c controller) HTMLToText(reader io.Reader) ([]byte, error) {
 		data = append(data, snippet.GetToken()...)
 		return nil
 	}
-	if err := html.ReadSnippetsWithCallback(reader, onSnippet); err != nil {
+	if err := c.htmlReader.ReadSnippetsWithCallback(reader, onSnippet); err != nil {
 		return nil, err
 	}
 
@@ -45,7 +44,7 @@ func (c controller) TokenizeHTML(reader io.Reader) ([]*pb.Snippet, error) {
 	}
 
 	// Call htmlToText with our callback
-	if err := html.ReadSnippetsWithCallback(reader, onSnippet); err != nil {
+	if err := c.htmlReader.ReadSnippetsWithCallback(reader, onSnippet); err != nil {
 		return nil, err
 	}
 
@@ -64,7 +63,7 @@ func (c controller) RecognizeInHTML(reader io.Reader, opts map[string]lib.Recogn
 		}
 	}
 
-	snippetReaderValues := html.ReadSnippets(reader)
+	snippetReaderValues := c.htmlReader.ReadSnippets(reader)
 	for snippetReaderValue := range snippetReaderValues {
 		SendToAll(snippetReaderValue, channels)
 		if snippetReaderValue.Err != nil {
