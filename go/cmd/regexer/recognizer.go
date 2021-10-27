@@ -28,6 +28,7 @@ func (r recogniser) GetStream(stream pb.Recognizer_GetStreamServer) error {
 		}
 
 		// normalize the token (removes punctuation and enforces NFKC encoding on the utf8 characters).
+		// We might not really need to normalise here. Something to think about.
 		text.NormalizeSnippet(token)
 
 		// For every regexp try to match the token and send the recognised entity if there is a match.

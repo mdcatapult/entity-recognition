@@ -38,9 +38,13 @@ func (s server) RegisterRoutes(r *gin.Engine) {
 }
 
 func (s server) RecognizeInHTML(c *gin.Context) {
-	requestedRecognisers, _ := c.GetQueryArray("recogniser")
+	requestedRecognisers, ok := c.GetQueryArray("recogniser")
+	if !ok {
+		handleError(c, NewHttpError(400, errors.New("recogniser query parameters must be set")))
+		return
+	}
 
-	recognisers := make(map[string]lib.RecogniserOptions)
+	recognisers := make(map[string]lib.RecogniserOptions, len(requestedRecognisers))
 	for _, recogniser := range requestedRecognisers {
 		recognisers[recogniser] = lib.RecogniserOptions{}
 
@@ -51,23 +55,18 @@ func (s server) RecognizeInHTML(c *gin.Context) {
 
 		b, err := base64.StdEncoding.DecodeString(header)
 		if err != nil {
-			handleError(c, HttpError{
-				code:  400,
-				error: errors.New("invalid request header - must be base64 encoded"),
-			})
+			handleError(c, NewHttpError(400, errors.New("invalid request header - must be base64 encoded")))
 			return
 		}
 
 		var opts lib.RecogniserOptions
 		if err := json.Unmarshal(b, &opts); err != nil {
-			handleError(c, HttpError{
-				code:  400,
-				error: errors.New("invalid request header - must be valid json (base64 encoded)"),
-			})
+			handleError(c, NewHttpError(400, errors.New("invalid request header - must be valid json (base64 encoded)")))
 			return
 		}
 		recognisers[recogniser] = opts
 	}
+
 	entities, err := s.controller.RecognizeInHTML(c.Request.Body, recognisers)
 	if err != nil {
 		handleError(c, err)

@@ -9,5 +9,5 @@ type RecogniserOptions struct {
 }
 
 type HttpOptions struct {
-	QueryParameters url.Values `json:"query_parameters"`
+	QueryParameters url.Values `json:"queryParameters"`
 }
