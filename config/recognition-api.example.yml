@@ -13,5 +13,6 @@ grpc_recognisers:
 #    port: 50054
 
 http_recognisers:
-  dummy:
-    type: dummy
+  leadmine-chemical-entities:
+    type: leadmine
+    url: https://leadmine.wopr.inf.mdc/chemical-entities/entities
