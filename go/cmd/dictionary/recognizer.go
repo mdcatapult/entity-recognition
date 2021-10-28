@@ -29,7 +29,7 @@ func newEntity(snippet *pb.Snippet, lookup *cache.Lookup) *pb.RecognizedEntity {
 	return &pb.RecognizedEntity{
 		Entity:      snippet.GetToken(),
 		Position:    snippet.GetOffset(),
-		Dictionary:  lookup.Dictionary,
+		Recogniser:  lookup.Dictionary,
 		Identifiers: lookup.Identifiers,
 		Xpath:       snippet.GetXpath(),
 	}

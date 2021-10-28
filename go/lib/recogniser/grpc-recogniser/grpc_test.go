@@ -16,7 +16,7 @@ func Test_grpcRecogniser_recognise(t *testing.T) {
 	foundEntity := &pb.RecognizedEntity{
 		Entity:      "found entity",
 		Position:    3,
-		Dictionary:  "test",
+		Recogniser:  "test",
 		Xpath:       "/p",
 		Identifiers: map[string]string{"many": "", "things": ""},
 	}
@@ -30,6 +30,7 @@ func Test_grpcRecogniser_recognise(t *testing.T) {
 	mockRecognizer_RecognizeClient.On("Recv").Return(nil, io.EOF).Once()
 
 	testRecogniser := grpcRecogniser{
+		Name:     "test",
 		err:      nil,
 		entities: nil,
 		stream:   mockRecognizer_RecognizeClient,

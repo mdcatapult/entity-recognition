@@ -12,8 +12,9 @@ import (
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 )
 
-func New(client pb.RecognizerClient) recogniser.Client {
+func New(name string, client pb.RecognizerClient) recogniser.Client {
 	return &grpcRecogniser{
+		Name:     name,
 		client:   client,
 		err:      nil,
 		entities: nil,
@@ -22,6 +23,7 @@ func New(client pb.RecognizerClient) recogniser.Client {
 }
 
 type grpcRecogniser struct {
+	Name     string
 	client   pb.RecognizerClient
 	err      error
 	entities []*pb.RecognizedEntity
@@ -66,7 +68,14 @@ func (g *grpcRecogniser) recognise(snipReaderValues <-chan snippet_reader.Value,
 				g.err = err
 				return
 			}
-			g.entities = append(g.entities, entity)
+			g.entities = append(g.entities, &pb.RecognizedEntity{
+				Entity:      entity.Entity,
+				Position:    entity.Position,
+				Xpath:       entity.Xpath,
+				Recogniser:  g.Name,
+				Identifiers: entity.Identifiers,
+				Metadata:    entity.Metadata,
+			})
 		}
 	}()
 

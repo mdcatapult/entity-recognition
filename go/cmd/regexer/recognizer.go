@@ -37,8 +37,10 @@ func (r recogniser) GetStream(stream pb.Recognizer_GetStreamServer) error {
 				err := stream.Send(&pb.RecognizedEntity{
 					Entity:     token.GetToken(),
 					Position:   token.GetOffset(),
-					Dictionary: name,
 					Xpath:      token.GetXpath(),
+					Identifiers: map[string]string{
+						name: token.GetToken(),
+					},
 				})
 				if err != nil {
 					return err

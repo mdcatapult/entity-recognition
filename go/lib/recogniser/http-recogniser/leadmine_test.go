@@ -2,18 +2,17 @@ package http_recogniser
 
 import (
 	"encoding/json"
-	"io/ioutil"
-	"net/http"
-	"os"
-	"sync"
-	"testing"
-
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	mocks "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks/lib"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/html"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"sync"
+	"testing"
 )
 
 type leadmineSuite struct {
@@ -38,6 +37,7 @@ func (s *leadmineSuite) TestRecognise() {
 		Body:       leadmineResponseFile,
 	}, nil)
 	testLeadmine := leadmine{
+		Name: "test-leadmine",
 		Url:        "https://leadmine.wopr.inf.mdc/chemical-entities/entities",
 		httpClient: mockHttpClient,
 	}

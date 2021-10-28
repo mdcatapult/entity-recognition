@@ -43,7 +43,7 @@ func (r *localRecogniser) Recognize(stream pb.Recognizer_GetStreamServer) error 
 				entity := &pb.RecognizedEntity{
 					Entity:      compoundToken.GetToken(),
 					Position:    compoundToken.GetOffset(),
-					Dictionary:  lookup.Dictionary,
+					Recogniser:  lookup.Dictionary,
 					Identifiers: lookup.Identifiers,
 					Metadata:    lookup.Metadata,
 				}

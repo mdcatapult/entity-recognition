@@ -25,7 +25,9 @@ func (s *RecognizerSuite) Test_recogniser_Recognize() {
 	mockStream := testhelpers.NewMockRecognizeServerStream(testhelpers.Snips("hello", "my", "name", "is", "jeff")...)
 	foundEntity := &pb.RecognizedEntity{
 		Entity:     "hello",
-		Dictionary: "test_regex",
+		Identifiers: map[string]string{
+			"test_regex": "hello",
+		},
 	}
 	mockStream.On("Send", foundEntity).Return(nil).Once()
 	type args struct {

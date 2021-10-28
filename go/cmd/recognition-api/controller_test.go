@@ -107,7 +107,7 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 		{
 			Entity:      "found entity",
 			Position:    2312,
-			Dictionary:  "test",
+			Recogniser:  "test",
 			Identifiers: map[string]string{"many": "", "things": ""},
 		},
 	}

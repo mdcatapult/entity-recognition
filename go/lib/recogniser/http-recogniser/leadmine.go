@@ -16,14 +16,16 @@ import (
 	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
 )
 
-func NewLeadmineClient(url string) recogniser.Client {
+func NewLeadmineClient(name, url string) recogniser.Client {
 	return &leadmine{
+		Name:       name,
 		Url:        url,
 		httpClient: http.DefaultClient,
 	}
 }
 
 type leadmine struct {
+	Name	   string
 	Url        string
 	httpClient lib.HttpClient
 	err        error
@@ -163,7 +165,7 @@ func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, opts 
 		}
 
 		metadata, err := json.Marshal(LeadmineMetadata{
-			ResolvedEntity:  entity.ResolvedEntity,
+			EntityGroup: entity.EntityGroup,
 			RecognisingDict: entity.RecognisingDict,
 		})
 		if err != nil {
@@ -175,8 +177,10 @@ func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, opts 
 			Entity:      entity.EntityText,
 			Position:    uint32(position),
 			Xpath:       snip.Xpath,
-			Dictionary:  entity.EntityGroup,
-			Identifiers: nil,
+			Recogniser:  l.Name,
+			Identifiers: map[string]string{
+				"resolvedEntity": entity.ResolvedEntity,
+			},
 			Metadata:    metadata,
 		})
 	}
@@ -213,6 +217,6 @@ type RecognisingDict struct {
 }
 
 type LeadmineMetadata struct {
-	ResolvedEntity  string `json:"resolvedEntity"`
+	EntityGroup  string `json:"entityGroup"`
 	RecognisingDict RecognisingDict
 }

@@ -61,13 +61,13 @@ func main() {
 			log.Fatal().Err(err).Send()
 		}
 		cancel()
-		recogniserClients[name] = grpc_recogniser.New(pb.NewRecognizerClient(conn))
+		recogniserClients[name] = grpc_recogniser.New(name, pb.NewRecognizerClient(conn))
 	}
 
 	for name, conf := range config.HttpRecognisers {
 		switch conf.Type {
 		case http_recogniser.LeadmineType:
-			recogniserClients[name] = http_recogniser.NewLeadmineClient(conf.Url)
+			recogniserClients[name] = http_recogniser.NewLeadmineClient(name, conf.Url)
 		}
 	}
 
