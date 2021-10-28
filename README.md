@@ -31,20 +31,9 @@ Grab some html from a website (ctrl+U in chrome). Make a post request to `localh
 For example:
 ```bash
 curl -L https://en.wikipedia.org/wiki/Acetylcarnitine > /tmp/acetylcarnitine.html
-curl -XPOST --data-binary "@/tmp/acetylcarnitine.html" 'http://localhost:8080/html/entities'
+curl -XPOST --data-binary "@/tmp/acetylcarnitine.html" 'http://localhost:8080/html/entities?recogniser=dictionary'
 ```
 
 ### Code Generation
 Some code in this repo is generated. The generated code is committed, so you don't need to regenerate it yourself. See the [Makefile](Makefile) for more info.
 
-
-```json
-["hello dave banana apple","toast bread cake icing skiing","snow white colour"]
-```
-```json
-{
-  0: "hello dave banana apple",
-  23: "toast bread cake icing skiing",
-  51: "snow white colour"
-}
-```
