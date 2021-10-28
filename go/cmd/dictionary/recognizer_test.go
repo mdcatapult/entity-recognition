@@ -62,16 +62,16 @@ func (s *RecognizerSuite) Test_recogniser_queryToken() {
 	mockDBClient.On("NewGetPipeline", testConfig.PipelineSize).Return(mockGetPipeline).Once()
 	mockStream := testhelpers.NewMockRecognizeServerStream(testhelpers.Snips("hello", "my", "name", "is", "jeff")...)
 	notInDB := &pb.Snippet{
-		Token: "not in db",
+		Text: "not in db",
 	}
 	inDB := &pb.Snippet{
-		Token: "in db",
+		Text: "in db",
 	}
 	cacheMiss := &pb.Snippet{
-		Token: "cache miss",
+		Text: "cache miss",
 	}
 	notInCache := &pb.Snippet{
-		Token: "not in cache",
+		Text: "not in cache",
 	}
 	tokenCache := map[*pb.Snippet]*cache.Lookup{
 		notInDB:   nil,
@@ -183,14 +183,22 @@ func (s *RecognizerSuite) Test_recogniser_getCompoundTokens() {
 			args: args{
 				vars: &requestVars{
 					snippetHistory: []*pb.Snippet{},
-					tokenHistory:   []string{},
 				},
-				token: testhelpers.Snip("Hello", 0, ""),
+				token: testhelpers.Snip("Hello", "hello", 0, ""),
 			},
-			want: testhelpers.Snips("hello"),
+			want: []*pb.Snippet{
+				{
+					Text:           "Hello",
+					NormalisedText: "hello",
+				},
+			},
 			wantVars: &requestVars{
-				snippetHistory: testhelpers.Snips("hello"),
-				tokenHistory:   []string{"hello"},
+				snippetHistory: []*pb.Snippet{
+					{
+						Text: "Hello",
+						NormalisedText: "hello",
+					},
+				},
 			},
 		},
 		{
@@ -198,28 +206,33 @@ func (s *RecognizerSuite) Test_recogniser_getCompoundTokens() {
 			args: args{
 				vars: &requestVars{
 					snippetHistory: testhelpers.Snips("got"),
-					tokenHistory:   []string{"got"},
 				},
-				token: testhelpers.Snip("Hello.", 0, ""),
+				token: testhelpers.Snip("Hello.", "hello", 0, ""),
 			},
-			want: testhelpers.Snips("hello", "got hello"),
+			want: []*pb.Snippet{
+				{
+					Text: "got Hello.",
+					NormalisedText: "got hello",
+				},
+				{
+					Text: "Hello.",
+					NormalisedText: "hello",
+				},
+			},
 			wantVars: &requestVars{
 				snippetHistory: []*pb.Snippet{},
-				tokenHistory:   []string{},
 			},
 		},
 		{
 			name: "less than compound token length",
 			args: args{
 				vars: &requestVars{
-					tokenHistory:   []string{"old"},
 					snippetHistory: testhelpers.Snips("old"),
 				},
-				token: testhelpers.Snip("new", 0, ""),
+				token: testhelpers.Snip("new", "new", 0, ""),
 			},
 			want: testhelpers.Snips("old new", "new"),
 			wantVars: &requestVars{
-				tokenHistory:   []string{"old", "new"},
 				snippetHistory: testhelpers.Snips("old", "new"),
 			},
 		},
@@ -227,27 +240,33 @@ func (s *RecognizerSuite) Test_recogniser_getCompoundTokens() {
 			name: "at compound token length",
 			args: args{
 				vars: &requestVars{
-					tokenHistory:   []string{"old", "new", "black", "white", "quavers"},
 					snippetHistory: testhelpers.Snips("old", "new", "black", "white", "quavers"),
 				},
-				token: testhelpers.Snip("latest", 0, ""),
+				token: testhelpers.Snip("latest", "latest", 0, ""),
 			},
-			want: testhelpers.Snips("latest",
-				"quavers latest",
-				"white quavers latest",
+			want: testhelpers.Snips(
+				"new black white quavers latest",
 				"black white quavers latest",
-				"new black white quavers latest"),
+				"white quavers latest",
+				"quavers latest",
+				"latest",
+			),
 			wantVars: &requestVars{
 				snippetHistory: testhelpers.Snips("new", "black", "white", "quavers", "latest"),
-				tokenHistory:   []string{"new", "black", "white", "quavers", "latest"},
 			},
 		},
 	}
-	for _, tt := range tests {
-		s.T().Log(tt.name)
+	for i, tt := range tests {
+		s.T().Logf("Case %d: %s", i,  tt.name)
 		got, _ := getCompoundSnippets(tt.args.vars, tt.args.token)
-		s.ElementsMatch(tt.want, got)
-		s.ElementsMatch(tt.args.vars.snippetHistory, tt.wantVars.snippetHistory)
-		s.ElementsMatch(tt.args.vars.tokenHistory, tt.wantVars.tokenHistory)
+		s.Len(got, len(tt.want))
+		for j, snip := range tt.want {
+			s.Equal(snip, got[j])
+		}
+
+		s.Len(tt.wantVars.snippetHistory, len(tt.args.vars.snippetHistory))
+		for j, snip := range tt.wantVars.snippetHistory {
+			s.Equal(snip, tt.args.vars.snippetHistory[j])
+		}
 	}
 }

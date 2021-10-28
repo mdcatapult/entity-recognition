@@ -33,13 +33,13 @@ func (r recogniser) GetStream(stream pb.Recognizer_GetStreamServer) error {
 
 		// For every regexp try to match the token and send the recognised entity if there is a match.
 		for name, re := range r.regexps {
-			if re.MatchString(token.GetToken()) {
+			if re.MatchString(token.GetText()) {
 				err := stream.Send(&pb.RecognizedEntity{
-					Entity:     token.GetToken(),
+					Entity:     token.GetText(),
 					Position:   token.GetOffset(),
 					Xpath:      token.GetXpath(),
 					Identifiers: map[string]string{
-						name: token.GetToken(),
+						name: token.GetText(),
 					},
 				})
 				if err != nil {

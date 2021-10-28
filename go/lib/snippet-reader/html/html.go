@@ -79,7 +79,7 @@ func htmlToText(r io.Reader, snips chan snippet_reader.Value) {
 			tag.innerText = append(tag.innerText, '\n')
 			snips <- snippet_reader.Value{
 				Snippet: &pb.Snippet{
-					Token:  string(tag.innerText),
+					Text:  string(tag.innerText),
 					Offset: tag.start,
 					Xpath:  tag.xpath,
 				},

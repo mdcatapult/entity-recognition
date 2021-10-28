@@ -16,7 +16,6 @@ type localRecogniser struct {
 func initializeRequest(stream pb.Recognizer_GetStreamServer) *requestVars {
 	return &requestVars{
 		snippetHistory: []*pb.Snippet{},
-		tokenHistory:   []string{},
 		stream:         stream,
 	}
 }
@@ -39,9 +38,9 @@ func (r *localRecogniser) Recognize(stream pb.Recognizer_GetStreamServer) error 
 		}
 
 		for _, compoundToken := range compoundTokens {
-			if lookup := r.localCache.Get(compoundToken.GetToken()); lookup != nil {
+			if lookup := r.localCache.Get(compoundToken.GetText()); lookup != nil {
 				entity := &pb.RecognizedEntity{
-					Entity:      compoundToken.GetToken(),
+					Entity:      compoundToken.GetText(),
 					Position:    compoundToken.GetOffset(),
 					Recogniser:  lookup.Dictionary,
 					Identifiers: lookup.Identifiers,

@@ -10,14 +10,15 @@ import (
 func Snips(toks ...string) []*pb.Snippet {
 	snippets := make([]*pb.Snippet, len(toks))
 	for i, tok := range toks {
-		snippets[i] = Snip(tok, 0, "")
+		snippets[i] = Snip(tok, tok,0, "")
 	}
 	return snippets
 }
 
-func Snip(tok string, offset uint32, xpath string) *pb.Snippet {
+func Snip(originalText, normalisedText string, offset uint32, xpath string) *pb.Snippet {
 	return &pb.Snippet{
-		Token:  tok,
+		Text:   originalText,
+		NormalisedText: normalisedText,
 		Offset: offset,
 		Xpath:  xpath,
 	}

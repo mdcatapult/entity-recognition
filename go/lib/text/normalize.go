@@ -49,7 +49,7 @@ func RemoveFirstChar(in string) string {
 
 func NormalizeAndLowercaseSnippet(snippet *pb.Snippet) bool {
 	compoundTokenEnd := NormalizeSnippet(snippet)
-	snippet.Token = strings.ToLower(snippet.Token)
+	snippet.NormalisedText = strings.ToLower(snippet.NormalisedText)
 	return compoundTokenEnd
 }
 
@@ -60,7 +60,7 @@ func NormalizeSnippet(snippet *pb.Snippet) bool {
 
 	var compoundTokenEnd bool
 	var offset uint32
-	snippet.Token, compoundTokenEnd, offset = NormalizeString(snippet.Token)
+	snippet.NormalisedText, compoundTokenEnd, offset = NormalizeString(snippet.Text)
 	snippet.Offset += offset
 
 	return compoundTokenEnd

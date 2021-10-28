@@ -117,7 +117,7 @@ func (p *esPipeline) ExecSet() error {
 }
 func (p *esPipeline) Get(token *pb.Snippet) {
 	p.buf.WriteString(fmt.Sprintf(`{}%s`, "\n"))
-	p.buf.WriteString(fmt.Sprintf(`{"size": 1, "query" : {"match" : { "synonyms": "%s" }}}%s`, jsonEscape(token.GetToken()), "\n"))
+	p.buf.WriteString(fmt.Sprintf(`{"size": 1, "query" : {"match" : { "synonyms": "%s" }}}%s`, jsonEscape(token.GetNormalisedText()), "\n"))
 	p.currentQuery = append(p.currentQuery, token)
 }
 

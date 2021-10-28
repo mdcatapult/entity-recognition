@@ -81,7 +81,7 @@ func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, opts 
 
 	err := snippet_reader.ReadChannelWithCallback(snipReaderValues, func(snippet *pb.Snippet) error {
 		snips[len(text)] = snippet
-		text += snippet.GetToken()
+		text += snippet.GetText()
 		return nil
 	})
 	if err != nil {
@@ -154,7 +154,7 @@ func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, opts 
 		for {
 			snip, ok = snips[dec]
 			if ok {
-				if strings.Contains(snip.GetToken(), entity.EntityText) {
+				if strings.Contains(snip.GetText(), entity.EntityText) {
 					break
 				} else {
 					l.handleError(errors.New("entity not in snippet - FIX ME"))

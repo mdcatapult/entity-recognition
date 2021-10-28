@@ -14,7 +14,7 @@ import (
 func Tokenize(snippet *pb.Snippet, onToken func(*pb.Snippet) error) error {
 	// segmenter is a utf8 word boundary segmenter. Instead of splitting on all
 	// word boundaries, we check first that the boundary is whitespace.
-	segmenter := segment.NewWordSegmenterDirect([]byte(snippet.GetToken()))
+	segmenter := segment.NewWordSegmenterDirect([]byte(snippet.GetText()))
 	buf := bytes.NewBuffer([]byte{})
 	var currentToken []byte
 	var position uint32 = 0
@@ -50,7 +50,7 @@ func Tokenize(snippet *pb.Snippet, onToken func(*pb.Snippet) error) error {
 		// if currentToken has contents, create a snippet and execute the callback.
 		if len(currentToken) > 0 {
 			token := &pb.Snippet{
-				Token:  string(currentToken),
+				Text:  string(currentToken),
 				Offset: snippet.GetOffset() + position,
 				Xpath:  snippet.Xpath,
 			}
@@ -74,7 +74,7 @@ func Tokenize(snippet *pb.Snippet, onToken func(*pb.Snippet) error) error {
 	}
 	if len(currentToken) > 0 {
 		pbEntity := &pb.Snippet{
-			Token:  string(currentToken),
+			Text:  string(currentToken),
 			Offset: snippet.GetOffset() + position,
 			Xpath:  snippet.Xpath,
 		}
@@ -89,13 +89,13 @@ func Tokenize(snippet *pb.Snippet, onToken func(*pb.Snippet) error) error {
 // TokenizeWordBoundary tokenizes on word boundary instead of whitespace and doesn't
 // give any offset information.
 func TokenizeWordBoundary(snippet *pb.Snippet, onToken func(*pb.Snippet) error) error {
-	r := bytes.NewReader([]byte(snippet.GetToken()))
+	r := bytes.NewReader([]byte(snippet.GetText()))
 	scanner := bufio.NewScanner(r)
 	scanner.Split(segment.SplitWords)
 	for scanner.Scan() {
 		token := scanner.Bytes()
 		err := onToken(&pb.Snippet{
-			Token:  string(token),
+			Text:  string(token),
 			Offset: 0,
 		})
 		if err != nil {

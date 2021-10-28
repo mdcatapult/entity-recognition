@@ -113,7 +113,7 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 	}
 
 	sentSnippet := &pb.Snippet{
-		Token:  "found entity\n",
+		Text:  "found entity\n",
 		Offset: 3,
 		Xpath:  "/p",
 	}

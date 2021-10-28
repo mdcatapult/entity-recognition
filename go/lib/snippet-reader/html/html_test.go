@@ -37,7 +37,7 @@ func TestHtmlToText(t *testing.T) {
 			},
 			want: wrapSnips([]*pb.Snippet{
 				{
-					Token:  "  x2 hello\ndave\n",
+					Text:  "  x2 hello\ndave\n",
 					Offset: 8,
 					Xpath:  "/body",
 				}}...),
@@ -50,7 +50,7 @@ func TestHtmlToText(t *testing.T) {
 			},
 			want: wrapSnips([]*pb.Snippet{
 				{
-					Token:  "acetylcarnitine\n",
+					Text:  "acetylcarnitine\n",
 					Offset: 3,
 					Xpath:  "/p",
 				},

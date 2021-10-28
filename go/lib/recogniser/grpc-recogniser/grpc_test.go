@@ -23,8 +23,8 @@ func Test_grpcRecogniser_recognise(t *testing.T) {
 	foundEntities := []*pb.RecognizedEntity{foundEntity}
 
 	mockRecognizer_RecognizeClient := testhelpers.NewMockRecognizeClientStream(
-		testhelpers.Snip("found", 3, "/p"),
-		testhelpers.Snip("entity", 9, "/p"),
+		testhelpers.Snip("found", "", 3, "/p"),
+		testhelpers.Snip("entity", "", 9, "/p"),
 	)
 	mockRecognizer_RecognizeClient.On("Recv").Return(foundEntity, nil).Once()
 	mockRecognizer_RecognizeClient.On("Recv").Return(nil, io.EOF).Once()

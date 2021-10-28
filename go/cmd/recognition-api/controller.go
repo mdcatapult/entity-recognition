@@ -19,7 +19,7 @@ type controller struct {
 func (c controller) HTMLToText(reader io.Reader) ([]byte, error) {
 	var data []byte
 	onSnippet := func(snippet *pb.Snippet) error {
-		data = append(data, snippet.GetToken()...)
+		data = append(data, snippet.GetText()...)
 		return nil
 	}
 	if err := c.htmlReader.ReadSnippetsWithCallback(reader, onSnippet); err != nil {
@@ -36,7 +36,7 @@ func (c controller) TokenizeHTML(reader io.Reader) ([]*pb.Snippet, error) {
 	onSnippet := func(snippet *pb.Snippet) error {
 		return text.Tokenize(snippet, func(snippet *pb.Snippet) error {
 			text.NormalizeSnippet(snippet)
-			if len(snippet.Token) > 0 {
+			if len(snippet.NormalisedText) > 0 {
 				tokens = append(tokens, snippet)
 			}
 			return nil
