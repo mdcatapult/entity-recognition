@@ -3,7 +3,6 @@ package dict
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"os"
 	"regexp"
 	"strconv"
@@ -31,7 +30,6 @@ func (p pubchemReader) read(dict *os.File, entries chan Entry, errors chan error
 	scn := bufio.NewScanner(dict)
 	row := 1
 	var synonyms []string
-	var identifiers []string
 
 	scn.Scan()
 	currentId, firstValue, err := parseLine(scn.Text())
@@ -40,9 +38,9 @@ func (p pubchemReader) read(dict *os.File, entries chan Entry, errors chan error
 		return
 	}
 
-	identifiers = []string{fmt.Sprintf("PUBCHEM:%d", currentId)}
+	identifiers := map[string]string{"pubchem": strconv.Itoa(currentId)}
 	if isIdentifier(firstValue) {
-		identifiers = append(identifiers, firstValue)
+		identifiers[firstValue] = ""
 	} else {
 		synonyms = append(synonyms, firstValue)
 	}
@@ -66,12 +64,12 @@ func (p pubchemReader) read(dict *os.File, entries chan Entry, errors chan error
 				Identifiers: ids,
 			}
 			synonyms = []string{}
-			identifiers = []string{fmt.Sprintf("PUBCHEM:%d", id)}
+			identifiers = map[string]string{"pubchem": strconv.Itoa(id)}
 			currentId = id
 		}
 
 		if isIdentifier(value) {
-			identifiers = append(identifiers, value)
+			identifiers[value] = ""
 		} else {
 			synonyms = append(synonyms, value)
 		}
