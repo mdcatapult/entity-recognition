@@ -42,6 +42,23 @@ var nonBreakingNodes = map[string]struct{}{
 	"emph":   {},
 }
 
+var voidElements = map[string]struct{}{
+	"area": {},
+	"base": {},
+	"br": {},
+	"col": {},
+	"embed": {},
+	"hr": {},
+	"img": {},
+	"input": {},
+	"link": {},
+	"meta": {},
+	"param": {},
+	"source": {},
+	"track": {},
+	"wbr": {},
+}
+
 type SnippetReader struct{}
 
 func (SnippetReader) ReadSnippets(r io.Reader) <-chan snippet_reader.Value {
@@ -109,8 +126,16 @@ func htmlToText(r io.Reader, snips chan snippet_reader.Value) {
 
 			// Push the tag onto the stack.
 			tn, _ := htmlTokenizer.TagName()
-			position += uint32(len(htmlTokenBytes))
-			stack.push(&htmlTag{name: string(tn), start: position})
+			if _, isVoid := voidElements[string(tn)]; isVoid {
+				if string(tn) == "br" {
+					stack.collectText([]byte{'\n'})
+				}
+				stack.push(&htmlTag{name: string(tn), start: position})
+				_ = stack.pop(func(tag *htmlTag) error { return nil })
+			} else {
+				position += uint32(len(htmlTokenBytes))
+				stack.push(&htmlTag{name: string(tn), start: position})
+			}
 
 		case html.EndTagToken:
 			// Must read this first. Other read methods mutate the current token.

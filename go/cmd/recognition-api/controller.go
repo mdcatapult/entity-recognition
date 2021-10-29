@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"sync"
 
@@ -56,8 +57,16 @@ func (c controller) RecognizeInHTML(reader io.Reader, opts map[string]lib.Recogn
 	wg := &sync.WaitGroup{}
 	channels := make(map[string]chan snippet_reader.Value)
 	for recogniserName, recogniserOptions := range opts {
+		validRecogniser, ok := c.recognisers[recogniserName]
+		if !ok {
+			return nil, HttpError{
+				code:  400,
+				error: fmt.Errorf("no such recogniser '%s'", recogniserName),
+			}
+		}
+
 		channels[recogniserName] = make(chan snippet_reader.Value)
-		err := c.recognisers[recogniserName].Recognise(channels[recogniserName], recogniserOptions, wg)
+		err := validRecogniser.Recognise(channels[recogniserName], recogniserOptions, wg)
 		if err != nil {
 			return nil, err
 		}
