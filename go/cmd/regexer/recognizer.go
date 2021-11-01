@@ -20,26 +20,26 @@ func (r recogniser) GetStream(stream pb.Recognizer_GetStreamServer) error {
 	log.Info().Msg("received request")
 	// listen for tokens
 	for {
-		token, err := stream.Recv()
+		snippet, err := stream.Recv()
 		if err == io.EOF {
 			break
 		} else if err != nil {
 			return err
 		}
 
-		// normalize the token (removes punctuation and enforces NFKC encoding on the utf8 characters).
+		// normalize the snippet (removes punctuation and enforces NFKC encoding on the utf8 characters).
 		// We might not really need to normalise here. Something to think about.
-		text.NormalizeSnippet(token)
+		text.NormalizeSnippet(snippet)
 
-		// For every regexp try to match the token and send the recognised entity if there is a match.
+		// For every regexp try to match the snippet and send the recognised entity if there is a match.
 		for name, re := range r.regexps {
-			if re.MatchString(token.GetNormalisedText()) {
+			if re.MatchString(snippet.GetNormalisedText()) {
 				err := stream.Send(&pb.RecognizedEntity{
-					Entity:     token.GetNormalisedText(),
-					Position:   token.GetOffset(),
-					Xpath:      token.GetXpath(),
+					Entity:     snippet.GetNormalisedText(),
+					Position:   snippet.GetOffset(),
+					Xpath:      snippet.GetXpath(),
 					Identifiers: map[string]string{
-						name: token.GetText(),
+						name: snippet.GetText(),
 					},
 				})
 				if err != nil {
