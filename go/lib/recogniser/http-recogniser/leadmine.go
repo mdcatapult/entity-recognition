@@ -89,62 +89,30 @@ func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, opts 
 		return
 	}
 
-	req, err := http.NewRequest(http.MethodPost, l.urlWithOpts(opts), strings.NewReader(text))
+	leadmineResponse, err := l.callLeadmineWebService(opts, text)
 	if err != nil {
 		l.handleError(err)
 		return
 	}
 
-	resp, err := l.httpClient.Do(req)
+	correctedLeadmineEntities, err := correctLeadmineEntityOffsets(leadmineResponse, text)
 	if err != nil {
 		l.handleError(err)
 		return
 	}
 
-	if resp.StatusCode != 200 {
-		l.handleError(err)
-		return
-	}
-
-	b, err := ioutil.ReadAll(resp.Body)
+	recognisedEntities, err := l.convertLeadmineEntities(correctedLeadmineEntities, snips)
 	if err != nil {
 		l.handleError(err)
 		return
 	}
 
-	var leadmineResponse LeadmineResponse
-	if err := json.Unmarshal(b, &leadmineResponse); err != nil {
-		l.handleError(err)
-		return
-	}
+	filteredEntities := lib.FilterSubmatches(recognisedEntities)
 
-	var correctedLeadmineEntities []LeadmineEntity
-	done := make(map[string]struct{})
-	for _, leadmineEntity := range leadmineResponse.Entities {
-		if _, ok := done[leadmineEntity.EntityText]; ok {
-			continue
-		}
-		done[leadmineEntity.EntityText] = struct{}{}
+	l.entities = filteredEntities
+}
 
-		// Only regex for the text (no extra stuff like word boundaries) because
-		// it slows things down considerably.
-		r, err := regexp.Compile(leadmineEntity.EntityText)
-		if err != nil {
-			l.handleError(err)
-			return
-		}
-
-		matches := r.FindAllStringIndex(text, -1)
-		for _, match := range matches {
-			entity := *leadmineEntity
-			entity.Beg = match[0]
-			entity.BegInNormalizedDoc = match[0]
-			entity.End = match[1]
-			entity.EndInNormalizedDoc = match[1]
-			correctedLeadmineEntities = append(correctedLeadmineEntities, entity)
-		}
-	}
-
+func (l *leadmine) convertLeadmineEntities(correctedLeadmineEntities []LeadmineEntity, snips map[int]*pb.Snippet) ([]*pb.RecognizedEntity, error) {
 	var recognisedEntities []*pb.RecognizedEntity
 	for _, entity := range correctedLeadmineEntities {
 		dec := entity.Beg
@@ -157,7 +125,7 @@ func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, opts 
 				if strings.Contains(snip.GetText(), entity.EntityText) {
 					break
 				} else {
-					l.handleError(errors.New("entity not in snippet - FIX ME"))
+					return nil, errors.New("entity not in snippet - FIX ME")
 				}
 			}
 			dec--
@@ -165,27 +133,82 @@ func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, opts 
 		}
 
 		metadata, err := json.Marshal(LeadmineMetadata{
-			EntityGroup: entity.EntityGroup,
+			EntityGroup:     entity.EntityGroup,
 			RecognisingDict: entity.RecognisingDict,
 		})
 		if err != nil {
-			l.handleError(err)
-			return
+			return nil, err
 		}
 
 		recognisedEntities = append(recognisedEntities, &pb.RecognizedEntity{
-			Entity:      entity.EntityText,
-			Position:    uint32(position),
-			Xpath:       snip.Xpath,
-			Recogniser:  l.Name,
+			Entity:     entity.EntityText,
+			Position:   uint32(position),
+			Xpath:      snip.Xpath,
+			Recogniser: l.Name,
 			Identifiers: map[string]string{
 				"resolvedEntity": entity.ResolvedEntity,
 			},
-			Metadata:    metadata,
+			Metadata: metadata,
 		})
 	}
+	return recognisedEntities, nil
+}
 
-	l.entities = recognisedEntities
+func correctLeadmineEntityOffsets(leadmineResponse *LeadmineResponse, text string) ([]LeadmineEntity, error) {
+	var correctedLeadmineEntities []LeadmineEntity
+	done := make(map[string]struct{})
+	for _, leadmineEntity := range leadmineResponse.Entities {
+		if _, ok := done[leadmineEntity.EntityText]; ok {
+			continue
+		}
+		done[leadmineEntity.EntityText] = struct{}{}
+
+		// Only regex for the text (no extra stuff like word boundaries) because
+		// it slows things down considerably.
+		r, err := regexp.Compile(leadmineEntity.EntityText)
+		if err != nil {
+			return nil, err
+		}
+
+		matches := r.FindAllStringIndex(text, -1)
+		for _, match := range matches {
+			entity := *leadmineEntity
+			entity.Beg = match[0]
+			entity.BegInNormalizedDoc = match[0]
+			entity.End = match[1]
+			entity.EndInNormalizedDoc = match[1]
+			correctedLeadmineEntities = append(correctedLeadmineEntities, entity)
+		}
+	}
+	return correctedLeadmineEntities, nil
+}
+
+func (l *leadmine) callLeadmineWebService(opts lib.RecogniserOptions, text string) (*LeadmineResponse, error) {
+	req, err := http.NewRequest(http.MethodPost, l.urlWithOpts(opts), strings.NewReader(text))
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := l.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != 200 {
+		return nil, err
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var leadmineResponse *LeadmineResponse
+	if err := json.Unmarshal(b, &leadmineResponse); err != nil {
+		return nil, err
+	}
+
+	return leadmineResponse, nil
 }
 
 type LeadmineResponse struct {
