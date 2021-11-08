@@ -12,6 +12,7 @@ import (
 
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
 	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
 )
@@ -80,6 +81,15 @@ func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, opts 
 	var text string
 
 	err := snippet_reader.ReadChannelWithCallback(snipReaderValues, func(snippet *pb.Snippet) error {
+		blacklisted, err := blacklist.Ok(snippet)
+		if err != nil {
+			return err
+		}
+
+		if blacklisted {
+			return nil
+		}
+
 		snips[len(text)] = snippet
 		text += snippet.GetText()
 		return nil
