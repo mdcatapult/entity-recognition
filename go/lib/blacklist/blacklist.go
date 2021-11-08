@@ -1,6 +1,7 @@
 package blacklist
 
 import (
+	"fmt"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 )
@@ -15,6 +16,7 @@ var bl *blacklist
 
 // Ok returns false if snippet's text is blacklisted.
 func Ok(snippetText string) (bool, error) {
+	fmt.Println(snippetText)
 	if bl == nil {
 		var err error
 		bl, err = loadBlacklist()
