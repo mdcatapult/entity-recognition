@@ -16,3 +16,7 @@ http_recognisers:
   leadmine-chemical-entities:
     type: leadmine
     url: https://leadmine.wopr.inf.mdc/chemical-entities/entities
+
+    leadmine-proteins:
+      type: leadmine
+      url: https://leadmine.wopr.inf.mdc/proteins/entities

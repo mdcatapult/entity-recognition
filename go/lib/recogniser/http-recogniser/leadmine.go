@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"io/ioutil"
 	"net/http"
 	"regexp"
@@ -12,7 +13,6 @@ import (
 
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
 	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
 )
@@ -81,14 +81,15 @@ func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, opts 
 	var text string
 
 	err := snippet_reader.ReadChannelWithCallback(snipReaderValues, func(snippet *pb.Snippet) error {
-		blacklisted, err := blacklist.Ok(snippet.Text) // should we use snippet Text or NormalisedText?
-		if err != nil {
-			return err
-		}
 
-		if blacklisted {
-			return nil
-		}
+		//blacklisted, err := blacklist.Ok(snippet.Text) // should we use snippet Text or NormalisedText?
+		//if err != nil {
+		//	return err
+		//}
+		//
+		//if blacklisted {
+		//	return nil
+		//}
 
 		snips[len(text)] = snippet
 		text += snippet.GetText()
@@ -105,6 +106,8 @@ func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, opts 
 		l.handleError(err)
 		return
 	}
+
+	leadmineResponse.Entities = blacklist.Leadmine(leadmineResponse.Entities)
 
 	correctedLeadmineEntities, err := correctLeadmineEntityOffsets(leadmineResponse, text)
 	if err != nil {
