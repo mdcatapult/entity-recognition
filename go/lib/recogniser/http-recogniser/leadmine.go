@@ -81,7 +81,7 @@ func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, opts 
 	var text string
 
 	err := snippet_reader.ReadChannelWithCallback(snipReaderValues, func(snippet *pb.Snippet) error {
-		blacklisted, err := blacklist.Ok(snippet)
+		blacklisted, err := blacklist.Ok(snippet.Text) // should we use snippet Text or NormalisedText?
 		if err != nil {
 			return err
 		}
@@ -94,6 +94,7 @@ func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, opts 
 		text += snippet.GetText()
 		return nil
 	})
+
 	if err != nil {
 		l.handleError(err)
 		return

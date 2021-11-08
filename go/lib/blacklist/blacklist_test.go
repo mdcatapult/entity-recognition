@@ -2,21 +2,29 @@ package blacklist
 
 import (
 	"github.com/stretchr/testify/assert"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"testing"
 )
 
-func Test_Blacklist(t *testing.T) {
-	//blacklist = map[string]interface{}{
-	//	"an entity": true,
-	//}
-	snip := pb.Snippet{
-		Text:           "a-snippet",
-		NormalisedText: "",
-		Offset:         0,
-		Xpath:          "",
-	}
-	res, err := Ok(&snip)
+var testBlacklist = blacklist{
+	BlacklistedEntities: map[string]bool{
+		"aspirin": true,
+	},
+}
+
+func TestMain(m *testing.M) {
+	bl = &testBlacklist
+	m.Run()
+}
+
+func TestBlacklist(t *testing.T) {
+	blacklistedText := "aspirin"
+	allowedText := "an-entity"
+
+	isBlacklisted, err := Ok(blacklistedText)
 	assert.NoError(t, err)
-	assert.Equal(t, true, res)
+	assert.False(t, isBlacklisted)
+
+	isBlacklisted, err = Ok(allowedText)
+	assert.NoError(t, err)
+	assert.True(t, isBlacklisted)
 }

@@ -1,18 +1,20 @@
 package blacklist
 
 import (
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 )
 
 const blacklistFileName = "../../../config/blacklist.yml"
 
-type blacklist = map[string]bool
-var bl blacklist
+type blacklist = struct {
+	BlacklistedEntities map[string]bool `yaml:"blacklisted_entities"`
+}
+
+var bl *blacklist
 
 // Ok returns false if snippet's text is blacklisted.
-func Ok(snippet *pb.Snippet) (bool, error) {
+func Ok(snippetText string) (bool, error) {
 	if bl == nil {
 		var err error
 		bl, err = loadBlacklist()
@@ -20,14 +22,14 @@ func Ok(snippet *pb.Snippet) (bool, error) {
 			return false, err
 		}
 	}
-	// should we check Text or NormalisedText?
-	if blacklisted, ok := bl[snippet.Text]; ok && blacklisted {
+
+	if blacklisted, ok := bl.BlacklistedEntities[snippetText]; ok && blacklisted {
 		return false, nil
 	}
 	return true, nil
 }
 
-func loadBlacklist() (blacklist, error) {
+func loadBlacklist() (*blacklist, error) {
 	data, err := ioutil.ReadFile(blacklistFileName)
 	if err != nil {
 		return nil, err
@@ -38,5 +40,5 @@ func loadBlacklist() (blacklist, error) {
 		return nil, err
 	}
 
-	return bl, nil
+	return &bl, nil
 }

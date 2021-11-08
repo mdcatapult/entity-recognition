@@ -2,6 +2,7 @@ package grpc_recogniser
 
 import (
 	"context"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"io"
 	"sync"
 
@@ -82,6 +83,16 @@ func (g *grpcRecogniser) recognise(snipReaderValues <-chan snippet_reader.Value,
 	// Read from the input channel, tokenise the snippets we read and send them on the stream.
 	err := snippet_reader.ReadChannelWithCallback(snipReaderValues, func(snippet *pb.Snippet) error {
 		return text.Tokenize(snippet, func(snippet *pb.Snippet) error {
+
+			blacklisted, err := blacklist.Ok(snippet.Text) // should we use snippet Text or NormalisedText?
+			if err != nil {
+				return err
+			}
+
+			if blacklisted {
+				return nil
+			}
+
 			if err := g.stream.Send(snippet); err != nil {
 				return err
 			}
