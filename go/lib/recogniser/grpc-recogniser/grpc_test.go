@@ -14,7 +14,8 @@ import (
 )
 
 func Test_grpcRecogniser_recognise(t *testing.T) {
-	blacklist.Load("../../../../go/resources/blacklist.yml")
+	_ = blacklist.Load("../../../../go/resources/blacklist.yml")
+
 	foundEntity := &pb.RecognizedEntity{
 		Entity:      "found entity",
 		Position:    3,

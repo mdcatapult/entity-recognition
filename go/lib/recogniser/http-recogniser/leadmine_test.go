@@ -25,7 +25,8 @@ func TestLeadmineSuite(t *testing.T) {
 }
 
 func (s *leadmineSuite) TestRecognise() {
-	blacklist.Load("../../../../go/resources/blacklist.yml")
+	_ = blacklist.Load("../../../../go/resources/blacklist.yml")
+
 	// Get reader of file to "recognise" in
 	sourceHtml, err := os.Open("../../../resources/acetylcarnitine.html")
 	s.Require().Nil(err)

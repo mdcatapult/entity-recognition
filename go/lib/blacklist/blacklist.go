@@ -22,9 +22,7 @@ var bl *blacklist
 
 func init() {
 	if bl == nil {
-		var err error
-		err = Load(blacklistFileName)
-		if err != nil {
+		if err := Load(blacklistFileName); err != nil {
 			log.Debug().Msg(fmt.Sprintf("could not load blacklist %v", err))
 		}
 	}

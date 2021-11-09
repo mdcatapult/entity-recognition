@@ -3,6 +3,7 @@ package blacklist
 import (
 	"github.com/stretchr/testify/assert"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/types/leadmine"
+	"os"
 	"testing"
 )
 
@@ -47,7 +48,7 @@ var (
 
 func TestMain(m *testing.M) {
 	bl = &testBlacklist
-	m.Run()
+	os.Exit(m.Run())
 }
 
 func TestBlacklistLeadmineEntities(t *testing.T) {
