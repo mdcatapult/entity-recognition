@@ -9,10 +9,11 @@ import (
 )
 
 const blacklistFileName = "../../../config/blacklist.yml"
+const geneOrProtein = "Gene or Protein"
 
 type blacklist = struct {
-	BlacklistedEntities map[string]bool `yaml:"blacklisted_entities"`
-	BlacklistedEntityGroups map[string]bool `yaml:"blacklisted_entity_groups"`
+	Entities map[string]bool `yaml:"blacklisted_entities"`
+	EntityGroups map[string]bool `yaml:"blacklisted_entity_groups"`
 	Abbreviations map[string]bool `yaml:"abbreviations"` // known abbreviations
 }
 
@@ -28,27 +29,31 @@ func init() {
 	}
 }
 
+// TODO: implement blacklist for grpc recognisers
 func Leadmine(entities []*httpRecogniser.LeadmineEntity) []*httpRecogniser.LeadmineEntity {
 
-	res := make([]*httpRecogniser.LeadmineEntity, len(entities))
+	res := make([]*httpRecogniser.LeadmineEntity, 0, len(entities))
 	for _, entity := range entities {
 		// skip if entity group is in group blacklist
-		if blacklisted, ok := bl.BlacklistedEntityGroups[strings.ToLower(entity.EntityGroup)]; blacklisted && ok {
+		if blacklisted, ok := bl.EntityGroups[strings.ToLower(entity.EntityGroup)]; blacklisted && ok {
 			continue
 		}
 
 		// if text is all uppercase, skip if it's a known abbreviation rather than a gene
-		if entity.EntityGroup == "Gene or Protein" && strings.ToUpper(entity.EntityText) == entity.EntityText {
+		if entity.EntityGroup == geneOrProtein && strings.ToUpper(entity.EntityText) == entity.EntityText {
 			if blacklisted, ok := bl.Abbreviations[entity.EntityText]; blacklisted && ok {
 				continue
 			}
 		}
 
 		//  skip if entity text is blacklisted
-		if blacklisted, ok := bl.BlacklistedEntities[entity.EntityText]; ok && blacklisted {
+		if blacklisted, ok := bl.Entities[entity.EntityText]; ok && blacklisted {
 			continue
 		}
+
+		res = append(res, entity)
 	}
+
 	return res
 }
 
