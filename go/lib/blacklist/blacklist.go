@@ -21,10 +21,8 @@ type blacklist = struct {
 var bl *blacklist
 
 func init() {
-	if bl == nil {
-		if err := Load(blacklistFileName); err != nil {
-			log.Debug().Msg(fmt.Sprintf("could not load blacklist %v", err))
-		}
+	if err := Load(blacklistFileName); err != nil {
+		log.Debug().Msg(fmt.Sprintf("could not load blacklist %v", err))
 	}
 }
 

@@ -72,9 +72,7 @@ func TestSnippetAllowed(t *testing.T) {
 	assert.True(t, SnippetAllowed("not blacklisted"))
 }
 
-func containsLeadmineEntity(
-	haystack []*leadmine.Entity,
-	needle *leadmine.Entity) bool {
+func containsLeadmineEntity(haystack []*leadmine.Entity, needle *leadmine.Entity) bool {
 	for _, v := range haystack {
 		if v == needle {
 			return true
