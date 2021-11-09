@@ -2,6 +2,7 @@ package blacklist
 
 import (
 	"github.com/stretchr/testify/assert"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/types/leadmine"
 	"testing"
 )
@@ -59,11 +60,22 @@ func TestBlacklistLeadmineEntities(t *testing.T) {
 		entityWithAllowedText, // this should not be blacklisted
 	}
 
-	res := Leadmine(leadmineEntities)
+	res := FilterLeadmineEntities(leadmineEntities)
 
 	assert.Equal(t, 2, len(res))
 	assert.True(t, containsLeadmineEntity(res, entityWithGeneNameNotBlacklisted))
 	assert.True(t, containsLeadmineEntity(res, entityWithAllowedText))
+}
+
+func TestSnippetAllowed(t *testing.T) {
+	blacklistedSnippet := &pb.Snippet{
+		Text:           blacklistedText,
+	}
+	allowedSnippet := &pb.Snippet{
+		Text: "not blacklisted",
+	}
+	assert.False(t, SnippetAllowed(blacklistedSnippet))
+	assert.True(t, SnippetAllowed(allowedSnippet))
 }
 
 func containsLeadmineEntity(

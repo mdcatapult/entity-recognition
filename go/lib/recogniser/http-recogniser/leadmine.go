@@ -14,8 +14,8 @@ import (
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/types/leadmine"
 	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/types/leadmine"
 )
 
 func NewLeadmineClient(name, url string) recogniser.Client {
@@ -98,7 +98,7 @@ func (l *leadminer) recognise(snipReaderValues <-chan snippet_reader.Value, opts
 		return
 	}
 
-	leadmineResponse.Entities = blacklist.Leadmine(leadmineResponse.Entities)
+	leadmineResponse.Entities = blacklist.FilterLeadmineEntities(leadmineResponse.Entities)
 
 	correctedLeadmineEntities, err := correctLeadmineEntityOffsets(leadmineResponse, text)
 	if err != nil {

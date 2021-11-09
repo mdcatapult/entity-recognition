@@ -20,11 +20,20 @@ func Test_grpcRecogniser_recognise(t *testing.T) {
 		Xpath:       "/p",
 		Identifiers: map[string]string{"many": "", "things": ""},
 	}
-	foundEntities := []*pb.RecognizedEntity{foundEntity}
+	blacklistedEntity := &pb.RecognizedEntity{
+		Entity:      "protein",
+		Position:    22,
+		Recogniser:  "test",
+		Xpath:       "/p",
+		Identifiers: map[string]string{"many": "", "things": ""},
+	}
+	foundEntities := []*pb.RecognizedEntity{foundEntity, blacklistedEntity}
 
 	mockRecognizer_RecognizeClient := testhelpers.NewMockRecognizeClientStream(
 		testhelpers.Snip("found", "", 3, "/p"),
 		testhelpers.Snip("entity", "", 9, "/p"),
+		testhelpers.Snip("protein", "", 22, "/p"),
+
 	)
 	mockRecognizer_RecognizeClient.On("Recv").Return(foundEntity, nil).Once()
 	mockRecognizer_RecognizeClient.On("Recv").Return(nil, io.EOF).Once()
@@ -36,7 +45,8 @@ func Test_grpcRecogniser_recognise(t *testing.T) {
 		stream:   mockRecognizer_RecognizeClient,
 	}
 
-	snipChan := html.SnippetReader{}.ReadSnippets(strings.NewReader("<p>found entity</p>"))
+	snipChan := html.SnippetReader{}.ReadSnippets(strings.NewReader("" +
+		"<p>found entity</p> <p>protein</p>"))
 	wg := &sync.WaitGroup{}
 	testRecogniser.recognise(snipChan, wg)
 

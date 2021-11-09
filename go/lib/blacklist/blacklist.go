@@ -3,10 +3,10 @@ package blacklist
 import (
 	"fmt"
 	"github.com/rs/zerolog/log"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/types/leadmine"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	"os"
 	"strings"
 )
 
@@ -31,8 +31,8 @@ func init() {
 	}
 }
 
-// TODO: implement blacklist for grpc recognisers
-func Leadmine(entities []*leadmine.Entity) []*leadmine.Entity {
+// FilterLeadmineEntities filters []leadmine.Entity based on the blacklist.
+func FilterLeadmineEntities(entities []*leadmine.Entity) []*leadmine.Entity {
 
 	if bl == nil {
 		log.Warn().Msg("blacklist is not set")
@@ -64,12 +64,21 @@ func Leadmine(entities []*leadmine.Entity) []*leadmine.Entity {
 	return res
 }
 
+// SnippetAllowed returns true if the snippet's text does not exist in the blacklist
+func SnippetAllowed(snippet *pb.Snippet) bool {
+
+	fmt.Println(bl)
+	if bl == nil {
+		return true
+	}
+
+	_, isBlacklisted := bl.Entities[snippet.Text]
+
+	return !isBlacklisted
+}
+
 func loadBlacklist() (*blacklist, error) {
 	data, err := ioutil.ReadFile(blacklistFileName)
-
-	wd, _ := os.Getwd()
-	fmt.Println("wd:", wd)
-	fmt.Println("data:", data, err)
 	if err != nil {
 		return nil, err
 	}
