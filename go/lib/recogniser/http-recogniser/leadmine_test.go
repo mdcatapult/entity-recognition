@@ -36,7 +36,7 @@ func (s *leadmineSuite) TestRecognise() {
 		StatusCode: http.StatusOK,
 		Body:       leadmineResponseFile,
 	}, nil)
-	testLeadmine := leadmine{
+	testLeadmine := leadminer{
 		Name: "test-leadmine",
 		Url:        "https://leadmine.wopr.inf.mdc/chemical-entities/entities",
 		httpClient: mockHttpClient,
@@ -104,7 +104,7 @@ func (s *leadmineSuite) TestUrlWithOpts() {
 	}
 	for _, tt := range tests {
 		s.T().Log(tt.name)
-		leadmine := leadmine{Url: tt.url}
+		leadmine := leadminer{Url: tt.url}
 		actual := leadmine.urlWithOpts(tt.opts)
 		s.Equal(tt.expected, actual)
 	}

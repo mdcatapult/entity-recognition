@@ -1,19 +1,21 @@
 package blacklist
 
 import (
-	httpRecogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser/http-recogniser"
-
+	"fmt"
+	"github.com/rs/zerolog/log"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/types/leadmine"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"os"
 	"strings"
 )
 
-const blacklistFileName = "../../../config/blacklist.yml"
+var blacklistFileName = "./config/blacklist.yml"
 const geneOrProtein = "Gene or Protein"
 
 type blacklist = struct {
-	Entities map[string]bool `yaml:"blacklisted_entities"`
-	EntityGroups map[string]bool `yaml:"blacklisted_entity_groups"`
+	Entities map[string]bool `yaml:"entities"`
+	EntityGroups map[string]bool `yaml:"entity_groups"`
 	Abbreviations map[string]bool `yaml:"abbreviations"` // known abbreviations
 }
 
@@ -24,15 +26,20 @@ func init() {
 		var err error
 		bl, err = loadBlacklist()
 		if err != nil {
-			panic("Could not load blacklist")
+			log.Debug().Msg(fmt.Sprintf("could not load blacklist %v", err))
 		}
 	}
 }
 
 // TODO: implement blacklist for grpc recognisers
-func Leadmine(entities []*httpRecogniser.LeadmineEntity) []*httpRecogniser.LeadmineEntity {
+func Leadmine(entities []*leadmine.Entity) []*leadmine.Entity {
 
-	res := make([]*httpRecogniser.LeadmineEntity, 0, len(entities))
+	if bl == nil {
+		log.Warn().Msg("blacklist is not set")
+		return entities
+	}
+
+	res := make([]*leadmine.Entity, 0, len(entities))
 	for _, entity := range entities {
 		// skip if entity group is in group blacklist
 		if blacklisted, ok := bl.EntityGroups[strings.ToLower(entity.EntityGroup)]; blacklisted && ok {
@@ -57,14 +64,18 @@ func Leadmine(entities []*httpRecogniser.LeadmineEntity) []*httpRecogniser.Leadm
 	return res
 }
 
-
 func loadBlacklist() (*blacklist, error) {
 	data, err := ioutil.ReadFile(blacklistFileName)
+
+	wd, _ := os.Getwd()
+	fmt.Println("wd:", wd)
+	fmt.Println("data:", data, err)
 	if err != nil {
 		return nil, err
 	}
 
 	bl := blacklist{}
+
 	if err := yaml.Unmarshal(data, &bl); err != nil {
 		return nil, err
 	}

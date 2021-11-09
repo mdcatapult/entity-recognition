@@ -2,7 +2,7 @@ package leadmine
 
 type Response struct {
 	Created  string            `json:"created"`
-	Entities []*LeadmineEntity `json:"entities"`
+	Entities []*Entity `json:"entities"`
 }
 
 type Entity struct {
@@ -18,7 +18,7 @@ type Entity struct {
 	EntityGroup           string          `json:"entityGroup"`
 }
 
-type Dict struct {
+type RecognisingDict struct {
 	EnforceBracketing            bool   `json:"enforceBracketing"`
 	EntityType                   string `json:"entityType"`
 	HtmlColor                    string `json:"htmlColor"`

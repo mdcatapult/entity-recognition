@@ -2,7 +2,7 @@ package blacklist
 
 import (
 	"github.com/stretchr/testify/assert"
-	httpRecogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser/http-recogniser"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/types/leadmine"
 	"testing"
 )
 
@@ -25,21 +25,21 @@ var testBlacklist = blacklist{
 }
 
 var (
-	entityWithAllowedText = &httpRecogniser.LeadmineEntity{
+	entityWithAllowedText = &leadmine.Entity{
 		EntityText: "non-blacklisted-text",
 	}
-	entityWithBlacklistedText = &httpRecogniser.LeadmineEntity{
+	entityWithBlacklistedText = &leadmine.Entity{
 		EntityText:            blacklistedText,
 	}
-	entityWithBlacklistedGroup = &httpRecogniser.LeadmineEntity{
+	entityWithBlacklistedGroup = &leadmine.Entity{
 		EntityText: "non-blacklisted-text",
 		EntityGroup: blacklistedEntityGroup,
 	}
-	entityWithGeneNameNotBlacklisted = &httpRecogniser.LeadmineEntity{
+	entityWithGeneNameNotBlacklisted = &leadmine.Entity {
 		EntityText: "SOME GENE NAME", // gene names are capitalised
 		EntityGroup: geneOrProtein,
 	}
-	entityWithAbbreviationNotGeneName = &httpRecogniser.LeadmineEntity{
+	entityWithAbbreviationNotGeneName = &leadmine.Entity{
 		EntityText:  blacklistedAbbreviation,
 		EntityGroup: geneOrProtein,
 	}
@@ -50,8 +50,8 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
-func TestLeadmineEntities(t *testing.T) {
-	leadmineEntities := []*httpRecogniser.LeadmineEntity{
+func TestBlacklistLeadmineEntities(t *testing.T) {
+	leadmineEntities := []*leadmine.Entity{
 		entityWithBlacklistedText,
 		entityWithAbbreviationNotGeneName,
 		entityWithBlacklistedGroup,
@@ -67,8 +67,8 @@ func TestLeadmineEntities(t *testing.T) {
 }
 
 func containsLeadmineEntity(
-	haystack []*httpRecogniser.LeadmineEntity,
-	needle *httpRecogniser.LeadmineEntity) bool {
+	haystack []*leadmine.Entity,
+	needle *leadmine.Entity) bool {
 	for _, v := range haystack {
 		if v == needle {
 			return true
