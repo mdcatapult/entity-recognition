@@ -98,7 +98,9 @@ func (l *leadminer) recognise(snipReaderValues <-chan snippet_reader.Value, opts
 		return
 	}
 
+	fmt.Println("before len: ", len(leadmineResponse.Entities))
 	leadmineResponse.Entities = blacklist.FilterLeadmineEntities(leadmineResponse.Entities)
+	fmt.Println("after len: ", len(leadmineResponse.Entities))
 
 	correctedLeadmineEntities, err := correctLeadmineEntityOffsets(leadmineResponse, text)
 	if err != nil {

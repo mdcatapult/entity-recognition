@@ -24,7 +24,7 @@ var bl *blacklist
 func init() {
 	if bl == nil {
 		var err error
-		bl, err = loadBlacklist()
+		err = Load(blacklistFileName)
 		if err != nil {
 			log.Debug().Msg(fmt.Sprintf("could not load blacklist %v", err))
 		}
@@ -77,17 +77,20 @@ func SnippetAllowed(snippet *pb.Snippet) bool {
 	return !isBlacklisted
 }
 
-func loadBlacklist() (*blacklist, error) {
-	data, err := ioutil.ReadFile(blacklistFileName)
+func Load(path string) error {
+
+	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	bl := blacklist{}
-
-	if err := yaml.Unmarshal(data, &bl); err != nil {
-		return nil, err
+	res := blacklist{}
+	if err := yaml.Unmarshal(data, &res); err != nil {
+		return err
 	}
 
-	return &bl, nil
+	log.Info().Msg(fmt.Sprintf("blacklist set from %v", path))
+	bl = &res
+
+	return nil
 }

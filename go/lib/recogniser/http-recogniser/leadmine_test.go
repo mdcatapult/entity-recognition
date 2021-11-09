@@ -7,6 +7,7 @@ import (
 	mocks "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks/lib"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/html"
 	"io/ioutil"
 	"net/http"
@@ -24,6 +25,7 @@ func TestLeadmineSuite(t *testing.T) {
 }
 
 func (s *leadmineSuite) TestRecognise() {
+	blacklist.Load("../../../../go/resources/blacklist.yml")
 	// Get reader of file to "recognise" in
 	sourceHtml, err := os.Open("../../../resources/acetylcarnitine.html")
 	s.Require().Nil(err)
