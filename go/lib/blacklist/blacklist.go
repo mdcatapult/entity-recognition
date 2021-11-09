@@ -3,7 +3,6 @@ package blacklist
 import (
 	"fmt"
 	"github.com/rs/zerolog/log"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/types/leadmine"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
@@ -41,6 +40,7 @@ func FilterLeadmineEntities(entities []*leadmine.Entity) []*leadmine.Entity {
 
 	res := make([]*leadmine.Entity, 0, len(entities))
 	for _, entity := range entities {
+
 		// skip if entity group is in group blacklist
 		if blacklisted, ok := bl.EntityGroups[strings.ToLower(entity.EntityGroup)]; blacklisted && ok {
 			continue
@@ -64,15 +64,13 @@ func FilterLeadmineEntities(entities []*leadmine.Entity) []*leadmine.Entity {
 	return res
 }
 
-// SnippetAllowed returns true if the snippet's text does not exist in the blacklist
-func SnippetAllowed(snippet *pb.Snippet) bool {
-
-	fmt.Println(bl)
+// SnippetAllowed returns true if the text does not exist in the blacklist
+func SnippetAllowed(text string) bool {
 	if bl == nil {
 		return true
 	}
 
-	_, isBlacklisted := bl.Entities[snippet.Text]
+	_, isBlacklisted := bl.Entities[text]
 
 	return !isBlacklisted
 }

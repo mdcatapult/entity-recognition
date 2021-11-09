@@ -2,6 +2,7 @@
 # synonyms of genes and therefore should not be caught by this list.
 entities:
   AF-DX 250: true
+  protein: true
 # some capitalised words are abbreviations and definitely not genes. These should be blacklisted.
 abbreviations:
 entity_groups:
