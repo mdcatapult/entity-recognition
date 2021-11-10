@@ -105,9 +105,13 @@ func NormalizeString(token string) (normalizedToken string, compoundTokenEnd boo
 			offset += 1
 			token = RemoveFirstChar(token)
 		}
-		if removeLastChar {
+		if removeLastChar && len(token) > 0 {
 			token = RemoveLastChar(token)
 		}
+	}
+
+	if len(token) == 0 {
+		return "", false, offset
 	}
 
 	// remove quotes, brackets etc. from end
@@ -121,7 +125,7 @@ func NormalizeString(token string) (normalizedToken string, compoundTokenEnd boo
 				}
 			}
 		}
-		if removeLastChar {
+		if removeLastChar && len(token) > 0 {
 			_, compoundTokenEnd = TokenDelimiters[LastChar(token)]
 			token = RemoveLastChar(token)
 		}
