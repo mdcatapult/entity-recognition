@@ -13,9 +13,9 @@ var blacklistFileName = "./config/blacklist.yml"
 const geneOrProtein = "Gene or Protein"
 
 type blacklist = struct {
-	Entities map[string]bool `yaml:"entities"`
-	EntityGroups map[string]bool `yaml:"entity_groups"`
-	Abbreviations map[string]bool `yaml:"abbreviations"` // known abbreviations
+	Entities map[string]bool
+	EntityGroups map[string]bool
+	Abbreviations map[string]bool // known abbreviations
 }
 
 var bl *blacklist
@@ -73,14 +73,36 @@ func SnippetAllowed(text string) bool {
 
 func Load(path string) error {
 
-	data, err := ioutil.ReadFile(path)
+	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		return err
 	}
 
-	res := blacklist{}
-	if err := yaml.Unmarshal(data, &res); err != nil {
+	type yamlBlacklist = struct {
+		Entities []string `yaml:"entities"`
+		EntityGroups []string `yaml:"entity_groups"`
+		Abbreviations []string `yaml:"abbreviations"`
+	}
+
+	yamlBl := yamlBlacklist{}
+	if err := yaml.Unmarshal(bytes, &yamlBl); err != nil {
 		return err
+	}
+
+	res := blacklist{
+		Entities: map[string]bool{},
+		EntityGroups: map[string]bool{},
+		Abbreviations: map[string]bool{},
+	}
+
+	for _, v := range yamlBl.Entities {
+		res.Entities[v] = true
+	}
+	for _, v := range yamlBl.EntityGroups {
+		res.EntityGroups[v] = true
+	}
+	for _, v := range yamlBl.Abbreviations {
+		res.EntityGroups[v] = true
 	}
 
 	log.Info().Msg(fmt.Sprintf("blacklist set from %v", path))

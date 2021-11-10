@@ -1,144 +1,144 @@
-# case-insensitive list of words to blacklist. Capitalised versions of words such as 'via' are
+# case- insensitive list of words to blacklist. Capitalised versions of words such as 'via' are
 # synonyms of genes and therefore should not be caught by this list.
 entities:
-  proteins: true
-  protein : true
-  hub : true
-  via : true
-  tgn : true
-  alternative name : true
-  orf : true
-  golgi : true
-  golgi apparatus : true
-  ptm : true
-  vps : true
-  mass : true
-  truncated n-terminus : true
-  et : true
-  van : true
-  cell : true
-  transmembrane proteins : true
-  killer : true
-  pdz domain : true
-  step: true
-  coil: true
-  virion assembly: true
-  oct: true
-  amigo: true
-  sera: true
-  peptide 1: true
-  peptide 2: true
-  dec: true
-  bs8: true
-  spatial: true
-  mice: true
-  fast: true
-  damage: true
-  wave: true
-  nat: true
-  med: true
-  annu: true
-  proc: true
-  traits: true
-  sino: true
-  tele: true
-  aid: true
-  yeast: true
-  ubiquitin-like protein: true
-  tip: true
-  impact: true
-  top: true
-  star: true
-  stars: true
-  enigma: true
-  max: true
-  bar: true
-  bars: true
-  phd: true
-  soc: true
-  sur: true
-  sbi: true
-  trap: true
-  traps: true
-  fig: true
-  bright: true
-  fate: true
-  sharp: true
-  chip: true
-  flash: true
-  light: true
-  lab: true
-  past: true
-  intracellular protein: true
-  mark: true
-  kit: true
-  prism: true
-  minor: true
-  prep: true
-  degs: true
-  mix: true
-  acta: true
-  map: true
-  scott: true
-  lind: true
+  - proteins
+  - protein
+  - hub
+  - via
+  - tgn
+  - alternative name
+  - orf
+  - golgi
+  - golgi apparatus
+  - ptm
+  - vps
+  - mass
+  - truncated n- terminus
+  - et
+  - van
+  - cell
+  - transmembrane proteins
+  - killer
+  - pdz domain
+  - step
+  - coil
+  - virion assembly
+  - oct
+  - amigo
+  - sera
+  - peptide 1
+  - peptide 2
+  - dec
+  - bs8
+  - spatial
+  - mice
+  - fast
+  - damage
+  - wave
+  - nat
+  - med
+  - annu
+  - proc
+  - traits
+  - sino
+  - tele
+  - aid
+  - yeast
+  - ubiquitin- like protein
+  - tip
+  - impact
+  - top
+  - star
+  - stars
+  - enigma
+  - max
+  - bar
+  - bars
+  - phd
+  - soc
+  - sur
+  - sbi
+  - trap
+  - traps
+  - fig
+  - bright
+  - fate
+  - sharp
+  - chip
+  - flash
+  - light
+  - lab
+  - past
+  - intracellular protein
+  - mark
+  - kit
+  - prism
+  - minor
+  - prep
+  - degs
+  - mix
+  - acta
+  - map
+  - scott
+  - lind
 
 # some capitalised words are abbreviations and definitely not genes. These should be blacklisted.
 abbreviations:
-  S1A: true
-  S1B: true
-  S1C: true
-  S1D: true
-  S1E: true
-  S1F: true
-  S2A: true
-  S2B: true
-  S2C: true
-  S2D: true
-  S2E: true
-  S2F: true
-  S3A: true
-  S3B: true
-  S3C: true
-  S3D: true
-  S3E: true
-  S3F: true
-  S4A: true
-  S4B: true
-  S4C: true
-  S4D: true
-  S4E: true
-  S4F: true
-  S5A: true
-  S5B: true
-  S5C: true
-  S5D: true
-  S5E: true
-  S5F: true
-  S6A: true
-  S6B: true
-  S6C: true
-  S6D: true
-  S6E: true
-  S6F: true
-  S1: true
-  S2: true
-  S3: true
-  S4: true
-  S5: true
-  S6: true
-  S7: true
-  S8: true
-  S9: true
-  S10: true
-  S11: true
-  S12: true
-  S13: true
-  S14: true
-  S15: true
-  S16: true
-  P0: true
-  PTM: true
-  SNX: true
+  - S1A
+  - S1B
+  - S1C
+  - S1D
+  - S1E
+  - S1F
+  - S2A
+  - S2B
+  - S2C
+  - S2D
+  - S2E
+  - S2F
+  - S3A
+  - S3B
+  - S3C
+  - S3D
+  - S3E
+  - S3F
+  - S4A
+  - S4B
+  - S4C
+  - S4D
+  - S4E
+  - S4F
+  - S5A
+  - S5B
+  - S5C
+  - S5D
+  - S5E
+  - S5F
+  - S6A
+  - S6B
+  - S6C
+  - S6D
+  - S6E
+  - S6F
+  - S1
+  - S2
+  - S3
+  - S4
+  - S5
+  - S6
+  - S7
+  - S8
+  - S9
+  - S10
+  - S11
+  - S12
+  - S13
+  - S14
+  - S15
+  - S16
+  - P0
+  - PTM
+  - SNX
 
 entity_groups:
-  gene or protein class: true
+  - gene or protein class
