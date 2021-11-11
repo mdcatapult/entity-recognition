@@ -1,7 +1,6 @@
 package grpc_recogniser
 
 import (
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"io"
 	"strings"
 	"sync"
@@ -14,51 +13,20 @@ import (
 )
 
 func Test_grpcRecogniser_recognise(t *testing.T) {
-<<<<<<< HEAD
-	_ = blacklist.Load("../../../../go/resources/blacklist.yml")
-
-	foundEntity := &pb.RecognizedEntity{
-		Entity:      "found entity",
-=======
 	foundEntity := &pb.Entity{
 		Name:      "found entity",
->>>>>>> task/http-recognisers
 		Position:    3,
 		Recogniser:  "test",
 		Xpath:       "/p",
 		Identifiers: map[string]string{"many": "", "things": ""},
 	}
-<<<<<<< HEAD
-	blacklistedEntity := &pb.RecognizedEntity{
-		Entity:      "protein",
-		Position:    99999,
-		Recogniser:  "test",
-		Xpath:       "/p",
-		Identifiers: map[string]string{"many": "", "things": ""},
-	}
-=======
 	foundEntities := []*pb.Entity{foundEntity}
->>>>>>> task/http-recognisers
 
-	expectedRecognisedEntities := []*pb.RecognizedEntity{foundEntity}
-
-	// This text will be fed to the recogniser
-	snipChan := html.SnippetReader{}.ReadSnippets(strings.NewReader("" +
-		"<p>found entity</p> <p>protein</p>"))
-
-	// This mock stream must match the text that has been supplied to the recogniser
-	// in the snipChan
 	mockRecognizer_RecognizeClient := testhelpers.NewMockRecognizeClientStream(
 		testhelpers.Snip("found", "", 3, "/p"),
 		testhelpers.Snip("entity", "", 9, "/p"),
-
-		// this should be blacklisted and therefore does not feature in expectedRecognisedEntities
-		testhelpers.Snip("protein", "", 23, "/p"),
 	)
-
-	// mock the grpc server's response
 	mockRecognizer_RecognizeClient.On("Recv").Return(foundEntity, nil).Once()
-	mockRecognizer_RecognizeClient.On("Recv").Return(blacklistedEntity, nil).Once()
 	mockRecognizer_RecognizeClient.On("Recv").Return(nil, io.EOF).Once()
 
 	testRecogniser := grpcRecogniser{
@@ -68,6 +36,7 @@ func Test_grpcRecogniser_recognise(t *testing.T) {
 		stream:   mockRecognizer_RecognizeClient,
 	}
 
+	snipChan := html.SnippetReader{}.ReadSnippets(strings.NewReader("<p>found entity</p>"))
 	wg := &sync.WaitGroup{}
 	testRecogniser.recognise(snipChan, wg)
 
@@ -75,5 +44,5 @@ func Test_grpcRecogniser_recognise(t *testing.T) {
 
 	mockRecognizer_RecognizeClient.AssertExpectations(t)
 	assert.Nil(t, testRecogniser.err)
-	assert.EqualValues(t, expectedRecognisedEntities, testRecogniser.entities)
+	assert.EqualValues(t, foundEntities, testRecogniser.entities)
 }

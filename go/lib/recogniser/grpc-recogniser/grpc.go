@@ -72,7 +72,7 @@ func (g *grpcRecogniser) recognise(snipReaderValues <-chan snippet_reader.Value,
 				return
 			}
 
-			if !g.blacklist.Allowed(entity.Entity) {
+			if !g.blacklist.Allowed(entity.Name) {
 				continue
 			}
 			

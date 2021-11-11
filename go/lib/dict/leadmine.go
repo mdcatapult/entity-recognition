@@ -6,20 +6,20 @@ import (
 	"strings"
 )
 
-func NewLeadmineReader() Reader {
-	return leadmineReader{}
+func Newleadmineeader() Reader {
+	return leadmineeader{}
 }
 
-type leadmineReader struct{}
+type leadmineeader struct{}
 
-func (l leadmineReader) Read(dict *os.File) (chan Entry, chan error) {
+func (l leadmineeader) Read(dict *os.File) (chan Entry, chan error) {
 	entries := make(chan Entry)
 	errors := make(chan error)
 	go l.read(dict, entries, errors)
 	return entries, errors
 }
 
-func (l leadmineReader) read(dict *os.File, entries chan Entry, errors chan error) {
+func (l leadmineeader) read(dict *os.File, entries chan Entry, errors chan error) {
 
 	// Instantiate variables we need to keep track of across lines.
 	scn := bufio.NewScanner(dict)

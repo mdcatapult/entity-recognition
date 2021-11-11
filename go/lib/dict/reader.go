@@ -35,7 +35,7 @@ func Read(format Format, file *os.File) (chan Entry, chan error, error) {
 		entries, errors := NewPubchemReader().Read(file)
 		return entries, errors, nil
 	case LeadmineDictionaryFormat:
-		entries, errors := NewLeadmineReader().Read(file)
+		entries, errors := Newleadmineeader().Read(file)
 		return entries, errors, nil
 	case NativeDictionaryFormat:
 		entries, errors := NewNativeReader().Read(file)

@@ -7,7 +7,6 @@ import (
 	mocks "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks/lib"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/html"
 	"io/ioutil"
 	"net/http"
@@ -25,21 +24,19 @@ func TestLeadmineSuite(t *testing.T) {
 }
 
 func (s *leadmineSuite) TestRecognise() {
-	_ = blacklist.Load("../../../../go/resources/blacklist.yml")
-
 	// Get reader of file to "recognise" in
 	sourceHtml, err := os.Open("../../../resources/acetylcarnitine.html")
 	s.Require().Nil(err)
 
 	// Set up http mock client to return the leadmine response data
-	leadmineResponseFile, err := os.Open("../../../resources/leadmine-response.json")
+	leadmineesponseFile, err := os.Open("../../../resources/leadmine-response.json")
 	s.Require().Nil(err)
 	mockHttpClient := &mocks.HttpClient{}
 	mockHttpClient.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
 		StatusCode: http.StatusOK,
-		Body:       leadmineResponseFile,
+		Body:       leadmineesponseFile,
 	}, nil)
-	testLeadmine := leadminer{
+	testLeadmine := leadmine{
 		Name: "test-leadmine",
 		Url:        "https://leadmine.wopr.inf.mdc/chemical-entities/entities",
 		httpClient: mockHttpClient,
@@ -107,7 +104,7 @@ func (s *leadmineSuite) TestUrlWithOpts() {
 	}
 	for _, tt := range tests {
 		s.T().Log(tt.name)
-		leadmine := leadminer{Url: tt.url}
+		leadmine := leadmine{Url: tt.url}
 		actual := leadmine.urlWithOpts(tt.opts)
 		s.Equal(tt.expected, actual)
 	}

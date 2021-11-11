@@ -15,11 +15,10 @@ import (
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
 	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/types/leadmine"
 )
 
 func NewLeadmineClient(name, url, blacklistPath string) recogniser.Client {
-	return &leadminer{
+	return &leadmine{
 		Name:       name,
 		Url:        url,
 		httpClient: http.DefaultClient,
@@ -27,7 +26,7 @@ func NewLeadmineClient(name, url, blacklistPath string) recogniser.Client {
 	}
 }
 
-type leadminer struct {
+type leadmine struct {
 	Name	   string
 	Url        string
 	httpClient lib.HttpClient
@@ -36,20 +35,20 @@ type leadminer struct {
 	blacklist blacklist.Blacklist
 }
 
-func (l *leadminer) reset() {
+func (l *leadmine) reset() {
 	l.err = nil
 	l.entities = nil
 }
 
-func (l *leadminer) Err() error {
+func (l *leadmine) Err() error {
 	return l.err
 }
 
-func (l *leadminer) Result() []*pb.Entity {
+func (l *leadmine) Result() []*pb.Entity {
 	return l.entities
 }
 
-func (l *leadminer) urlWithOpts(opts lib.RecogniserOptions) string {
+func (l *leadmine) urlWithOpts(opts lib.RecogniserOptions) string {
 	if len(opts.QueryParameters) == 0 {
 		return l.Url
 	}
@@ -66,17 +65,17 @@ func (l *leadminer) urlWithOpts(opts lib.RecogniserOptions) string {
 	return l.Url + "?" + paramStr[1:]
 }
 
-func (l *leadminer) handleError(err error) {
+func (l *leadmine) handleError(err error) {
 	l.err = err
 }
 
-func (l *leadminer) Recognise(snipReaderValues <-chan snippet_reader.Value, opts lib.RecogniserOptions, wg *sync.WaitGroup) error {
+func (l *leadmine) Recognise(snipReaderValues <-chan snippet_reader.Value, opts lib.RecogniserOptions, wg *sync.WaitGroup) error {
 	l.reset()
 	go l.recognise(snipReaderValues, opts, wg)
 	return nil
 }
 
-func (l *leadminer) recognise(snipReaderValues <-chan snippet_reader.Value, opts lib.RecogniserOptions, wg *sync.WaitGroup) {
+func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, opts lib.RecogniserOptions, wg *sync.WaitGroup) {
 	wg.Add(1)
 	defer wg.Done()
 
@@ -119,8 +118,8 @@ func (l *leadminer) recognise(snipReaderValues <-chan snippet_reader.Value, opts
 	l.entities = filteredEntities
 }
 
-func (l *leadminer)blacklistEntities(entities []*leadmine.Entity) []*leadmine.Entity {
-	res := make([]*leadmine.Entity, 0, len(entities))
+func (l *leadmine)blacklistEntities(entities []*entity) []*entity {
+	res := make([]*entity, 0, len(entities))
 	for _, entity := range entities {
 		if l.blacklist.Allowed(entity.EntityText) {
 			res = append(res, entity)
@@ -129,7 +128,7 @@ func (l *leadminer)blacklistEntities(entities []*leadmine.Entity) []*leadmine.En
 	return res
 }
 
-func (l *leadminer) convertLeadmineEntities(correctedLeadmineEntities []leadmine.Entity, snips map[int]*pb.Snippet) ([]*pb.Entity, error) {
+func (l *leadmine) convertLeadmineEntities(correctedLeadmineEntities []entity, snips map[int]*pb.Snippet) ([]*pb.Entity, error) {
 	var recognisedEntities []*pb.Entity
 	for _, entity := range correctedLeadmineEntities {
 		dec := entity.Beg
@@ -149,7 +148,7 @@ func (l *leadminer) convertLeadmineEntities(correctedLeadmineEntities []leadmine
 			position++
 		}
 
-		metadata, err := json.Marshal(leadmine.Metadata{
+		metadata, err := json.Marshal(metadata{
 			EntityGroup:     entity.EntityGroup,
 			RecognisingDict: entity.RecognisingDict,
 		})
@@ -171,10 +170,10 @@ func (l *leadminer) convertLeadmineEntities(correctedLeadmineEntities []leadmine
 	return recognisedEntities, nil
 }
 
-func correctLeadmineEntityOffsets(leadmineResponse *leadmine.Response, text string) ([]leadmine.Entity, error) {
-	var correctedLeadmineEntities []leadmine.Entity
+func correctLeadmineEntityOffsets(leadmineesponse *response, text string) ([]entity, error) {
+	var correctedLeadmineEntities []entity
 	done := make(map[string]struct{})
-	for _, leadmineEntity := range leadmineResponse.Entities {
+	for _, leadmineEntity := range leadmineesponse.Entities {
 		if _, ok := done[leadmineEntity.EntityText]; ok {
 			continue
 		}
@@ -200,7 +199,7 @@ func correctLeadmineEntityOffsets(leadmineResponse *leadmine.Response, text stri
 	return correctedLeadmineEntities, nil
 }
 
-func (l *leadminer) callLeadmineWebService(opts lib.RecogniserOptions, text string) (*leadmine.Response, error) {
+func (l *leadmine) callLeadmineWebService(opts lib.RecogniserOptions, text string) (*response, error) {
 	req, err := http.NewRequest(http.MethodPost, l.urlWithOpts(opts), strings.NewReader(text))
 	if err != nil {
 		return nil, err
@@ -220,10 +219,43 @@ func (l *leadminer) callLeadmineWebService(opts lib.RecogniserOptions, text stri
 		return nil, err
 	}
 
-	var leadmineResponse *leadmine.Response
+	var leadmineResponse *response
 	if err := json.Unmarshal(b, &leadmineResponse); err != nil {
 		return nil, err
 	}
 
 	return leadmineResponse, nil
+}
+
+type response struct {
+	Created  string            `json:"created"`
+	Entities []*entity `json:"entities"`
+}
+
+type entity struct {
+	Beg                   int             `json:"beg"`
+	BegInNormalizedDoc    int             `json:"begInNormalizedDoc"`
+	End                   int             `json:"end"`
+	EndInNormalizedDoc    int             `json:"endInNormalizedDoc"`
+	EntityText            string          `json:"entityText"`
+	PossiblyCorrectedText string          `json:"possiblyCorrectedText"`
+	RecognisingDict       recognisingDict `json:"recognisingDict"`
+	ResolvedEntity        string          `json:"resolvedEntity"`
+	SectionType           string          `json:"sectionType"`
+	EntityGroup           string          `json:"entityGroup"`
+}
+
+type recognisingDict struct {
+	EnforceBracketing            bool   `json:"enforceBracketing"`
+	EntityType                   string `json:"entityType"`
+	HtmlColor                    string `json:"htmlColor"`
+	MaxCorrectionDistance        int    `json:"maxCorrectionDistance"`
+	MinimumCorrectedEntityLength int    `json:"minimumCorrectedEntityLength"`
+	MinimumEntityLength          int    `json:"minimumEntityLength"`
+	Source                       string `json:"source"`
+}
+
+type metadata struct {
+	EntityGroup     string `json:"entityGroup"`
+	RecognisingDict recognisingDict
 }
