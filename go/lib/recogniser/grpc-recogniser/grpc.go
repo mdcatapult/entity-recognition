@@ -13,13 +13,14 @@ import (
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 )
 
-func New(name string, client pb.RecognizerClient) recogniser.Client {
+func New(name string, client pb.RecognizerClient, blacklistPath string) recogniser.Client {
 	return &grpcRecogniser{
 		Name:     name,
 		client:   client,
 		err:      nil,
 		entities: nil,
 		stream:   nil,
+		blacklist: blacklist.Load(blacklistPath),
 	}
 }
 
@@ -29,6 +30,7 @@ type grpcRecogniser struct {
 	err      error
 	entities []*pb.RecognizedEntity
 	stream   pb.Recognizer_GetStreamClient
+	blacklist blacklist.Blacklist
 }
 
 func (g *grpcRecogniser) Recognise(snipReaderValues <-chan snippet_reader.Value, _ lib.RecogniserOptions, wg *sync.WaitGroup) error {
@@ -69,7 +71,8 @@ func (g *grpcRecogniser) recognise(snipReaderValues <-chan snippet_reader.Value,
 				g.err = err
 				return
 			}
-			if !blacklist.SnippetAllowed(entity.Entity) {
+
+			if !g.blacklist.Allowed(entity.Entity) {
 				continue
 			}
 

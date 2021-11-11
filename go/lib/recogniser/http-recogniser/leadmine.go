@@ -18,11 +18,12 @@ import (
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/types/leadmine"
 )
 
-func NewLeadmineClient(name, url string) recogniser.Client {
+func NewLeadmineClient(name, url, blacklistPath string) recogniser.Client {
 	return &leadminer{
 		Name:       name,
 		Url:        url,
 		httpClient: http.DefaultClient,
+		blacklist: blacklist.Load(blacklistPath),
 	}
 }
 
@@ -32,6 +33,7 @@ type leadminer struct {
 	httpClient lib.HttpClient
 	err        error
 	entities   []*pb.RecognizedEntity
+	blacklist blacklist.Blacklist
 }
 
 func (l *leadminer) reset() {
@@ -98,7 +100,7 @@ func (l *leadminer) recognise(snipReaderValues <-chan snippet_reader.Value, opts
 		return
 	}
 
-	leadmineResponse.Entities = blacklist.FilterLeadmineEntities(leadmineResponse.Entities)
+	leadmineResponse.Entities = l.blacklistEntities(leadmineResponse.Entities)
 
 	correctedLeadmineEntities, err := correctLeadmineEntityOffsets(leadmineResponse, text)
 	if err != nil {
@@ -115,6 +117,16 @@ func (l *leadminer) recognise(snipReaderValues <-chan snippet_reader.Value, opts
 	filteredEntities := lib.FilterSubmatches(recognisedEntities)
 
 	l.entities = filteredEntities
+}
+
+func (l *leadminer)blacklistEntities(entities []*leadmine.Entity) []*leadmine.Entity {
+	res := make([]*leadmine.Entity, 0, len(entities))
+	for _, entity := range entities {
+		if l.blacklist.Allowed(entity.EntityText) {
+			res = append(res, entity)
+		}
+	}
+	return res
 }
 
 func (l *leadminer) convertLeadmineEntities(correctedLeadmineEntities []leadmine.Entity, snips map[int]*pb.Snippet) ([]*pb.RecognizedEntity, error) {

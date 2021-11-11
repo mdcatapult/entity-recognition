@@ -25,10 +25,12 @@ type recognitionAPIConfig struct {
 	GrpcRecognizers map[string]struct {
 		Host string
 		Port int
+		BlacklistPath string
 	} `mapstructure:"grpc_recognisers"`
 	HttpRecognisers map[string]struct {
 		Type http_recogniser.Type
 		Url  string
+		BlacklistPath string
 	} `mapstructure:"http_recognisers"`
 }
 
@@ -61,13 +63,13 @@ func main() {
 			log.Fatal().Err(err).Send()
 		}
 		cancel()
-		recogniserClients[name] = grpc_recogniser.New(name, pb.NewRecognizerClient(conn))
+		recogniserClients[name] = grpc_recogniser.New(name, pb.NewRecognizerClient(conn), conf.BlacklistPath)
 	}
 
 	for name, conf := range config.HttpRecognisers {
 		switch conf.Type {
 		case http_recogniser.LeadmineType:
-			recogniserClients[name] = http_recogniser.NewLeadmineClient(name, conf.Url)
+			recogniserClients[name] = http_recogniser.NewLeadmineClient(name, conf.Url, conf.BlacklistPath)
 		}
 	}
 
