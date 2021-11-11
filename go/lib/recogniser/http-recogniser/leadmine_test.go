@@ -7,6 +7,7 @@ import (
 	mocks "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks/lib"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/html"
 	"io/ioutil"
 	"net/http"
@@ -29,17 +30,24 @@ func (s *leadmineSuite) TestRecognise() {
 	s.Require().Nil(err)
 
 	// Set up http mock client to return the leadmine response data
-	leadmineesponseFile, err := os.Open("../../../resources/leadmine-response.json")
+	leadmineResponseFile, err := os.Open("../../../resources/leadmine-response.json")
 	s.Require().Nil(err)
 	mockHttpClient := &mocks.HttpClient{}
 	mockHttpClient.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
 		StatusCode: http.StatusOK,
-		Body:       leadmineesponseFile,
+		Body:       leadmineResponseFile,
 	}, nil)
+
 	testLeadmine := leadmine{
 		Name: "test-leadmine",
 		Url:        "https://leadmine.wopr.inf.mdc/chemical-entities/entities",
 		httpClient: mockHttpClient,
+		blacklist: blacklist.Blacklist{
+			CaseSensitive:   map[string]bool{
+				"AF-DX 250": true,
+			},
+			CaseInsensitive: map[string]bool{},
+		},
 	}
 
 	// Set up function arguments
