@@ -17,3 +17,9 @@ http_recognisers:
     type: leadmine
     url: https://leadmine.wopr.inf.mdc/chemical-entities/entities
     blacklistPath: config/blacklists/leadmine-chemical-entities.yml
+
+    leadmine-proteins:
+      type: leadmine
+      url: https://leadmine.wopr.inf.mdc/proteins/entities
+      blacklistPath: config/blacklists/leadmine-proteins.yml
+
