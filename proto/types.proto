@@ -8,8 +8,8 @@ message Snippet {
     string xpath = 4;
 }
 
-message RecognizedEntity {
-    string entity = 1;
+message Entity {
+    string name = 1;
     uint32 position = 2;
     string xpath = 3;
     string recogniser = 4;

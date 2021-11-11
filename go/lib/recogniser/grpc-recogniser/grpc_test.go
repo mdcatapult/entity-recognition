@@ -13,14 +13,14 @@ import (
 )
 
 func Test_grpcRecogniser_recognise(t *testing.T) {
-	foundEntity := &pb.RecognizedEntity{
-		Entity:      "found entity",
+	foundEntity := &pb.Entity{
+		Name:      "found entity",
 		Position:    3,
 		Recogniser:  "test",
 		Xpath:       "/p",
 		Identifiers: map[string]string{"many": "", "things": ""},
 	}
-	foundEntities := []*pb.RecognizedEntity{foundEntity}
+	foundEntities := []*pb.Entity{foundEntity}
 
 	mockRecognizer_RecognizeClient := testhelpers.NewMockRecognizeClientStream(
 		testhelpers.Snip("found", "", 3, "/p"),

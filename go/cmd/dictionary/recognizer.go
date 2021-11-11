@@ -24,10 +24,10 @@ type requestVars struct {
 	pipe               remote.GetPipeline
 }
 
-func newEntityWithNormalisedText(snippet *pb.Snippet, lookup *cache.Lookup) *pb.RecognizedEntity {
+func newEntityWithNormalisedText(snippet *pb.Snippet, lookup *cache.Lookup) *pb.Entity {
 	normalisedText, _, _ := text.NormalizeString(snippet.GetText())
-	return &pb.RecognizedEntity{
-		Entity:      normalisedText,
+	return &pb.Entity{
+		Name:      normalisedText,
 		Position:    snippet.GetOffset(),
 		Recogniser:  lookup.Dictionary,
 		Identifiers: lookup.Identifiers,

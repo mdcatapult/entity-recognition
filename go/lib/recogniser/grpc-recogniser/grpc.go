@@ -26,7 +26,7 @@ type grpcRecogniser struct {
 	Name     string
 	client   pb.RecognizerClient
 	err      error
-	entities []*pb.RecognizedEntity
+	entities []*pb.Entity
 	stream   pb.Recognizer_GetStreamClient
 }
 
@@ -68,8 +68,8 @@ func (g *grpcRecogniser) recognise(snipReaderValues <-chan snippet_reader.Value,
 				g.err = err
 				return
 			}
-			g.entities = append(g.entities, &pb.RecognizedEntity{
-				Entity:      entity.Entity,
+			g.entities = append(g.entities, &pb.Entity{
+				Name:      entity.Name,
 				Position:    entity.Position,
 				Xpath:       entity.Xpath,
 				Recogniser:  g.Name,
@@ -104,6 +104,6 @@ func (g *grpcRecogniser) Err() error {
 	return g.err
 }
 
-func (g *grpcRecogniser) Result() []*pb.RecognizedEntity {
+func (g *grpcRecogniser) Result() []*pb.Entity {
 	return g.entities
 }

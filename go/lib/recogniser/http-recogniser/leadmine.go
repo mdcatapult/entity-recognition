@@ -29,7 +29,7 @@ type leadmine struct {
 	Url        string
 	httpClient lib.HttpClient
 	err        error
-	entities   []*pb.RecognizedEntity
+	entities   []*pb.Entity
 }
 
 func (l *leadmine) reset() {
@@ -41,7 +41,7 @@ func (l *leadmine) Err() error {
 	return l.err
 }
 
-func (l *leadmine) Result() []*pb.RecognizedEntity {
+func (l *leadmine) Result() []*pb.Entity {
 	return l.entities
 }
 
@@ -112,8 +112,8 @@ func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, opts 
 	l.entities = filteredEntities
 }
 
-func (l *leadmine) convertLeadmineEntities(correctedLeadmineEntities []LeadmineEntity, snips map[int]*pb.Snippet) ([]*pb.RecognizedEntity, error) {
-	var recognisedEntities []*pb.RecognizedEntity
+func (l *leadmine) convertLeadmineEntities(correctedLeadmineEntities []LeadmineEntity, snips map[int]*pb.Snippet) ([]*pb.Entity, error) {
+	var recognisedEntities []*pb.Entity
 	for _, entity := range correctedLeadmineEntities {
 		dec := entity.Beg
 		position := 0
@@ -140,8 +140,8 @@ func (l *leadmine) convertLeadmineEntities(correctedLeadmineEntities []LeadmineE
 			return nil, err
 		}
 
-		recognisedEntities = append(recognisedEntities, &pb.RecognizedEntity{
-			Entity:     entity.EntityText,
+		recognisedEntities = append(recognisedEntities, &pb.Entity{
+			Name:     entity.EntityText,
 			Position:   uint32(position),
 			Xpath:      snip.Xpath,
 			Recogniser: l.Name,

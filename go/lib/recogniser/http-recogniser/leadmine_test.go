@@ -54,7 +54,7 @@ func (s *leadmineSuite) TestRecognise() {
 	// Get the expected response from resources.
 	b, err := ioutil.ReadFile("../../../resources/converted-leadmine-response.json")
 	s.Require().Nil(err)
-	var expectedEntities []*pb.RecognizedEntity
+	var expectedEntities []*pb.Entity
 	err = json.Unmarshal(b, &expectedEntities)
 	s.Require().Nil(err)
 

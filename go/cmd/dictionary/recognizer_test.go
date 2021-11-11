@@ -85,9 +85,9 @@ func (s *RecognizerSuite) Test_recogniser_queryToken() {
 		tokenCacheWithMissingToken[k] = v
 	}
 	tokenCacheWithMissingToken[notInCache] = &cache.Lookup{}
-	foundEntity := &pb.RecognizedEntity{
+	foundEntity := &pb.Entity{
 		Recogniser: "fake dictionary",
-		Entity:     "in db",
+		Name:     "in db",
 	}
 	mockStream.On("Send", foundEntity).Return(nil).Once()
 	mockGetPipeline.On("Get", notInCache).Once()

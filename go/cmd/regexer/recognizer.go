@@ -34,8 +34,8 @@ func (r recogniser) GetStream(stream pb.Recognizer_GetStreamServer) error {
 		// For every regexp try to match the snippet and send the recognised entity if there is a match.
 		for name, re := range r.regexps {
 			if re.MatchString(snippet.GetNormalisedText()) {
-				err := stream.Send(&pb.RecognizedEntity{
-					Entity:     snippet.GetNormalisedText(),
+				err := stream.Send(&pb.Entity{
+					Name:     snippet.GetNormalisedText(),
 					Position:   snippet.GetOffset(),
 					Xpath:      snippet.GetXpath(),
 					Identifiers: map[string]string{

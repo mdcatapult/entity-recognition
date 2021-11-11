@@ -103,9 +103,9 @@ func (s *ControllerSuite) Test_controller_TokenizeHTML() {
 }
 
 func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
-	foundEntities := []*pb.RecognizedEntity{
+	foundEntities := []*pb.Entity{
 		{
-			Entity:      "found entity",
+			Name:      "found entity",
 			Position:    2312,
 			Recogniser:  "test",
 			Identifiers: map[string]string{"many": "", "things": ""},

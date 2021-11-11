@@ -158,7 +158,7 @@ func (c *recognizerClient) GetStream(ctx context.Context, opts ...grpc.CallOptio
 
 type Recognizer_GetStreamClient interface {
 	Send(*Snippet) error
-	Recv() (*RecognizedEntity, error)
+	Recv() (*Entity, error)
 	grpc.ClientStream
 }
 
@@ -170,8 +170,8 @@ func (x *recognizerGetStreamClient) Send(m *Snippet) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *recognizerGetStreamClient) Recv() (*RecognizedEntity, error) {
-	m := new(RecognizedEntity)
+func (x *recognizerGetStreamClient) Recv() (*Entity, error) {
+	m := new(Entity)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -211,7 +211,7 @@ func _Recognizer_GetStream_Handler(srv interface{}, stream grpc.ServerStream) er
 }
 
 type Recognizer_GetStreamServer interface {
-	Send(*RecognizedEntity) error
+	Send(*Entity) error
 	Recv() (*Snippet, error)
 	grpc.ServerStream
 }
@@ -220,7 +220,7 @@ type recognizerGetStreamServer struct {
 	grpc.ServerStream
 }
 
-func (x *recognizerGetStreamServer) Send(m *RecognizedEntity) error {
+func (x *recognizerGetStreamServer) Send(m *Entity) error {
 	return x.ServerStream.SendMsg(m)
 }
 
