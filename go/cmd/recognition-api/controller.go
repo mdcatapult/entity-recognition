@@ -52,7 +52,7 @@ func (c controller) TokenizeHTML(reader io.Reader) ([]*pb.Snippet, error) {
 	return tokens, nil
 }
 
-func (c controller) RecognizeInHTML(reader io.Reader, opts map[string]lib.RecogniserOptions) ([]*pb.RecognizedEntity, error) {
+func (c controller) RecognizeInHTML(reader io.Reader, opts map[string]lib.RecogniserOptions) ([]*pb.Entity, error) {
 
 	wg := &sync.WaitGroup{}
 	channels := make(map[string]chan snippet_reader.Value)
@@ -89,7 +89,7 @@ func (c controller) RecognizeInHTML(reader io.Reader, opts map[string]lib.Recogn
 		length += len(c.recognisers[recogniserName].Result())
 	}
 
-	recognisedEntities := make([]*pb.RecognizedEntity, 0, length)
+	recognisedEntities := make([]*pb.Entity, 0, length)
 	for recogniserName := range opts {
 		recognisedEntities = append(recognisedEntities, c.recognisers[recogniserName].Result()...)
 	}

@@ -28,7 +28,7 @@ type grpcRecogniser struct {
 	Name     string
 	client   pb.RecognizerClient
 	err      error
-	entities []*pb.RecognizedEntity
+	entities []*pb.Entity
 	stream   pb.Recognizer_GetStreamClient
 	blacklist blacklist.Blacklist
 }
@@ -75,9 +75,9 @@ func (g *grpcRecogniser) recognise(snipReaderValues <-chan snippet_reader.Value,
 			if !g.blacklist.Allowed(entity.Entity) {
 				continue
 			}
-
-			g.entities = append(g.entities, &pb.RecognizedEntity{
-				Entity:      entity.Entity,
+			
+			g.entities = append(g.entities, &pb.Entity{
+				Name:      entity.Name,
 				Position:    entity.Position,
 				Xpath:       entity.Xpath,
 				Recogniser:  g.Name,
@@ -113,6 +113,6 @@ func (g *grpcRecogniser) Err() error {
 	return g.err
 }
 
-func (g *grpcRecogniser) Result() []*pb.RecognizedEntity {
+func (g *grpcRecogniser) Result() []*pb.Entity {
 	return g.entities
 }

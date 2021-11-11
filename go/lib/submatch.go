@@ -5,8 +5,8 @@ import (
 	"strings"
 )
 
-func FilterSubmatches(recognisedEntities []*pb.RecognizedEntity) []*pb.RecognizedEntity {
-	filteredEntities := make([]*pb.RecognizedEntity, 0, len(recognisedEntities))
+func FilterSubmatches(recognisedEntities []*pb.Entity) []*pb.Entity {
+	filteredEntities := make([]*pb.Entity, 0, len(recognisedEntities))
 
 OuterLoopLabel:
 	for _, submatchCanditate := range recognisedEntities {
@@ -20,9 +20,9 @@ OuterLoopLabel:
 	return filteredEntities
 }
 
-func IsSubmatch(canditate, entity *pb.RecognizedEntity) bool {
-	return len(canditate.Entity) < len(entity.Entity) &&
+func IsSubmatch(canditate, entity *pb.Entity) bool {
+	return len(canditate.Name) < len(entity.Name) &&
 		canditate.Xpath == entity.Xpath &&
-		strings.Contains(entity.Entity, canditate.Entity)
+		strings.Contains(entity.Name, canditate.Name)
 }
 

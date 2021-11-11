@@ -14,15 +14,21 @@ import (
 )
 
 func Test_grpcRecogniser_recognise(t *testing.T) {
+<<<<<<< HEAD
 	_ = blacklist.Load("../../../../go/resources/blacklist.yml")
 
 	foundEntity := &pb.RecognizedEntity{
 		Entity:      "found entity",
+=======
+	foundEntity := &pb.Entity{
+		Name:      "found entity",
+>>>>>>> task/http-recognisers
 		Position:    3,
 		Recogniser:  "test",
 		Xpath:       "/p",
 		Identifiers: map[string]string{"many": "", "things": ""},
 	}
+<<<<<<< HEAD
 	blacklistedEntity := &pb.RecognizedEntity{
 		Entity:      "protein",
 		Position:    99999,
@@ -30,6 +36,9 @@ func Test_grpcRecogniser_recognise(t *testing.T) {
 		Xpath:       "/p",
 		Identifiers: map[string]string{"many": "", "things": ""},
 	}
+=======
+	foundEntities := []*pb.Entity{foundEntity}
+>>>>>>> task/http-recognisers
 
 	expectedRecognisedEntities := []*pb.RecognizedEntity{foundEntity}
 

@@ -23,8 +23,8 @@ func (s *RecognizerSuite) Test_recogniser_Recognize() {
 		"test_regex": regexp.MustCompile("hello"),
 	}}
 	mockStream := testhelpers.NewMockRecognizeServerStream(testhelpers.Snips("hello", "my", "name", "is", "jeff")...)
-	foundEntity := &pb.RecognizedEntity{
-		Entity:     "hello",
+	foundEntity := &pb.Entity{
+		Name:     "hello",
 		Identifiers: map[string]string{
 			"test_regex": "hello",
 		},

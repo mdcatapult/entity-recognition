@@ -11,5 +11,5 @@ import (
 type Client interface {
 	Recognise(<-chan snippet_reader.Value, lib.RecogniserOptions, *sync.WaitGroup) error
 	Err() error
-	Result() []*pb.RecognizedEntity
+	Result() []*pb.Entity
 }
