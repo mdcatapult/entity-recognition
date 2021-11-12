@@ -52,7 +52,7 @@ func Load(path string) Blacklist {
 
 	yamlBl := yamlBlacklist{}
 	if err := yaml.Unmarshal(bytes, &yamlBl); err != nil {
-		log.Warn().Msg(fmt.Sprintf("could not load blacklist"))
+		log.Warn().Msg(fmt.Sprintf("could not load blacklist from %v", path))
 	}
 
 	res := Blacklist{

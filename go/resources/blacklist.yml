@@ -1,9 +1,0 @@
-# case-insensitive list of words to blacklist. Capitalised versions of words such as 'via' are
-# synonyms of genes and therefore should not be caught by this list.
-entities:
-  - AF-DX 250
-  - protein
-# some capitalised words are abbreviations and definitely not genes. These should be blacklisted.
-abbreviations: []
-entity_groups: []
-

@@ -151,8 +151,6 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 	mockRecogniser.On("Result").Return(foundEntities)
 	s.controller.recognisers = map[string]recogniser.Client{"mock": mockRecogniser}
 
-	// TODO: add a blacklist to s.controller
-
 	opts := map[string]lib.RecogniserOptions{
 		"mock": {},
 	}
