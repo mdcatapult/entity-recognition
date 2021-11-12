@@ -45,7 +45,7 @@ func Load(path string) Blacklist {
 		log.Warn().Msg(fmt.Sprintf("could not find blacklist at %v", path))
 	}
 
-	type yamlBlacklist = struct {
+	type yamlBlacklist struct {
 		CaseSensitive []string `yaml:"case_sensitive"`
 		CaseInsensitive []string `yaml:"case_insensitive"`
 	}
