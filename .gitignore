@@ -2,6 +2,7 @@
 bin
 cover.out
 config/*.yml
-config/blacklists/*.yml
 !config/*.example.yml
+config/blacklists/*.yml
+!config/blacklists/*.example.yml:
 *.iml

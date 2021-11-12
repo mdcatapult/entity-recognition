@@ -38,6 +38,7 @@ func (blacklist Blacklist) FilterEntities(entities []*pb.Entity) []*pb.Entity {
 	return res
 }
 
+// Load returns an unmarshalled blacklist from a YAML file at the given path.
 func Load(path string) Blacklist {
 
 	bytes, err := ioutil.ReadFile(path)
