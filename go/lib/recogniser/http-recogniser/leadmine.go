@@ -99,7 +99,6 @@ func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, opts 
 		return
 	}
 
-	fmt.Println("leadmine blacklist: ", l.blacklist, l.blacklist.CaseInsensitive)
 	leadmineResponse.Entities = l.blacklistEntities(leadmineResponse.Entities)
 
 	correctedLeadmineEntities, err := correctLeadmineEntityOffsets(leadmineResponse, text)
@@ -119,8 +118,8 @@ func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, opts 
 	l.entities = filteredEntities
 }
 
-func (l *leadmine) blacklistEntities(entities []*entity) []*entity {
-	res := make([]*entity, 0, len(entities))
+func (l *leadmine) blacklistEntities(entities []*LeadmineEntity) []*LeadmineEntity {
+	res := make([]*LeadmineEntity, 0, len(entities))
 	for _, entity := range entities {
 		if l.blacklist.Allowed(entity.EntityText) {
 			res = append(res, entity)
@@ -129,7 +128,7 @@ func (l *leadmine) blacklistEntities(entities []*entity) []*entity {
 	return res
 }
 
-func (l *leadmine) convertLeadmineEntities(correctedLeadmineEntities []entity, snips map[int]*pb.Snippet) ([]*pb.Entity, error) {
+func (l *leadmine) convertLeadmineEntities(correctedLeadmineEntities []LeadmineEntity, snips map[int]*pb.Snippet) ([]*pb.Entity, error) {
 	var recognisedEntities []*pb.Entity
 	for _, entity := range correctedLeadmineEntities {
 		dec := entity.Beg
@@ -142,14 +141,14 @@ func (l *leadmine) convertLeadmineEntities(correctedLeadmineEntities []entity, s
 				if strings.Contains(snip.GetText(), entity.EntityText) {
 					break
 				} else {
-					return nil, errors.New("entity not in snippet - FIX ME")
+					return nil, errors.New("LeadmineEntity not in snippet - FIX ME")
 				}
 			}
 			dec--
 			position++
 		}
 
-		metadata, err := json.Marshal(metadata{
+		metadata, err := json.Marshal(LeadmineMetadata{
 			EntityGroup:     entity.EntityGroup,
 			RecognisingDict: entity.RecognisingDict,
 		})
@@ -171,10 +170,10 @@ func (l *leadmine) convertLeadmineEntities(correctedLeadmineEntities []entity, s
 	return recognisedEntities, nil
 }
 
-func correctLeadmineEntityOffsets(leadmineesponse *response, text string) ([]entity, error) {
-	var correctedLeadmineEntities []entity
+func correctLeadmineEntityOffsets(leadmineResponse *LeadmineResponse, text string) ([]LeadmineEntity, error) {
+	var correctedLeadmineEntities []LeadmineEntity
 	done := make(map[string]struct{})
-	for _, leadmineEntity := range leadmineesponse.Entities {
+	for _, leadmineEntity := range leadmineResponse.Entities {
 		if _, ok := done[leadmineEntity.EntityText]; ok {
 			continue
 		}
@@ -200,7 +199,7 @@ func correctLeadmineEntityOffsets(leadmineesponse *response, text string) ([]ent
 	return correctedLeadmineEntities, nil
 }
 
-func (l *leadmine) callLeadmineWebService(opts lib.RecogniserOptions, text string) (*response, error) {
+func (l *leadmine) callLeadmineWebService(opts lib.RecogniserOptions, text string) (*LeadmineResponse, error) {
 	req, err := http.NewRequest(http.MethodPost, l.urlWithOpts(opts), strings.NewReader(text))
 	if err != nil {
 		return nil, err
@@ -220,7 +219,7 @@ func (l *leadmine) callLeadmineWebService(opts lib.RecogniserOptions, text strin
 		return nil, err
 	}
 
-	var leadmineResponse *response
+	var leadmineResponse *LeadmineResponse
 	if err := json.Unmarshal(b, &leadmineResponse); err != nil {
 		return nil, err
 	}
@@ -228,25 +227,25 @@ func (l *leadmine) callLeadmineWebService(opts lib.RecogniserOptions, text strin
 	return leadmineResponse, nil
 }
 
-type response struct {
+type LeadmineResponse struct {
 	Created  string            `json:"created"`
-	Entities []*entity `json:"entities"`
+	Entities []*LeadmineEntity `json:"entities"`
 }
 
-type entity struct {
+type LeadmineEntity struct {
 	Beg                   int             `json:"beg"`
 	BegInNormalizedDoc    int             `json:"begInNormalizedDoc"`
 	End                   int             `json:"end"`
 	EndInNormalizedDoc    int             `json:"endInNormalizedDoc"`
 	EntityText            string          `json:"entityText"`
 	PossiblyCorrectedText string          `json:"possiblyCorrectedText"`
-	RecognisingDict       recognisingDict `json:"recognisingDict"`
+	RecognisingDict       RecognisingDict `json:"RecognisingDict"`
 	ResolvedEntity        string          `json:"resolvedEntity"`
 	SectionType           string          `json:"sectionType"`
 	EntityGroup           string          `json:"entityGroup"`
 }
 
-type recognisingDict struct {
+type RecognisingDict struct {
 	EnforceBracketing            bool   `json:"enforceBracketing"`
 	EntityType                   string `json:"entityType"`
 	HtmlColor                    string `json:"htmlColor"`
@@ -256,7 +255,7 @@ type recognisingDict struct {
 	Source                       string `json:"source"`
 }
 
-type metadata struct {
+type LeadmineMetadata struct {
 	EntityGroup     string `json:"entityGroup"`
-	RecognisingDict recognisingDict
+	RecognisingDict RecognisingDict
 }

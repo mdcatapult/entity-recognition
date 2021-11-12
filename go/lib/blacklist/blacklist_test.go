@@ -20,6 +20,8 @@ func TestBlacklist(t *testing.T) {
 
 	assert.False(t, testBlacklist.Allowed("caseSensitive"))
 	assert.True(t, testBlacklist.Allowed("CASESENSITIVE"))
+
+	assert.True(t, testBlacklist.Allowed("non-blacklisted-term"))
 }
 
 
