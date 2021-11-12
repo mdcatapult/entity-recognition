@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -22,6 +23,7 @@ type recognitionAPIConfig struct {
 	Server   struct {
 		HttpPort int `mapstructure:"http_port"`
 	}
+	BlacklistPath string `mapstructure:"blacklist_path"` // global blacklist
 	GrpcRecognizers map[string]struct {
 		Host string
 		Port int
@@ -78,7 +80,9 @@ func main() {
 	c := controller{
 		recognisers: recogniserClients,
 		htmlReader:  html.SnippetReader{},
+		blacklist: blacklist.Load(config.BlacklistPath),
 	}
+
 	s := server{controller: c}
 	s.RegisterRoutes(r)
 	if err := r.Run(fmt.Sprintf(":%d", config.Server.HttpPort)); err != nil {

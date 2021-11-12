@@ -1,6 +1,8 @@
 server:
   http_port: 8080
 
+blacklist_path: config/blacklists/global.yml
+
 grpc_recognisers:
   dictionary:
     host: localhost

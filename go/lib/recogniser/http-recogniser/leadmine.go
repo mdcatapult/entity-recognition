@@ -99,6 +99,7 @@ func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, opts 
 		return
 	}
 
+	fmt.Println("leadmine blacklist: ", l.blacklist, l.blacklist.CaseInsensitive)
 	leadmineResponse.Entities = l.blacklistEntities(leadmineResponse.Entities)
 
 	correctedLeadmineEntities, err := correctLeadmineEntityOffsets(leadmineResponse, text)
@@ -118,7 +119,7 @@ func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, opts 
 	l.entities = filteredEntities
 }
 
-func (l *leadmine)blacklistEntities(entities []*entity) []*entity {
+func (l *leadmine) blacklistEntities(entities []*entity) []*entity {
 	res := make([]*entity, 0, len(entities))
 	for _, entity := range entities {
 		if l.blacklist.Allowed(entity.EntityText) {

@@ -3,6 +3,7 @@ package blacklist
 import (
 	"fmt"
 	"github.com/rs/zerolog/log"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"strings"
@@ -13,6 +14,7 @@ type Blacklist struct {
 	CaseInsensitive map[string]bool
 }
 
+// Allowed returns true if entity is not blacklisted.
 func (blacklist Blacklist) Allowed(entity string) bool {
 	if _, ok := blacklist.CaseSensitive[entity]; ok {
 		return false
@@ -23,6 +25,17 @@ func (blacklist Blacklist) Allowed(entity string) bool {
 	}
 
 	return true
+}
+
+// FilterEntities filters []*pb.Entity based on blacklist.
+func (blacklist Blacklist) FilterEntities(entities []*pb.Entity) []*pb.Entity {
+	res := make([]*pb.Entity, 0, len(entities))
+	for _, entity := range entities {
+		if blacklist.Allowed(entity.Name) {
+			res = append(res, entity)
+		}
+	}
+	return res
 }
 
 func Load(path string) Blacklist {
