@@ -13,6 +13,7 @@ lint:
   script:
     - go vet ./...
     - golangci-lint run
+    - find ./go -type f -name '*.go' -exec ./scripts/goimports.sh {}
 
 test:
   stage: test
