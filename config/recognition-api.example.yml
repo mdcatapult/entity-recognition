@@ -1,7 +1,7 @@
 server:
   http_port: 8080
 
-blacklist_path: config/blacklists/global.yml
+blacklist: config/blacklists/global.yml
 
 grpc_recognisers:
   dictionary:
@@ -18,10 +18,10 @@ http_recognisers:
   leadmine-chemical-entities:
     type: leadmine
     url: https://leadmine.wopr.inf.mdc/chemical-entities/entities
-    blacklistPath: config/blacklists/leadmine-chemical-entities.yml
+    blacklist: config/blacklists/leadmine-chemical-entities.yml
 
   leadmine-proteins:
     type: leadmine
     url: https://leadmine.wopr.inf.mdc/proteins/entities
-    blacklistPath: config/blacklists/leadmine-proteins.yml
+    blacklist: config/blacklists/leadmine-proteins.yml
 

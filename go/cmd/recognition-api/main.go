@@ -23,16 +23,16 @@ type recognitionAPIConfig struct {
 	Server   struct {
 		HttpPort int `mapstructure:"http_port"`
 	}
-	BlacklistPath string `mapstructure:"blacklist_path"` // global blacklist
+	Blacklist string `mapstructure:"blacklist"` // global blacklist
 	GrpcRecognizers map[string]struct {
 		Host string
 		Port int
-		BlacklistPath string
+		Blacklist string
 	} `mapstructure:"grpc_recognisers"`
 	HttpRecognisers map[string]struct {
 		Type http_recogniser.Type
 		Url  string
-		BlacklistPath string
+		Blacklist string
 	} `mapstructure:"http_recognisers"`
 }
 
