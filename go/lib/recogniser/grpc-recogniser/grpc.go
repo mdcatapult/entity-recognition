@@ -13,14 +13,14 @@ import (
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 )
 
-func New(name string, client pb.RecognizerClient, blacklistPath string) recogniser.Client {
+func New(name string, client pb.RecognizerClient, blacklist blacklist.Blacklist) recogniser.Client {
 	return &grpcRecogniser{
 		Name:      name,
 		client:    client,
 		err:       nil,
 		entities:  nil,
 		stream:    nil,
-		blacklist: blacklist.Load(blacklistPath),
+		blacklist: blacklist,
 	}
 }
 

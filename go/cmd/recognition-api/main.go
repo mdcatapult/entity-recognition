@@ -65,13 +65,16 @@ func main() {
 			log.Fatal().Err(err).Send()
 		}
 		cancel()
-		recogniserClients[name] = grpc_recogniser.New(name, pb.NewRecognizerClient(conn), conf.BlacklistPath)
+
+		blacklist := blacklist.Load(conf.Blacklist)
+		recogniserClients[name] = grpc_recogniser.New(name, pb.NewRecognizerClient(conn), blacklist)
 	}
 
 	for name, conf := range config.HttpRecognisers {
+		blacklist := blacklist.Load(conf.Blacklist)
 		switch conf.Type {
 		case http_recogniser.LeadmineType:
-			recogniserClients[name] = http_recogniser.NewLeadmineClient(name, conf.Url, conf.BlacklistPath)
+			recogniserClients[name] = http_recogniser.NewLeadmineClient(name, conf.Url, blacklist)
 		}
 	}
 
@@ -80,7 +83,7 @@ func main() {
 	c := controller{
 		recognisers: recogniserClients,
 		htmlReader:  html.SnippetReader{},
-		blacklist:   blacklist.Load(config.BlacklistPath),
+		blacklist:   blacklist.Load(config.Blacklist),
 	}
 
 	s := server{controller: c}

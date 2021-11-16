@@ -17,12 +17,12 @@ import (
 	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
 )
 
-func NewLeadmineClient(name, url, blacklistPath string) recogniser.Client {
+func NewLeadmineClient(name, url string, blacklist blacklist.Blacklist) recogniser.Client {
 	return &leadmine{
 		Name:       name,
 		Url:        url,
 		httpClient: http.DefaultClient,
-		blacklist:  blacklist.Load(blacklistPath),
+		blacklist:  blacklist,
 	}
 }
 
