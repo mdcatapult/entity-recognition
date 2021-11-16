@@ -87,7 +87,7 @@ func (s *RecognizerSuite) Test_recogniser_queryToken() {
 	tokenCacheWithMissingToken[notInCache] = &cache.Lookup{}
 	foundEntity := &pb.Entity{
 		Recogniser: "fake dictionary",
-		Name:     "in db",
+		Name:       "in db",
 	}
 	mockStream.On("Send", foundEntity).Return(nil).Once()
 	mockGetPipeline.On("Get", notInCache).Once()
@@ -195,7 +195,7 @@ func (s *RecognizerSuite) Test_recogniser_getCompoundTokens() {
 			wantVars: &requestVars{
 				snippetHistory: []*pb.Snippet{
 					{
-						Text: "Hello",
+						Text:           "Hello",
 						NormalisedText: "hello",
 					},
 				},
@@ -211,11 +211,11 @@ func (s *RecognizerSuite) Test_recogniser_getCompoundTokens() {
 			},
 			want: []*pb.Snippet{
 				{
-					Text: "got Hello.",
+					Text:           "got Hello.",
 					NormalisedText: "got hello",
 				},
 				{
-					Text: "Hello.",
+					Text:           "Hello.",
 					NormalisedText: "hello",
 				},
 			},
@@ -257,7 +257,7 @@ func (s *RecognizerSuite) Test_recogniser_getCompoundTokens() {
 		},
 	}
 	for i, tt := range tests {
-		s.T().Logf("Case %d: %s", i,  tt.name)
+		s.T().Logf("Case %d: %s", i, tt.name)
 		got, _ := getCompoundSnippets(tt.args.vars, tt.args.token)
 		s.Len(got, len(tt.want))
 		for j, snip := range tt.want {

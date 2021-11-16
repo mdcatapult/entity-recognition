@@ -2,15 +2,16 @@ package blacklist
 
 import (
 	"fmt"
+	"io/ioutil"
+	"strings"
+
 	"github.com/rs/zerolog/log"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
-	"strings"
 )
 
 type Blacklist struct {
-	CaseSensitive map[string]bool
+	CaseSensitive   map[string]bool
 	CaseInsensitive map[string]bool
 }
 
@@ -47,7 +48,7 @@ func Load(path string) Blacklist {
 	}
 
 	type yamlBlacklist struct {
-		CaseSensitive []string `yaml:"case_sensitive"`
+		CaseSensitive   []string `yaml:"case_sensitive"`
 		CaseInsensitive []string `yaml:"case_insensitive"`
 	}
 
@@ -57,7 +58,7 @@ func Load(path string) Blacklist {
 	}
 
 	res := Blacklist{
-		CaseSensitive: map[string]bool{},
+		CaseSensitive:   map[string]bool{},
 		CaseInsensitive: map[string]bool{},
 	}
 

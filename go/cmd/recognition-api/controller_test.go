@@ -105,7 +105,7 @@ func (s *ControllerSuite) Test_controller_TokenizeHTML() {
 func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 	foundEntities := []*pb.Entity{
 		{
-			Name:      "found entity",
+			Name:        "found entity",
 			Position:    2312,
 			Recogniser:  "test",
 			Identifiers: map[string]string{"many": "", "things": ""},
@@ -113,7 +113,7 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 	}
 
 	sentSnippet := &pb.Snippet{
-		Text:  "found entity\n",
+		Text:   "found entity\n",
 		Offset: 3,
 		Xpath:  "/p",
 	}

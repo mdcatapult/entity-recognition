@@ -1,7 +1,6 @@
 package grpc_recogniser
 
 import (
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"io"
 	"strings"
 	"sync"
@@ -9,20 +8,21 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/html"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/testhelpers"
 )
 
 func Test_grpcRecogniser_recognise(t *testing.T) {
 	foundEntity := &pb.Entity{
-		Name:      "found entity",
+		Name:        "found entity",
 		Position:    3,
 		Recogniser:  "test",
 		Xpath:       "/p",
 		Identifiers: map[string]string{"many": "", "things": ""},
 	}
 	blacklistedEntity := &pb.Entity{
-		Name:      "protein",
+		Name:        "protein",
 		Position:    99999,
 		Recogniser:  "test",
 		Xpath:       "/p",
@@ -57,7 +57,7 @@ func Test_grpcRecogniser_recognise(t *testing.T) {
 		stream:   mockRecognizer_RecognizeClient,
 		blacklist: blacklist.Blacklist{
 			CaseSensitive: map[string]bool{},
-			CaseInsensitive: map[string]bool {
+			CaseInsensitive: map[string]bool{
 				"protein": true,
 			},
 		},

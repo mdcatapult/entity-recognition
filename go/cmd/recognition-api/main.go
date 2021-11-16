@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
 	grpc_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser/grpc-recogniser"
 	http_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser/http-recogniser"
@@ -23,15 +23,15 @@ type recognitionAPIConfig struct {
 	Server   struct {
 		HttpPort int `mapstructure:"http_port"`
 	}
-	Blacklist string `mapstructure:"blacklist"` // global blacklist
+	Blacklist       string `mapstructure:"blacklist"` // global blacklist
 	GrpcRecognizers map[string]struct {
-		Host string
-		Port int
+		Host      string
+		Port      int
 		Blacklist string
 	} `mapstructure:"grpc_recognisers"`
 	HttpRecognisers map[string]struct {
-		Type http_recogniser.Type
-		Url  string
+		Type      http_recogniser.Type
+		Url       string
 		Blacklist string
 	} `mapstructure:"http_recognisers"`
 }
@@ -80,7 +80,7 @@ func main() {
 	c := controller{
 		recognisers: recogniserClients,
 		htmlReader:  html.SnippetReader{},
-		blacklist: blacklist.Load(config.BlacklistPath),
+		blacklist:   blacklist.Load(config.BlacklistPath),
 	}
 
 	s := server{controller: c}

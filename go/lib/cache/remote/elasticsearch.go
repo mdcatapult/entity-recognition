@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/elastic/go-elasticsearch/v7"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache"
 )

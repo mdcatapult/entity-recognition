@@ -1,8 +1,9 @@
 package blacklist
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBlacklist(t *testing.T) {
@@ -10,7 +11,7 @@ func TestBlacklist(t *testing.T) {
 		CaseSensitive: map[string]bool{
 			"caseSensitive": true,
 		},
-		CaseInsensitive: map[string]bool {
+		CaseInsensitive: map[string]bool{
 			"caseinsensitive": true,
 		},
 	}
@@ -23,5 +24,3 @@ func TestBlacklist(t *testing.T) {
 
 	assert.True(t, testBlacklist.Allowed("non-blacklisted-term"))
 }
-
-

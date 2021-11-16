@@ -2,12 +2,12 @@ package grpc_recogniser
 
 import (
 	"context"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"io"
 	"sync"
 
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
 	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
@@ -15,21 +15,21 @@ import (
 
 func New(name string, client pb.RecognizerClient, blacklistPath string) recogniser.Client {
 	return &grpcRecogniser{
-		Name:     name,
-		client:   client,
-		err:      nil,
-		entities: nil,
-		stream:   nil,
+		Name:      name,
+		client:    client,
+		err:       nil,
+		entities:  nil,
+		stream:    nil,
 		blacklist: blacklist.Load(blacklistPath),
 	}
 }
 
 type grpcRecogniser struct {
-	Name     string
-	client   pb.RecognizerClient
-	err      error
-	entities []*pb.Entity
-	stream   pb.Recognizer_GetStreamClient
+	Name      string
+	client    pb.RecognizerClient
+	err       error
+	entities  []*pb.Entity
+	stream    pb.Recognizer_GetStreamClient
 	blacklist blacklist.Blacklist
 }
 
@@ -75,9 +75,9 @@ func (g *grpcRecogniser) recognise(snipReaderValues <-chan snippet_reader.Value,
 			if !g.blacklist.Allowed(entity.Name) {
 				continue
 			}
-			
+
 			g.entities = append(g.entities, &pb.Entity{
-				Name:      entity.Name,
+				Name:        entity.Name,
 				Position:    entity.Position,
 				Xpath:       entity.Xpath,
 				Recogniser:  g.Name,

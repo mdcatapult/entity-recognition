@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"io/ioutil"
 	"net/http"
 	"regexp"
@@ -13,6 +12,7 @@ import (
 
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
 	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
 )
@@ -22,17 +22,17 @@ func NewLeadmineClient(name, url, blacklistPath string) recogniser.Client {
 		Name:       name,
 		Url:        url,
 		httpClient: http.DefaultClient,
-		blacklist: blacklist.Load(blacklistPath),
+		blacklist:  blacklist.Load(blacklistPath),
 	}
 }
 
 type leadmine struct {
-	Name	   string
+	Name       string
 	Url        string
 	httpClient lib.HttpClient
 	err        error
 	entities   []*pb.Entity
-	blacklist blacklist.Blacklist
+	blacklist  blacklist.Blacklist
 }
 
 func (l *leadmine) reset() {
@@ -157,7 +157,7 @@ func (l *leadmine) convertLeadmineEntities(correctedLeadmineEntities []LeadmineE
 		}
 
 		recognisedEntities = append(recognisedEntities, &pb.Entity{
-			Name:     entity.EntityText,
+			Name:       entity.EntityText,
 			Position:   uint32(position),
 			Xpath:      snip.Xpath,
 			Recogniser: l.Name,

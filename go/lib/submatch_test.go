@@ -1,9 +1,10 @@
 package lib
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
-	"testing"
 )
 
 func Test_isSubmatch(t *testing.T) {
@@ -12,20 +13,20 @@ func Test_isSubmatch(t *testing.T) {
 		entity    *pb.Entity
 	}
 	tests := []struct {
-		name string
-		args args
+		name     string
+		args     args
 		expected bool
 	}{
 		{
 			name: "is a submatch",
 			args: args{
 				canditate: &pb.Entity{
-					Name:      "sub",
-					Xpath:       "/html/*[1]/*[2]",
+					Name:  "sub",
+					Xpath: "/html/*[1]/*[2]",
 				},
-				entity:    &pb.Entity{
-					Name:      "substantial",
-					Xpath:       "/html/*[1]/*[2]",
+				entity: &pb.Entity{
+					Name:  "substantial",
+					Xpath: "/html/*[1]/*[2]",
 				},
 			},
 			expected: true,
@@ -34,12 +35,12 @@ func Test_isSubmatch(t *testing.T) {
 			name: "is not a submatch, longer entity",
 			args: args{
 				canditate: &pb.Entity{
-					Name:      "substantially",
-					Xpath:       "/html/*[1]/*[2]",
+					Name:  "substantially",
+					Xpath: "/html/*[1]/*[2]",
 				},
-				entity:    &pb.Entity{
-					Name:      "substantial",
-					Xpath:       "/html/*[1]/*[2]",
+				entity: &pb.Entity{
+					Name:  "substantial",
+					Xpath: "/html/*[1]/*[2]",
 				},
 			},
 			expected: false,
@@ -48,12 +49,12 @@ func Test_isSubmatch(t *testing.T) {
 			name: "is not a submatch, different xpath",
 			args: args{
 				canditate: &pb.Entity{
-					Name:      "sub",
-					Xpath:       "/html/*[1]/*[2]",
+					Name:  "sub",
+					Xpath: "/html/*[1]/*[2]",
 				},
-				entity:    &pb.Entity{
-					Name:      "substantial",
-					Xpath:       "/html/*[1]/*[3]",
+				entity: &pb.Entity{
+					Name:  "substantial",
+					Xpath: "/html/*[1]/*[3]",
 				},
 			},
 			expected: false,
@@ -62,12 +63,12 @@ func Test_isSubmatch(t *testing.T) {
 			name: "is not a submatch, no substring match",
 			args: args{
 				canditate: &pb.Entity{
-					Name:      "dave",
-					Xpath:       "/html/*[1]/*[2]",
+					Name:  "dave",
+					Xpath: "/html/*[1]/*[2]",
 				},
-				entity:    &pb.Entity{
-					Name:      "substantial",
-					Xpath:       "/html/*[1]/*[2]",
+				entity: &pb.Entity{
+					Name:  "substantial",
+					Xpath: "/html/*[1]/*[2]",
 				},
 			},
 			expected: false,
@@ -84,8 +85,8 @@ func Test_filterSubmatches(t *testing.T) {
 		recognisedEntities []*pb.Entity
 	}
 	tests := []struct {
-		name string
-		args args
+		name     string
+		args     args
 		expected []*pb.Entity
 	}{
 		{
@@ -93,42 +94,42 @@ func Test_filterSubmatches(t *testing.T) {
 			args: args{
 				recognisedEntities: []*pb.Entity{
 					{
-						Name: "substantially",
+						Name:  "substantially",
 						Xpath: "/html/*[1]",
 					},
 					{
 						// small submatch (should be removed)
-						Name: "sub",
+						Name:  "sub",
 						Xpath: "/html/*[1]",
 					},
 					{
 						// longer submatch (should be removed)
-						Name: "substantial",
+						Name:  "substantial",
 						Xpath: "/html/*[1]",
 					},
 					{
 						// different xpath
-						Name: "sub",
+						Name:  "sub",
 						Xpath: "/html/*[2]",
 					},
 					{
 						// Doesn't match substring
-						Name: "dave",
+						Name:  "dave",
 						Xpath: "/html/*[1]",
 					},
 				},
 			},
 			expected: []*pb.Entity{
 				{
-					Name: "sub",
+					Name:  "sub",
 					Xpath: "/html/*[2]",
 				},
 				{
-					Name: "substantially",
+					Name:  "substantially",
 					Xpath: "/html/*[1]",
 				},
 				{
-					Name: "dave",
+					Name:  "dave",
 					Xpath: "/html/*[1]",
 				},
 			},

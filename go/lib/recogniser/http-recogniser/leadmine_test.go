@@ -2,6 +2,12 @@ package http_recogniser
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"sync"
+	"testing"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	mocks "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks/lib"
@@ -9,11 +15,6 @@ import (
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/html"
-	"io/ioutil"
-	"net/http"
-	"os"
-	"sync"
-	"testing"
 )
 
 type leadmineSuite struct {
@@ -39,11 +40,11 @@ func (s *leadmineSuite) TestRecognise() {
 	}, nil)
 
 	testLeadmine := leadmine{
-		Name: "test-leadmine",
+		Name:       "test-leadmine",
 		Url:        "https://leadmine.wopr.inf.mdc/chemical-entities/entities",
 		httpClient: mockHttpClient,
 		blacklist: blacklist.Blacklist{
-			CaseSensitive:   map[string]bool{
+			CaseSensitive: map[string]bool{
 				"AF-DX 250": true,
 			},
 			CaseInsensitive: map[string]bool{},

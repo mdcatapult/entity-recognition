@@ -43,20 +43,20 @@ var nonBreakingNodes = map[string]struct{}{
 }
 
 var voidElements = map[string]struct{}{
-	"area": {},
-	"base": {},
-	"br": {},
-	"col": {},
-	"embed": {},
-	"hr": {},
-	"img": {},
-	"input": {},
-	"link": {},
-	"meta": {},
-	"param": {},
+	"area":   {},
+	"base":   {},
+	"br":     {},
+	"col":    {},
+	"embed":  {},
+	"hr":     {},
+	"img":    {},
+	"input":  {},
+	"link":   {},
+	"meta":   {},
+	"param":  {},
 	"source": {},
-	"track": {},
-	"wbr": {},
+	"track":  {},
+	"wbr":    {},
 }
 
 type SnippetReader struct{}
@@ -96,7 +96,7 @@ func htmlToText(r io.Reader, snips chan snippet_reader.Value) {
 			tag.innerText = append(tag.innerText, '\n')
 			snips <- snippet_reader.Value{
 				Snippet: &pb.Snippet{
-					Text:  string(tag.innerText),
+					Text:   string(tag.innerText),
 					Offset: tag.start,
 					Xpath:  tag.xpath,
 				},

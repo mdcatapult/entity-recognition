@@ -59,4 +59,4 @@ run: build
 
 .PHONY: format
 format: require-go
-	find ./go -type f -name '*.go' -exec ./scripts/goimports.sh {} \;
+	find ./go -type f -name '*.go' -not -path "./go/gen/*" -exec ./scripts/goimports.sh {} \;

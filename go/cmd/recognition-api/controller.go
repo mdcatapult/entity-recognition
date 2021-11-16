@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"io"
 	"sync"
 
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
 	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
@@ -16,7 +16,7 @@ import (
 type controller struct {
 	recognisers map[string]recogniser.Client
 	htmlReader  snippet_reader.Client
-	blacklist blacklist.Blacklist // a global blacklist to apply against all recognisers
+	blacklist   blacklist.Blacklist // a global blacklist to apply against all recognisers
 }
 
 func (c controller) HTMLToText(reader io.Reader) ([]byte, error) {
