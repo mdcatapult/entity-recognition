@@ -7,6 +7,7 @@ import (
 
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
 	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
@@ -15,6 +16,7 @@ import (
 type controller struct {
 	recognisers map[string]recogniser.Client
 	htmlReader  snippet_reader.Client
+	blacklist   blacklist.Blacklist // a global blacklist to apply against all recognisers
 }
 
 func (c controller) HTMLToText(reader io.Reader) ([]byte, error) {
@@ -89,12 +91,16 @@ func (c controller) RecognizeInHTML(reader io.Reader, opts map[string]lib.Recogn
 		length += len(c.recognisers[recogniserName].Result())
 	}
 
-	recognisedEntities := make([]*pb.Entity, 0, length)
+	allowedEntities := make([]*pb.Entity, 0, length)
 	for recogniserName := range opts {
-		recognisedEntities = append(recognisedEntities, c.recognisers[recogniserName].Result()...)
+		recognisedEntities := c.recognisers[recogniserName].Result()
+
+		// apply global blacklist
+		allowedEntities = append(allowedEntities, c.blacklist.FilterEntities(recognisedEntities)...)
+
 	}
 
-	return recognisedEntities, nil
+	return allowedEntities, nil
 }
 
 func SendToAll(snipReaderValue snippet_reader.Value, channels map[string]chan snippet_reader.Value) {

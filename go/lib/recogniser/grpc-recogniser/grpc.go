@@ -7,27 +7,30 @@ import (
 
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
 	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 )
 
-func New(name string, client pb.RecognizerClient) recogniser.Client {
+func New(name string, client pb.RecognizerClient, blacklist blacklist.Blacklist) recogniser.Client {
 	return &grpcRecogniser{
-		Name:     name,
-		client:   client,
-		err:      nil,
-		entities: nil,
-		stream:   nil,
+		Name:      name,
+		client:    client,
+		err:       nil,
+		entities:  nil,
+		stream:    nil,
+		blacklist: blacklist,
 	}
 }
 
 type grpcRecogniser struct {
-	Name     string
-	client   pb.RecognizerClient
-	err      error
-	entities []*pb.Entity
-	stream   pb.Recognizer_GetStreamClient
+	Name      string
+	client    pb.RecognizerClient
+	err       error
+	entities  []*pb.Entity
+	stream    pb.Recognizer_GetStreamClient
+	blacklist blacklist.Blacklist
 }
 
 func (g *grpcRecogniser) Recognise(snipReaderValues <-chan snippet_reader.Value, _ lib.RecogniserOptions, wg *sync.WaitGroup) error {
@@ -68,8 +71,13 @@ func (g *grpcRecogniser) recognise(snipReaderValues <-chan snippet_reader.Value,
 				g.err = err
 				return
 			}
+
+			if !g.blacklist.Allowed(entity.Name) {
+				continue
+			}
+
 			g.entities = append(g.entities, &pb.Entity{
-				Name:      entity.Name,
+				Name:        entity.Name,
 				Position:    entity.Position,
 				Xpath:       entity.Xpath,
 				Recogniser:  g.Name,
@@ -82,6 +90,7 @@ func (g *grpcRecogniser) recognise(snipReaderValues <-chan snippet_reader.Value,
 	// Read from the input channel, tokenise the snippets we read and send them on the stream.
 	err := snippet_reader.ReadChannelWithCallback(snipReaderValues, func(snippet *pb.Snippet) error {
 		return text.Tokenize(snippet, func(snippet *pb.Snippet) error {
+
 			if err := g.stream.Send(snippet); err != nil {
 				return err
 			}

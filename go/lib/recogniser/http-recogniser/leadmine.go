@@ -12,24 +12,27 @@ import (
 
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
 	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
 )
 
-func NewLeadmineClient(name, url string) recogniser.Client {
+func NewLeadmineClient(name, url string, blacklist blacklist.Blacklist) recogniser.Client {
 	return &leadmine{
 		Name:       name,
 		Url:        url,
 		httpClient: http.DefaultClient,
+		blacklist:  blacklist,
 	}
 }
 
 type leadmine struct {
-	Name	   string
+	Name       string
 	Url        string
 	httpClient lib.HttpClient
 	err        error
 	entities   []*pb.Entity
+	blacklist  blacklist.Blacklist
 }
 
 func (l *leadmine) reset() {
@@ -84,6 +87,7 @@ func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, opts 
 		text += snippet.GetText()
 		return nil
 	})
+
 	if err != nil {
 		l.handleError(err)
 		return
@@ -94,6 +98,8 @@ func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, opts 
 		l.handleError(err)
 		return
 	}
+
+	leadmineResponse.Entities = l.blacklistEntities(leadmineResponse.Entities)
 
 	correctedLeadmineEntities, err := correctLeadmineEntityOffsets(leadmineResponse, text)
 	if err != nil {
@@ -112,6 +118,16 @@ func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, opts 
 	l.entities = filteredEntities
 }
 
+func (l *leadmine) blacklistEntities(entities []*LeadmineEntity) []*LeadmineEntity {
+	res := make([]*LeadmineEntity, 0, len(entities))
+	for _, entity := range entities {
+		if l.blacklist.Allowed(entity.EntityText) {
+			res = append(res, entity)
+		}
+	}
+	return res
+}
+
 func (l *leadmine) convertLeadmineEntities(correctedLeadmineEntities []LeadmineEntity, snips map[int]*pb.Snippet) ([]*pb.Entity, error) {
 	var recognisedEntities []*pb.Entity
 	for _, entity := range correctedLeadmineEntities {
@@ -125,7 +141,7 @@ func (l *leadmine) convertLeadmineEntities(correctedLeadmineEntities []LeadmineE
 				if strings.Contains(snip.GetText(), entity.EntityText) {
 					break
 				} else {
-					return nil, errors.New("entity not in snippet - FIX ME")
+					return nil, errors.New("LeadmineEntity not in snippet - FIX ME")
 				}
 			}
 			dec--
@@ -141,7 +157,7 @@ func (l *leadmine) convertLeadmineEntities(correctedLeadmineEntities []LeadmineE
 		}
 
 		recognisedEntities = append(recognisedEntities, &pb.Entity{
-			Name:     entity.EntityText,
+			Name:       entity.EntityText,
 			Position:   uint32(position),
 			Xpath:      snip.Xpath,
 			Recogniser: l.Name,
@@ -223,7 +239,7 @@ type LeadmineEntity struct {
 	EndInNormalizedDoc    int             `json:"endInNormalizedDoc"`
 	EntityText            string          `json:"entityText"`
 	PossiblyCorrectedText string          `json:"possiblyCorrectedText"`
-	RecognisingDict       RecognisingDict `json:"recognisingDict"`
+	RecognisingDict       RecognisingDict `json:"RecognisingDict"`
 	ResolvedEntity        string          `json:"resolvedEntity"`
 	SectionType           string          `json:"sectionType"`
 	EntityGroup           string          `json:"entityGroup"`
@@ -240,6 +256,6 @@ type RecognisingDict struct {
 }
 
 type LeadmineMetadata struct {
-	EntityGroup  string `json:"entityGroup"`
+	EntityGroup     string `json:"entityGroup"`
 	RecognisingDict RecognisingDict
 }

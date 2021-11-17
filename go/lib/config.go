@@ -66,6 +66,5 @@ func InitializeConfig(defaultPath string, defaultConfig map[string]interface{}, 
 	if err := viper.Unmarshal(targetStruct); err != nil {
 		return err
 	}
-
 	return nil
 }

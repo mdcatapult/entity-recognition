@@ -9,6 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
 	grpc_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser/grpc-recogniser"
 	http_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser/http-recogniser"
@@ -22,13 +23,16 @@ type recognitionAPIConfig struct {
 	Server   struct {
 		HttpPort int `mapstructure:"http_port"`
 	}
+	Blacklist       string `mapstructure:"blacklist"` // global blacklist
 	GrpcRecognizers map[string]struct {
-		Host string
-		Port int
+		Host      string
+		Port      int
+		Blacklist string
 	} `mapstructure:"grpc_recognisers"`
 	HttpRecognisers map[string]struct {
-		Type http_recogniser.Type
-		Url  string
+		Type      http_recogniser.Type
+		Url       string
+		Blacklist string
 	} `mapstructure:"http_recognisers"`
 }
 
@@ -61,25 +65,42 @@ func main() {
 			log.Fatal().Err(err).Send()
 		}
 		cancel()
-		recogniserClients[name] = grpc_recogniser.New(name, pb.NewRecognizerClient(conn))
+
+
+		recogniserClients[name] = grpc_recogniser.New(name, pb.NewRecognizerClient(conn), loadBlacklist(conf.Blacklist))
 	}
 
 	for name, conf := range config.HttpRecognisers {
 		switch conf.Type {
 		case http_recogniser.LeadmineType:
-			recogniserClients[name] = http_recogniser.NewLeadmineClient(name, conf.Url)
+			recogniserClients[name] = http_recogniser.NewLeadmineClient(name, conf.Url, loadBlacklist(conf.Blacklist))
 		}
 	}
 
 	r := gin.New()
 	r.Use(gin.LoggerWithFormatter(lib.JsonLogFormatter))
+
 	c := controller{
 		recognisers: recogniserClients,
 		htmlReader:  html.SnippetReader{},
+		blacklist:  loadBlacklist(config.Blacklist),
 	}
+
 	s := server{controller: c}
 	s.RegisterRoutes(r)
 	if err := r.Run(fmt.Sprintf(":%d", config.Server.HttpPort)); err != nil {
 		log.Fatal().Err(err).Send()
 	}
+}
+
+func loadBlacklist(path string) blacklist.Blacklist {
+	var bl = blacklist.Blacklist{}
+	if path != "" {
+		loadedBlacklist, err := blacklist.Load(path)
+		if err != nil {
+			log.Fatal().Err(err).Send()
+		}
+		bl = *loadedBlacklist
+	}
+	return bl
 }

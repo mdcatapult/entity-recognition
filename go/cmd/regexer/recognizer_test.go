@@ -24,7 +24,7 @@ func (s *RecognizerSuite) Test_recogniser_Recognize() {
 	}}
 	mockStream := testhelpers.NewMockRecognizeServerStream(testhelpers.Snips("hello", "my", "name", "is", "jeff")...)
 	foundEntity := &pb.Entity{
-		Name:     "hello",
+		Name: "hello",
 		Identifiers: map[string]string{
 			"test_regex": "hello",
 		},

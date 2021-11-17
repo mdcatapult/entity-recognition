@@ -50,7 +50,7 @@ func Tokenize(snippet *pb.Snippet, onToken func(*pb.Snippet) error) error {
 		// if currentToken has contents, create a snippet and execute the callback.
 		if len(currentToken) > 0 {
 			token := &pb.Snippet{
-				Text:  string(currentToken),
+				Text:   string(currentToken),
 				Offset: snippet.GetOffset() + position,
 				Xpath:  snippet.Xpath,
 			}
@@ -74,7 +74,7 @@ func Tokenize(snippet *pb.Snippet, onToken func(*pb.Snippet) error) error {
 	}
 	if len(currentToken) > 0 {
 		pbEntity := &pb.Snippet{
-			Text:  string(currentToken),
+			Text:   string(currentToken),
 			Offset: snippet.GetOffset() + position,
 			Xpath:  snippet.Xpath,
 		}
@@ -95,7 +95,7 @@ func TokenizeWordBoundary(snippet *pb.Snippet, onToken func(*pb.Snippet) error) 
 	for scanner.Scan() {
 		token := scanner.Bytes()
 		err := onToken(&pb.Snippet{
-			Text:  string(token),
+			Text:   string(token),
 			Offset: 0,
 		})
 		if err != nil {

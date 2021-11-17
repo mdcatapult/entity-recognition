@@ -40,7 +40,7 @@ func (r *localRecogniser) Recognize(stream pb.Recognizer_GetStreamServer) error 
 		for _, compoundToken := range compoundTokens {
 			if lookup := r.localCache.Get(compoundToken.GetText()); lookup != nil {
 				entity := &pb.Entity{
-					Name:      compoundToken.GetText(),
+					Name:        compoundToken.GetText(),
 					Position:    compoundToken.GetOffset(),
 					Recogniser:  lookup.Dictionary,
 					Identifiers: lookup.Identifiers,

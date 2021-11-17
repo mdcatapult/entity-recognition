@@ -1,6 +1,8 @@
 server:
   http_port: 8080
 
+blacklist: config/blacklists/global.yml
+
 grpc_recognisers:
   dictionary:
     host: localhost
@@ -16,3 +18,10 @@ http_recognisers:
   leadmine-chemical-entities:
     type: leadmine
     url: https://leadmine.wopr.inf.mdc/chemical-entities/entities
+    blacklist: config/blacklists/leadmine-chemical-entities.yml
+
+  leadmine-proteins:
+    type: leadmine
+    url: https://leadmine.wopr.inf.mdc/proteins/entities
+    blacklist: config/blacklists/leadmine-proteins.yml
+

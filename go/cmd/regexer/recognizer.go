@@ -36,8 +36,8 @@ func (r recogniser) GetStream(stream pb.Recognizer_GetStreamServer) error {
 			if re.MatchString(snippet.GetNormalisedText()) {
 				err := stream.Send(&pb.Entity{
 					Name:     snippet.GetNormalisedText(),
-					Position:   snippet.GetOffset(),
-					Xpath:      snippet.GetXpath(),
+					Position: snippet.GetOffset(),
+					Xpath:    snippet.GetXpath(),
 					Identifiers: map[string]string{
 						name: snippet.GetText(),
 					},

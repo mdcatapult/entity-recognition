@@ -2,17 +2,19 @@ package http_recogniser
 
 import (
 	"encoding/json"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/suite"
-	mocks "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks/lib"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/html"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
+	mocks "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks/lib"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/html"
 )
 
 type leadmineSuite struct {
@@ -36,10 +38,17 @@ func (s *leadmineSuite) TestRecognise() {
 		StatusCode: http.StatusOK,
 		Body:       leadmineResponseFile,
 	}, nil)
+
 	testLeadmine := leadmine{
-		Name: "test-leadmine",
+		Name:       "test-leadmine",
 		Url:        "https://leadmine.wopr.inf.mdc/chemical-entities/entities",
 		httpClient: mockHttpClient,
+		blacklist: blacklist.Blacklist{
+			CaseSensitive: map[string]bool{
+				"AF-DX 250": true,
+			},
+			CaseInsensitive: map[string]bool{},
+		},
 	}
 
 	// Set up function arguments

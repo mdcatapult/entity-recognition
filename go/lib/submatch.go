@@ -1,8 +1,9 @@
 package lib
 
 import (
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"strings"
+
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 )
 
 func FilterSubmatches(recognisedEntities []*pb.Entity) []*pb.Entity {
@@ -25,4 +26,3 @@ func IsSubmatch(canditate, entity *pb.Entity) bool {
 		canditate.Xpath == entity.Xpath &&
 		strings.Contains(entity.Name, canditate.Name)
 }
-

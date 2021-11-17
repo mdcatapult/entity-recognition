@@ -7,7 +7,7 @@ PROTO_GEN_GO_GRPC := $(shell command -v protoc-gen-go-grpc 2> /dev/null)
 # Makes a copy of all the example config to put gitignored config files in the default location.
 .PHONY: config
 config:
-	for FILE in config/*.example.*; do cp $$FILE $$(echo $$FILE | sed 's/\.example//'); done
+	for FILE in $(shell find config/* -name *.example.*); do cp $$FILE $$(echo $$FILE | sed 's/\.example//'); done
 
 # Check for go, error if not present and link to install instructions.
 .PHONY: require-go
@@ -59,4 +59,4 @@ run: build
 
 .PHONY: format
 format: require-go
-	find ./go -type f -name '*.go' -exec ./scripts/goimports.sh {} \;
+	find ./go -type f -name '*.go' -not -path "./go/gen/*" -exec ./scripts/goimports.sh {} \;

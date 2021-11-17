@@ -27,7 +27,7 @@ type requestVars struct {
 func newEntityWithNormalisedText(snippet *pb.Snippet, lookup *cache.Lookup) *pb.Entity {
 	normalisedText, _, _ := text.NormalizeString(snippet.GetText())
 	return &pb.Entity{
-		Name:      normalisedText,
+		Name:        normalisedText,
 		Position:    snippet.GetOffset(),
 		Recogniser:  lookup.Dictionary,
 		Identifiers: lookup.Identifiers,
@@ -79,10 +79,10 @@ func getCompoundSnippets(vars *requestVars, snippet *pb.Snippet) (snippets []*pb
 	for i, historicalSnippet := range vars.snippetHistory {
 		originalText, normalisedText := joinSnippets(vars.snippetHistory[i:])
 		snippets[i] = &pb.Snippet{
-			Text:  originalText,
+			Text:           originalText,
 			NormalisedText: normalisedText,
-			Offset: historicalSnippet.GetOffset(),
-			Xpath:  historicalSnippet.GetXpath(),
+			Offset:         historicalSnippet.GetOffset(),
+			Xpath:          historicalSnippet.GetXpath(),
 		}
 	}
 
