@@ -40,11 +40,12 @@ func (blacklist Blacklist) FilterEntities(entities []*pb.Entity) []*pb.Entity {
 }
 
 // Load returns an unmarshalled blacklist from a YAML file at the given path.
-func Load(path string) Blacklist {
+func Load(path string) (*Blacklist, error) {
 
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
-		log.Warn().Msg(fmt.Sprintf("could not find blacklist at %v", path))
+		log.Error().Msg(fmt.Sprintf("could not find blacklist at %v", path))
+		return nil ,err
 	}
 
 	type yamlBlacklist struct {
@@ -54,7 +55,8 @@ func Load(path string) Blacklist {
 
 	yamlBl := yamlBlacklist{}
 	if err := yaml.Unmarshal(bytes, &yamlBl); err != nil {
-		log.Warn().Msg(fmt.Sprintf("could not load blacklist from %v", path))
+		log.Error().Msg(fmt.Sprintf("could not load blacklist from %v", path))
+		return nil, err
 	}
 
 	res := Blacklist{
@@ -71,5 +73,5 @@ func Load(path string) Blacklist {
 
 	log.Info().Msg(fmt.Sprintf("blacklist set from %v", path))
 
-	return res
+	return &res, nil
 }

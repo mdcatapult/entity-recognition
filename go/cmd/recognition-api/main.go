@@ -66,24 +66,24 @@ func main() {
 		}
 		cancel()
 
-		blacklist := blacklist.Load(conf.Blacklist)
-		recogniserClients[name] = grpc_recogniser.New(name, pb.NewRecognizerClient(conn), blacklist)
+
+		recogniserClients[name] = grpc_recogniser.New(name, pb.NewRecognizerClient(conn), loadBlacklist(conf.Blacklist))
 	}
 
 	for name, conf := range config.HttpRecognisers {
-		blacklist := blacklist.Load(conf.Blacklist)
 		switch conf.Type {
 		case http_recogniser.LeadmineType:
-			recogniserClients[name] = http_recogniser.NewLeadmineClient(name, conf.Url, blacklist)
+			recogniserClients[name] = http_recogniser.NewLeadmineClient(name, conf.Url, loadBlacklist(conf.Blacklist))
 		}
 	}
 
 	r := gin.New()
 	r.Use(gin.LoggerWithFormatter(lib.JsonLogFormatter))
+
 	c := controller{
 		recognisers: recogniserClients,
 		htmlReader:  html.SnippetReader{},
-		blacklist:   blacklist.Load(config.Blacklist),
+		blacklist:  loadBlacklist(config.Blacklist),
 	}
 
 	s := server{controller: c}
@@ -91,4 +91,16 @@ func main() {
 	if err := r.Run(fmt.Sprintf(":%d", config.Server.HttpPort)); err != nil {
 		log.Fatal().Err(err).Send()
 	}
+}
+
+func loadBlacklist(path string) blacklist.Blacklist {
+	var bl = blacklist.Blacklist{}
+	if path != "" {
+		loadedBlacklist, err := blacklist.Load(path)
+		if err != nil {
+			log.Fatal().Err(err).Send()
+		}
+		bl = *loadedBlacklist
+	}
+	return bl
 }
