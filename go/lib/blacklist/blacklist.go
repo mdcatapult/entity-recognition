@@ -45,7 +45,7 @@ func Load(path string) (*Blacklist, error) {
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Error().Msg(fmt.Sprintf("could not find blacklist at %v", path))
-		return nil ,err
+		return nil, err
 	}
 
 	type yamlBlacklist struct {

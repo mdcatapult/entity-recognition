@@ -66,7 +66,6 @@ func main() {
 		}
 		cancel()
 
-
 		recogniserClients[name] = grpc_recogniser.New(name, pb.NewRecognizerClient(conn), loadBlacklist(conf.Blacklist))
 	}
 
@@ -83,7 +82,7 @@ func main() {
 	c := controller{
 		recognisers: recogniserClients,
 		htmlReader:  html.SnippetReader{},
-		blacklist:  loadBlacklist(config.Blacklist),
+		blacklist:   loadBlacklist(config.Blacklist),
 	}
 
 	s := server{controller: c}

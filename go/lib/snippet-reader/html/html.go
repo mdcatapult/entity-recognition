@@ -20,6 +20,9 @@ var disallowedNodes = map[string]struct{}{
 	"input":    {},
 	"textarea": {},
 	"video":    {},
+	"head":     {},
+	"pre":      {},
+	"svg":      {},
 }
 
 var nonBreakingNodes = map[string]struct{}{
