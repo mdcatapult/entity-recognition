@@ -37,3 +37,14 @@ curl -XPOST --data-binary "@/tmp/acetylcarnitine.html" 'http://localhost:8080/ht
 ### Code Generation
 Some code in this repo is generated. The generated code is committed, so you don't need to regenerate it yourself. See the [Makefile](Makefile) for more info.
 
+## Deployment overview
+The recognition API doesn't do anything on its own. You need to configure it with some `recognisers` (either `http` or `grpc`).
+To configure the recognisers, you need to mount [config map](https://kubernetes.io/docs/concepts/configuration/configmap/) in `/app/config` with the name `recognition-api.yml`.
+(When containerised, all apps in this repo will look for a config file in the `/app/config` folder).
+Currently, there are only two types of recogniser: `grpc` and `http` (of which leadmine is a subtype, see the [example config file](./config/recognition-api.example.yml)).
+
+To summarise:
+1. Deploy a grpc or http recogniser. You may need to create additional resources for these recognisers such as configmaps, secrets, or even other deployments such as redis.
+2. Ensure the recogniser is accessible over the network.
+3. Create a key in a configmap with the `recognition-api.yml` config.
+4. Deploy the recognition api with the config map key mounted in `/app/config` with the path `recognition-api.yml`.
