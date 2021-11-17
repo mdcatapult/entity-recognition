@@ -46,5 +46,5 @@ Currently, there are only two types of recogniser: `grpc` and `http` (of which l
 To summarise:
 1. Deploy a grpc or http recogniser. You may need to create additional resources for these recognisers such as configmaps, secrets, or even other deployments such as redis.
 2. Ensure the recogniser is accessible over the network.
-3. Create a key in a configmap with the `recognition-api.yml` config.
+3. Create a key in a configmap with the `recognition-api.yml` as the value.
 4. Deploy the recognition api with the config map key mounted in `/app/config` with the path `recognition-api.yml`.

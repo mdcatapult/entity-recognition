@@ -67,6 +67,7 @@ func (s *RecognizerSuite) Test_recogniser_queryToken() {
 	inDB := &pb.Snippet{
 		Text: "in db",
 	}
+	// "in cache, not yet queried db (cache miss)"
 	cacheMiss := &pb.Snippet{
 		Text: "cache miss",
 	}
