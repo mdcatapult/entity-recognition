@@ -3,27 +3,29 @@ package testhelpers
 import (
 	"io"
 
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks"
+	mocks "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 )
 
 func Snips(toks ...string) []*pb.Snippet {
 	snippets := make([]*pb.Snippet, len(toks))
 	for i, tok := range toks {
-		snippets[i] = Snip(tok, 0)
+		snippets[i] = Snip(tok, tok, 0, "")
 	}
 	return snippets
 }
 
-func Snip(tok string, offset uint32) *pb.Snippet {
+func Snip(originalText, normalisedText string, offset uint32, xpath string) *pb.Snippet {
 	return &pb.Snippet{
-		Token:  tok,
-		Offset: offset,
+		Text:           originalText,
+		NormalisedText: normalisedText,
+		Offset:         offset,
+		Xpath:          xpath,
 	}
 }
 
-func NewMockRecognizeServerStream(snippets ...*pb.Snippet) *mocks.Recognizer_RecognizeServer {
-	stream := &mocks.Recognizer_RecognizeServer{}
+func NewMockRecognizeServerStream(snippets ...*pb.Snippet) *mocks.Recognizer_GetStreamServer {
+	stream := &mocks.Recognizer_GetStreamServer{}
 	for _, snippet := range snippets {
 		stream.On("Recv").Return(snippet, nil).Once()
 	}
@@ -31,8 +33,8 @@ func NewMockRecognizeServerStream(snippets ...*pb.Snippet) *mocks.Recognizer_Rec
 	return stream
 }
 
-func NewMockRecognizeClientStream(snippets ...*pb.Snippet) *mocks.Recognizer_RecognizeClient {
-	stream := &mocks.Recognizer_RecognizeClient{}
+func NewMockRecognizeClientStream(snippets ...*pb.Snippet) *mocks.Recognizer_GetStreamClient {
+	stream := &mocks.Recognizer_GetStreamClient{}
 	for _, snippet := range snippets {
 		stream.On("Send", snippet).Return(nil).Once()
 	}

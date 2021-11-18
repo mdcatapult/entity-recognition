@@ -1,0 +1,1678 @@
+
+	
+Acetylcarnitine
+From Wikipedia, the free encyclopedia
+Acetylcarnitine
+Clinical data
+AHFS/Drugs.com
+International Drug Names
+Routes of
+administration
+Oral
+ATC code
+N06BX12 (WHO) 
+Legal status
+Legal status
+In general: Over-the-counter (OTC)
+
+
+
+
+Pharmacokinetic data
+Bioavailability
+>10%
+Elimination half-life
+28.9 - 35.9 hours[1]
+Identifiers
+IUPAC name
+(R)-3-Acetyloxy-4-trimethylammonio-butanoate
+
+
+
+
+CAS Number
+3040-38-8 Y
+PubChem CID
+7045767
+DrugBank
+DB08842 Y
+ChemSpider
+5406074 Y
+UNII
+6DH1W9VH8Q
+ChEBI
+CHEBI:57589 Y
+ChEMBL
+ChEMBL1697733 Y
+CompTox Dashboard (EPA)
+DTXSID1040956 
+ECHA InfoCard
+100.130.594 
+Chemical and physical data
+Formula
+C9H17NO4
+Molar mass
+203.236 g·mol−1
+3D model (JSmol)
+Interactive image
+SMILES
+[O-]C(=O)C[C@@H](OC(=O)C)C[N+](C)(C)C
+
+
+
+
+InChI
+InChI=1S/C9H17NO4/c1-7(11)14-8(5-9(12)13)6-10(2,3)4/h8H,5-6H2,1-4H3/t8-/m1/s1 Y
+Key:RDHQFKQIGNGIED-MRVPVSSYSA-N Y
+
+
+
+
+ NY (what is this?)  (verify)
+Acetyl-L-carnitine, ALCAR or ALC, is an acetylated form of L-carnitine. It is naturally produced by the human body, and it is available as a dietary supplement. Acetylcarnitine is broken down in the blood by plasma esterases to carnitine which is used by the body to transport fatty acids into the mitochondria for breakdown.
+
+Contents
+1 Biochemical production and action
+2 Health effects
+3.1 Reviews
+3.2 Studies
+
+
+
+
+3 Research
+
+
+4 References
+5 Other reviews
+
+
+
+
+
+
+
+
+
+
+Biochemical production and action[edit]
+Carnitine is both a nutrient and made by the body as needed; it serves as a substrate for important reactions in which it accepts and gives up an acyl group. Acetylcarnitine is the most abundant naturally occurring derivative and is formed in the reaction:
+
+acetyl-CoA + carnitine ⇌ CoA + acetylcarnitine
+where the acetyl group displaces the hydrogen atom in the central hydroxyl group of carnitine.[2][3]  Coenzyme A (CoA) plays a key role in the Krebs cycle in mitochondria, which is essential for the production of ATP, which powers many reactions in cells; acetyl-CoA is the primary substrate for the Krebs cycle, once it is de-acetylated, it must be re-charged with an acetyl-group in order for the Krebs cycle to keep working.[3]
+
+Most cell types appear to have transporters to import carnitine and export acyl-carnitines, which seems to be a mechanism to dispose of longer-chain moieties; however many cell types can also import ALCAR.[2]
+
+Within cells, carnitine plays a key roles in importing acyl-CoA into mitochondria; the acyl-group of the acyl-CoA is transferred to carnitine, and the acyl-carnitine is imported through both mitochondrial membranes before being transferred to a CoA molecule, which is then beta oxidized to acetyl-CoA.  A separate set of enzymes and transporters also plays a buffering role by eliminating acetyl-CoA from inside mitochondria created by the pyruvate dehydrogenase complex that is in excess of its utilization by the Krebs cycle; carnitine accepts the acetyl moiety and becomes ALCAR, which is then transported out of the mitochondria and into the cytosol, leaving free CoA inside the mitochondria ready to accept new import of fatty acid chains.[3]  ALCAR in the cytosol can also form a pool of acetyl-groups for CoA, should the cell need it.[3]
+
+Excess acetyl-CoA causes more carbohydrates to be used for energy at the expense of fatty acids.  This occurs by different mechanisms inside and outside the mitochondria.  ALCAR transport decreases acetyl-CoA inside the mitochondria, but increases it outside.[4][5]
+
+Health effects[edit]
+Carnitine and ALCAR supplements carry warnings of a risk that they promote seizures in people with epilepsy, but a 2016 review found this risk to be based only on animal trials.[6]
+
+Research[edit]
+Reviews[edit]
+Peripheral neuropathy: Meta-analyses from 2015 and 2017 both conclude that the current evidence suggests ALC reduces pain from peripheral neuropathy with few adverse effects.[7] The 2017 review also suggested ALC improved electromyographic parameters.[8] Both called for more randomized controlled trials.  An updated Cochrane review in 2019 of four studies with 907 participants was very uncertain as to if ALC caused a pain reduction after 6 to 12 months of treatment.[9]
+Chemotherapy-induced peripheral neuropathy (CIPN): A review of two studies concluded that ALC may be a treatment option for paclitaxel- and cisplatin-induced CIPN, while a clinical trial showed it did not prevent CIPN and appeared to worsen the conditions in taxane therapy.[10][11]
+Male infertility: Scientific reviews from 2016 and 2014 showed mixed results, with some studies showing a positive relationship between ALC and sperm motility, and others showing no relationship.[12][13]
+Dementia: A 2003 Cochrane review sought to determine the safety and efficacy of ALCAR in dementia but the reviewers found only clinical trials studies on Alzheimer's disease; the review found that the pharmacology of ALCAR was poorly understood and that based on the lack of efficacy, ALCAR was unlikely to be an important treatment for AD.[14]
+Depression: One 2014 review assessed the use of ALCAR in fourteen clinical trials for various conditions with depressive symptoms; the trials were small (ranging from 20 to 193 subjects) and their design was so different that results could not be generalized; most studies showed positive results and a lack of adverse effects. The mechanism of action by which ALCAR could treat depression is not known.[15] A meta-analysis from 2014 concluded that ALCAR could only be recommended for the treatment of persistent depressive disorder if publication bias was deemed improbable.[16] A 2018 systematic review and meta-analysis of 12 randomized controlled trials found "supplementation significantly decreases depressive symptoms compared with placebo/no intervention, while offering a comparable effect with that of established antidepressant agents with fewer adverse effects." The review also indicates that "the effect of ALC in younger subjects was not more effective than placebo in improving these symptoms." indicating a need for more research explaining the age/effect relation.[17]
+Fragile X syndrome: A 2015 Cochrane review of ALCAR in fragile X syndrome found only two placebo-controlled trials, each of low quality, and concluded that ALCAR is unlikely to improve intellectual functioning or hyperactive behavior in children with this condition.[18]
+Hepatic encephalopathy: ALCAR has been studied in hepatic encephalopathy, a complication of cirrhosis involving neuropsychiatric impairment; ALCAR improves blood ammonia levels and generates a modest improvement in psychometric scores but does not resolve the condition — it may play a minor role in managing the condition.[19]
+
+
+
+
+
+
+
+Studies[edit]
+In a small clinical study, when ALCAR was administered intravenously and insulin levels were held steady and a meal low in carnitine but high in carbohydrates was taken by healthy young men, ALCAR appeared to decrease glucose consumption in favor of fat oxidation.[3]
+References[edit]
+^ Cao, Y; Wang, YX; Liu, CJ; Wang, LX; Han, ZW; Wang, CB (2009). "Comparison of pharmacokinetics of L-carnitine, acetyl-L-carnitine and propionyl-L-carnitine after single oral administration of L-carnitine in healthy volunteers". Clinical and Investigative Medicine. 32 (1): E13-9. doi:10.25011/cim.v32i1.5082. PMID 19178874.
+
+^ a b Bieber LL (1988). "Carnitine". Annual Review of Biochemistry. 57: 261–83. doi:10.1146/annurev.bi.57.070188.001401. PMID 3052273.
+
+^ a b c d e Stephens FB, Constantin-Teodosiu D, Greenhaff PL (June 2007). "New insights concerning the role of carnitine in the regulation of fuel metabolism in skeletal muscle". The Journal of Physiology. 581 (Pt 2): 431–44. doi:10.1113/jphysiol.2006.125799. PMC 2075186. PMID 17331998.
+
+^ Kiens B (January 2006). "Skeletal muscle lipid metabolism in exercise and insulin resistance". Physiological Reviews. 86 (1): 205–43. doi:10.1152/physrev.00023.2004. PMID 16371598.
+
+^ Lopaschuk GD, Gamble J (October 1994). "The 1993 Merck Frosst Award. Acetyl-CoA carboxylase: an important regulator of fatty acid oxidation in the heart". Canadian Journal of Physiology and Pharmacology. 72 (10): 1101–9. doi:10.1139/y94-156. PMID 7882173.
+
+^ Zeiler FA, Sader N, Gillman LM, West M (2016). "Levocarnitine induced seizures in patients on valproic acid: A negative systematic review". Seizure. 36: 36–39. doi:10.1016/j.seizure.2016.01.020. PMID 26889779.
+
+^ Li, Sheyu; Li, Qianrui; Li, Yun; Li, Ling; Tian, Haoming; Sun, Xin (2015-01-01). "Acetyl-L-carnitine in the treatment of peripheral neuropathic pain: a systematic review and meta-analysis of randomized controlled trials". PLOS ONE. 10 (3): e0119479. Bibcode:2015PLoSO..1019479L. doi:10.1371/journal.pone.0119479. ISSN 1932-6203. PMC 4353712. PMID 25751285.
+
+^ N., Veronese (2017). "Effect of acetyl-l-carnitine in the treatment of diabetic peripheral neuropathy: A systematic review and meta-analysis". European Geriatric Medicine. 8 (2): 117–122. doi:10.1016/j.eurger.2017.01.002. hdl:10138/235591.
+
+^ Rolim, Luiz Csp; da Silva, Edina Mk; Flumignan, Ronald Lg; Abreu, Marcio M.; Dib, Sérgio A. (15 June 2019). "Acetyl-L-carnitine for the treatment of diabetic peripheral neuropathy". The Cochrane Database of Systematic Reviews. 6: CD011265. doi:10.1002/14651858.CD011265.pub2. ISSN 1469-493X. PMC 6953387. PMID 31201734.
+
+^ Schloss, Janet M.; Colosimo, Maree; Airey, Caroline; Masci, Paul P.; Linnane, Anthony W.; Vitetta, Luis (2013-12-01). "Nutraceuticals and chemotherapy induced peripheral neuropathy (CIPN): a systematic review". Clinical Nutrition (Edinburgh, Scotland). 32 (6): 888–893. doi:10.1016/j.clnu.2013.04.007. ISSN 1532-1983. PMID 23647723.
+
+^ Brami, Cloé; Bao, Ting; Deng, Gary (February 2016). "Natural products and complementary therapies for chemotherapy-induced peripheral neuropathy: A systematic review". Critical Reviews in Oncology/Hematology. 98: 325–334. doi:10.1016/j.critrevonc.2015.11.014. PMC 4727999. PMID 26652982.
+
+^ Ahmadi, Sedigheh; Bashiri, Reihane; Ghadiri-Anari, Akram; Nadjarzadeh, Azadeh (2017-02-02). "Antioxidant supplements and semen parameters: An evidence based review". International Journal of Reproductive Biomedicine. 14 (12): 729–736. doi:10.29252/ijrm.14.12.729. ISSN 2476-4108. PMC 5203687. PMID 28066832.
+
+^ Arcaniolo, Davide; Favilla, Vincenzo; Tiscione, Daniele; Pisano, Francesca; Bozzini, Giorgio; Creta, Massimiliano; Gentile, Giorgio; Menchini Fabris, Filippo; Pavan, Nicola (2014-09-30). "Is there a place for nutritional supplements in the treatment of idiopathic male infertility?". Archivio Italiano di Urologia e Andrologia. 86 (3): 164–170. doi:10.4081/aiua.2014.3.164. ISSN 1124-3562. PMID 25308577.
+
+^ Hudson S, Tabet N (2003). "Acetyl-L-carnitine for dementia". Cochrane Database Syst Rev (Systematic review) (2): CD003158. doi:10.1002/14651858.CD003158. PMC 6991156. PMID 12804452.
+
+^ Wang, Sheng-Min; Han, Changsu; Lee, Soo-Jung; Patkar, Ashwin A.; Masand, Prakash S.; Pae, Chi-Un (June 2014). "A review of current evidence for acetyl-l-carnitine in the treatment of depression". Journal of Psychiatric Research. 53: 30–37. doi:10.1016/j.jpsychires.2014.02.005. PMID 24607292.
+
+^ Kriston, Levente; von Wolff, Alessa; Westphal, Annika; Hölzel, Lars P.; Härter, Martin (2014-08-01). "Efficacy and acceptability of acute treatments for persistent depressive disorder: a network meta-analysis". Depression and Anxiety. 31 (8): 621–630. doi:10.1002/da.22236. ISSN 1520-6394. PMID 24448972. S2CID 41163109.
+
+^ Veronese N, Stubbs B, Solmi M, Ajnakina O, Carvalho AF, Maggi S (Feb–Mar 2018). "Acetyl-L-Carnitine Supplementation and the Treatment of Depressive Symptoms: A Systematic Review and Meta-Analysis". Psychosomatic Medicine. 80 (2): 154–159. doi:10.1097/PSY.0000000000000537. PMID 29076953. S2CID 7649619.
+
+^ Rueda, JR;  et al. (May 2015). "L-acetylcarnitine for treating fragile X syndrome". Cochrane Database Syst Rev. 19 (5): CD010012. doi:10.1002/14651858.CD010012.pub2. PMID 25985235.
+
+^ Jawaro, T.; Yang, A.; Dixit, D.; Bridgeman, M. B. (28 April 2016). "Management of Hepatic Encephalopathy: A Primer". Annals of Pharmacotherapy. 50 (7): 569–577. doi:10.1177/1060028016645826. PMID 27126547. S2CID 32765158.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Other reviews[edit]
+Jane Higdon, "L-Carnitine", Micronutrient Information Center, Linus Pauling Institute, Oregon State University
+Carnitine (L-carnitine), University of Maryland Medical Center
+
+
+v
+t
+e
+Dietary supplements
+Types
+Amino acids
+Bodybuilding supplement
+Energy drink
+Energy bar
+Fatty acids
+Herbal supplements
+Minerals
+Prebiotics
+Probiotics (Lactobacillus
+Bifidobacterium)
+Protein bar
+Vitamins
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Vitamins and
+chemical elements
+ ("minerals")
+Retinol (Vitamin A)
+Thiamine (B1)
+Riboflavin (B2)
+Niacin (B3)
+Pantothenic acid (B5)
+Pyridoxine (B6)
+Biotin (B7)
+Folic acid (B9)
+Cyanocobalamin (B12)
+
+
+
+
+
+
+
+
+B vitamins
+
+Ascorbic acid (Vitamin C)
+Ergocalciferol and Cholecalciferol (Vitamin D)
+Tocopherol (Vitamin E)
+Naphthoquinone (Vitamin K)
+
+
+
+
+
+
+Calcium
+Choline
+Chromium
+Cobalt
+Copper
+Fluorine
+Iodine
+Iron
+Magnesium
+Manganese
+Molybdenum
+Phosphorus
+Potassium
+Selenium
+Sodium
+Sulfur
+Zinc
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Other common 
+ingredients
+AAKG
+β-hydroxy β-methylbutyrate
+Carnitine
+Chondroitin sulfate
+Cod liver oil
+Copper gluconate
+Creatine
+Dietary fiber
+Echinacea
+Elemental calcium
+Ephedra
+Fish oil
+Folic acid
+Ginseng
+Glucosamine
+Glutamine
+Grape seed extract
+Guarana
+Iron supplements
+Japanese honeysuckle
+Krill oil
+Lingzhi
+Linseed oil
+Lipoic acid
+Milk thistle
+Melatonin
+Red yeast rice
+Royal jelly
+Saw palmetto
+Spirulina
+St John's wort
+Taurine
+Wheatgrass
+Wolfberry
+Yohimbine
+Zinc gluconate
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Related articles
+Codex Alimentarius
+Enzyte
+Hadacol
+Herbal tea
+Nutraceutical
+Multivitamin
+Nutrition
+
+
+
+
+
+
+
+
+
+
+v
+t
+e
+Antioxidants
+Food antioxidants
+6-Hydroxymelatonin
+Acetyl-L-carnitine (ALCAR)
+Alpha-lipoic acid (ALA)
+Ascorbic acid (vitamin C)
+Carotenoids (vitamin A)
+Curcumin
+Edaravone
+Polyphenols
+Glutathione
+Hydroxytyrosol
+L-carnitine
+Ladostigil
+Melatonin
+Mofegiline
+N-Acetylcysteine (NAC)
+N-Acetylserotonin (NAS)
+Oleocanthal
+Oleuropein
+Rasagiline
+Resveratrol
+Selegiline
+Selenium
+Tocopherols (vitamin E)
+Tocotrienols (vitamin E)
+Tyrosol
+Ubiquinone (coenzyme Q)
+Uric acid
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Fuel antioxidants
+Butylated hydroxyanisole
+Butylated hydroxytoluene
+2,6-Di-tert-butylphenol
+1,2-Diaminopropane
+2,4-Dimethyl-6-tert-butylphenol
+Ethylenediamine
+
+
+
+
+
+
+
+
+
+Measurements
+Folin method
+ORAC
+TEAC
+FRAP
+
+
+
+
+
+
+
+Acetylcholine receptor modulators
+v
+t
+e
+Muscarinic acetylcholine receptor modulators
+mAChRs
+Agonists
+77-LH-28-1
+AC-42
+AC-260,584
+Aceclidine
+Acetylcholine
+AF30
+AF150(S)
+AF267B
+Alvameline
+AQRA-741
+Arecoline
+Bethanechol
+Bevonium
+Butyrylcholine
+Carbachol
+CDD-0034
+CDD-0078
+CDD-0097
+CDD-0098
+CDD-0102
+Cevimeline
+Choline
+cis-Dioxolane
+Clozapine
+Desmethylclozapine (norclozapine)
+Ethoxysebacylcholine
+Itameline
+LY-593,039
+L-689,660
+LY-2,033,298
+McNA343
+Methacholine
+Milameline
+Muscarine
+NGX-267
+Ocvimeline
+Oxotremorine
+PD-151,832
+Pilocarpine
+RS86
+Sabcomeline
+SDZ 210-086
+Sebacylcholine
+Suberyldicholine
+Talsaclidine
+Tazomeline
+Thiopilocarpine
+Vedaclidine
+VU-0029767
+VU-0090157
+VU-0152099
+VU-0152100
+VU-0238429
+WAY-132,983
+Xanomeline
+YM-796
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Antagonists
+3-Quinuclidinyl benzilate
+4-DAMP
+Aclidinium bromide (+formoterol)
+Abediterol
+AF-DX 250
+AF-DX 384
+Ambutonium bromide
+Anisodamine
+Anisodine
+Antihistamines (first-generation) (e.g., brompheniramine, buclizine, captodiame, chlorphenamine (chlorpheniramine), cinnarizine, clemastine, cyproheptadine, dimenhydrinate, dimetindene, diphenhydramine, doxylamine, meclizine, mequitazine, perlapine, phenindamine, pheniramine, phenyltoloxamine, promethazine, propiomazine, triprolidine)
+AQ-RA 741
+Atropine
+Atropine methonitrate
+Atypical antipsychotics (e.g., clozapine, fluperlapine, olanzapine (+fluoxetine), rilapine, quetiapine, tenilapine, zotepine)
+Benactyzine
+Benzatropine (benztropine)
+Benzilone
+Benzilylcholine mustard
+Benzydamine
+BIBN 99
+Biperiden
+Bornaprine
+Camylofin
+CAR-226,086
+CAR-301,060
+CAR-302,196
+CAR-302,282
+CAR-302,368
+CAR-302,537
+CAR-302,668
+Caramiphen
+Cimetropium bromide
+Clidinium bromide
+Cloperastine
+CS-27349
+Cyclobenzaprine
+Cyclopentolate
+Darifenacin
+DAU-5884
+Desfesoterodine
+Dexetimide
+DIBD
+Dicycloverine (dicyclomine)
+Dihexyverine
+Difemerine
+Diphemanil metilsulfate
+Ditran
+Drofenine
+EA-3167
+EA-3443
+EA-3580
+EA-3834
+Emepronium bromide
+Etanautine
+Etybenzatropine (ethybenztropine)
+Fenpiverinium
+Fentonium bromide
+Fesoterodine
+Flavoxate
+Glycopyrronium bromide (+beclometasone/formoterol, +indacaterol)
+Hexahydrodifenidol
+Hexahydrosiladifenidol
+Hexbutinol
+Hexocyclium
+Himbacine
+HL-031,120
+Homatropine
+Imidafenacin
+Ipratropium bromide (+salbutamol)
+Isopropamide
+J-104,129
+Hyoscyamine
+Mamba toxin 3
+Mamba toxin 7
+Mazaticol
+Mebeverine
+Meladrazine
+Mepenzolate
+Methantheline
+Methoctramine
+Methylatropine
+Methylhomatropine
+Methylscopolamine
+Metixene
+Muscarinic toxin 7
+N-Ethyl-3-piperidyl benzilate
+N-Methyl-3-piperidyl benzilate
+Nefopam
+Octatropine methylbromide (anisotropine methylbromide)
+Orphenadrine
+Otenzepad (AF-DX 116)
+Otilonium bromide
+Oxapium iodide
+Oxitropium bromide
+Oxybutynin
+Oxyphencyclimine
+Oxyphenonium bromide
+PBID
+PD-102,807
+PD-0298029
+Penthienate
+Pethidine
+pFHHSiD
+Phenglutarimide
+Phenyltoloxamine
+Pipenzolate bromide
+Piperidolate
+Pirenzepine
+Piroheptine
+Pizotifen
+Poldine
+Pridinol
+Prifinium bromide
+Procyclidine
+Profenamine (ethopropazine)
+Propantheline bromide
+Propiverine
+Quinidine
+3-Quinuclidinyl thiochromane-4-carboxylate
+Revefenacin
+Rociverine
+RU-47,213
+SCH-57,790
+SCH-72,788
+SCH-217,443
+Scopolamine (hyoscine)
+Scopolamine butylbromide (hyoscine butylbromide)
+Silahexacyclium
+Sofpironium bromide
+Solifenacin
+SSRIs (e.g., femoxetine, paroxetine)
+Telenzepine
+Terodiline
+Tetracyclic antidepressants (e.g., amoxapine, maprotiline, mianserin, mirtazapine)
+Tiemonium iodide
+Timepidium bromide
+Tiotropium bromide
+Tiquizium bromide
+Tofenacin
+Tolterodine
+Tricyclic antidepressants (e.g., amitriptyline (+perphenazine), amitriptylinoxide, butriptyline, cidoxepin, clomipramine, desipramine, desmethyldesipramine, dibenzepin, dosulepin (dothiepin), doxepin, imipramine, lofepramine, nitroxazepine, northiaden (desmethyldosulepin), nortriptyline, protriptyline, quinupramine, trimipramine)
+Tridihexethyl
+Trihexyphenidyl
+Trimebutine
+Tripitamine (tripitramine)
+Tropacine
+Tropatepine
+Tropicamide
+Trospium chloride
+Typical antipsychotics (e.g., chlorpromazine, chlorprothixene, cyamemazine (cyamepromazine), loxapine, mesoridazine, thioridazine)
+Umeclidinium bromide (+vilanterol)
+WIN-2299
+Xanomeline
+Zamifenacin
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Precursors
+(and prodrugs)
+Acetyl-coA
+Adafenoxate
+Choline (lecithin)
+Citicoline
+Cyprodenate
+Dimethylethanolamine
+Glycerophosphocholine
+Meclofenoxate (centrophenoxine)
+Phosphatidylcholine
+Phosphatidylethanolamine
+Phosphorylcholine
+Pirisudanol
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+See also: Receptor/signaling modulators • Nicotinic acetylcholine receptor modulators • Acetylcholine metabolism/transport modulators
+v
+t
+e
+Nicotinic acetylcholine receptor modulators
+nAChRs
+Agonists
+(and PAMs)
+5-HIAA
+6-Chloronicotine
+A-84,543
+A-366,833
+A-582,941
+A-867,744
+ABT-202
+ABT-418
+ABT-560
+ABT-894
+Acetylcholine
+Altinicline
+Anabasine
+Anatabine
+Anatoxin-a
+AR-R17779
+Bephenium hydroxynaphthoate
+Butinoline
+Butyrylcholine
+Carbachol
+Choline
+Cotinine
+Cytisine
+Decamethonium
+Desformylflustrabromine
+Dianicline
+Dimethylphenylpiperazinium
+Epibatidine
+Epiboxidine
+Ethanol (alcohol)
+Ethoxysebacylcholine
+EVP-4473
+EVP-6124
+Galantamine
+GTS-21
+Ispronicline
+Ivermectin
+JNJ-39393406
+Levamisole
+Lobeline
+MEM-63,908 (RG-3487)
+Morantel
+Nicotine (tobacco)
+NS-1738
+PHA-543,613
+PHA-709,829
+PNU-120,596
+PNU-282,987
+Pozanicline
+Pyrantel
+Rivanicline
+RJR-2429
+Sazetidine A
+SB-206553
+Sebacylcholine
+SIB-1508Y
+SIB-1553A
+SSR-180,711
+Suberyldicholine
+Suxamethonium (succinylcholine)
+Suxethonium (succinyldicholine)
+TC-1698
+TC-1734
+TC-1827
+TC-2216
+TC-5214
+TC-5619
+TC-6683
+Tebanicline
+Tribendimidine
+Tropisetron
+UB-165
+Varenicline
+WAY-317,538
+XY-4083
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Antagonists
+(and NAMs)
+18-MAC
+18-MC
+α-Neurotoxins (e.g., α-bungarotoxin, α-cobratoxin, α-conotoxin, many others)
+ABT-126
+Alcuronium
+Allopregnanolone
+Amantadine
+Anatruxonium
+AQW051
+Atracurium
+Barbiturates (e.g., pentobarbital, sodium thiopental)
+BNC-210
+Bungarotoxins (e.g., α-bungarotoxin, κ-bungarotoxin)
+Bupropion
+BW284C51
+BW-A444
+Candocuronium iodide (chandonium iodide)
+Chlorisondamine
+Cisatracurium
+Coclaurine
+Coronaridine
+Curare
+Cyclopropane
+Dacuronium bromide
+Decamethonium
+Dehydronorketamine
+Desflurane
+Dextromethorphan
+Dextropropoxyphene
+Dextrorphan
+Diadonium
+DHβE
+Dihydrochandonium
+Dimethyltubocurarine (metocurine)
+Dioscorine
+Dipyrandium
+Dizocilpine (MK-801)
+Doxacurium
+Encenicline
+Enflurane
+Erythravine
+Esketamine
+Fazadinium
+Gallamine
+Gantacurium chloride
+Halothane
+Hexafluronium
+Hexamethonium (benzohexonium)
+Hydroxybupropion
+Hydroxynorketamine
+Ibogaine
+Isoflurane
+Ketamine
+Kynurenic acid
+Laudanosine
+Laudexium (laudolissin)
+Levacetylmethadol
+Levomethadone
+Malouetine
+ME-18-MC
+Mecamylamine
+Memantine
+Methadone
+Methorphan (racemethorphan)
+Methyllycaconitine
+Metocurine
+Mivacurium
+Morphanol (racemorphan)
+Neramexane
+Nitrous oxide
+Norketamine
+Pancuronium bromide
+Pempidine
+Pentamine
+Pentolinium
+Phencyclidine
+Pipecuronium bromide
+Progesterone
+Promegestone
+Radafaxine
+Rapacuronium bromide
+Reboxetine
+Rocuronium bromide
+Sevoflurane
+Stercuronium iodide
+Surugatoxin
+Thiocolchicoside
+Toxiferine
+Tramadol
+Trimetaphan camsilate (trimethaphan camsylate)
+Tropeinium
+Tubocurarine
+Vanoxerine
+Vecuronium bromide
+Xenon
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Precursors
+(and prodrugs)
+Acetyl-coA
+Adafenoxate
+Choline (lecithin)
+Citicoline
+Cyprodenate
+Dimethylethanolamine
+Glycerophosphocholine
+Meclofenoxate (centrophenoxine)
+Phosphatidylcholine
+Phosphatidylethanolamine
+Phosphorylcholine
+Pirisudanol
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+See also: Receptor/signaling modulators • Muscarinic acetylcholine receptor modulators • Acetylcholine metabolism/transport modulators
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Acetylcarnitine&oldid=1031826513"
+
+
+Acetate esters
+Amino acid derivatives
+Anti-aging substances
+Salts of carboxylic acids
+Dietary supplements
+Quaternary ammonium compounds
+Categories: 
+Drugs with non-standard legal status
+ECHA InfoCard ID from Wikidata
+Chem-molar-mass both hardcoded and calculated
+Articles without KEGG source
+Drugboxes which contain changes to verified fields
+Drugboxes which contain changes to watched fields
+Hidden categories: 
+
+		
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		
+		
+	
+
+	
+	
+	
+	
+	
+
+
+	
+
+Navigation menu
+
+		Personal tools
+	
+Not logged in
+Talk
+Contributions
+Create account
+Log in
+
+		
+		
+		
+	
+
+	
+	
+
+
+		Namespaces
+	
+Article
+Talk
+
+		
+		
+		
+	
+
+	
+	
+
+
+		Variants
+	
+
+		
+		
+		
+	
+
+	
+	
+	
+
+
+			
+
+			
+
+		
+
+		Views
+	
+Read
+Edit
+View history
+
+		
+		
+		
+	
+
+	
+	
+
+
+		More
+	
+
+		
+		
+		
+	
+
+	
+	
+	
+
+Search
+
+		
+	
+
+			
+			
+			
+			
+		
+
+		
+	
+
+	
+	
+
+
+			
+
+			
+
+			
+
+		
+
+		
+
+		
+		
+	
+
+		
+	
+
+		Navigation
+	
+Main page
+Contents
+Current events
+Random article
+About Wikipedia
+Contact us
+Donate
+
+		
+		
+		
+	
+
+	
+	
+
+
+		Contribute
+	
+Help
+Learn to edit
+Community portal
+Recent changes
+Upload file
+
+		
+		
+		
+	
+
+	
+	
+
+
+		Tools
+	
+What links here
+Related changes
+Upload file
+Special pages
+Permanent link
+Page information
+Cite this page
+Wikidata item
+
+		
+		
+		
+	
+
+	
+	
+
+
+		Print/export
+	
+Download as PDF
+Printable version
+
+		
+		
+		
+	
+
+	
+	
+
+
+		Languages
+	
+العربية
+Español
+Français
+한국어
+Hrvatski
+Italiano
+Português
+Српски / srpski
+Srpskohrvatski / српскохрватски
+中文
+Edit links
+
+		
+		
+		
+	
+
+	
+	
+
+
+	
+	
+
+	
+
+
+
+	
+
+
+
+	
+	
+	
+
+
+
+ This page was last edited on 3 July 2021, at 21:58 (UTC).
+Text is available under the Creative Commons Attribution-ShareAlike License;
+additional terms may apply.  By using this site, you agree to the Terms of Use and Privacy Policy. Wikipedia® is a registered trademark of the Wikimedia Foundation, Inc., a non-profit organization.
+
+	
+	
+
+Privacy policy
+About Wikipedia
+Disclaimers
+Contact Wikipedia
+Mobile view
+Developers
+Statistics
+Cookie statement
+
+	
+	
+	
+	
+	
+	
+	
+	
+
+
+	
+	
+
+
+	
+
+	
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

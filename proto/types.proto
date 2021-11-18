@@ -2,14 +2,17 @@ syntax = "proto3";
 option go_package = "gitlab.mdcatapult.io/software-engineering/entity-recognition/gen/pb";
 
 message Snippet {
-    string token = 1;
-    uint32 offset = 2;
+    string text = 1;
+    string normalisedText = 2;
+    uint32 offset = 3;
+    string xpath = 4;
 }
 
-message RecognizedEntity {
-    string entity = 1;
+message Entity {
+    string name = 1;
     uint32 position = 2;
-    string dictionary = 3;
-    map<string,string> identifiers = 4;
-    map<string,string> metadata = 5;
+    string xpath = 3;
+    string recogniser = 4;
+    map<string,string> identifiers = 5;
+    bytes metadata = 6;
 }

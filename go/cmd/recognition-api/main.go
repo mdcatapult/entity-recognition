@@ -9,6 +9,11 @@ import (
 	"github.com/rs/zerolog/log"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
+	grpc_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser/grpc-recogniser"
+	http_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser/http-recogniser"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/html"
 	"google.golang.org/grpc"
 )
 
@@ -18,10 +23,17 @@ type recognitionAPIConfig struct {
 	Server   struct {
 		HttpPort int `mapstructure:"http_port"`
 	}
-	Recognizers map[string]struct {
-		Host     string
-		GrpcPort int `mapstructure:"grpc_port"`
-	}
+	Blacklist       string `mapstructure:"blacklist"` // global blacklist
+	GrpcRecognizers map[string]struct {
+		Host      string
+		Port      int
+		Blacklist string
+	} `mapstructure:"grpc_recognisers"`
+	HttpRecognisers map[string]struct {
+		Type      http_recogniser.Type
+		Url       string
+		Blacklist string
+	} `mapstructure:"http_recognisers"`
 }
 
 var config recognitionAPIConfig
@@ -44,33 +56,50 @@ func main() {
 
 	// for each recogniser in the config, instantiate a client and save the connection
 	// so that we can close it later.
-	clients := make([]pb.RecognizerClient, len(config.Recognizers))
-	connections := make([]*grpc.ClientConn, len(config.Recognizers))
-	i := 0
-	for name, r := range config.Recognizers {
+	recogniserClients := make(map[string]recogniser.Client)
+	for name, conf := range config.GrpcRecognizers {
 		log.Info().Str("recognizer", name).Msg("connecting...")
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		conn, err := grpc.DialContext(ctx, fmt.Sprintf("%s:%d", r.Host, r.GrpcPort), opts...)
+		conn, err := grpc.DialContext(ctx, fmt.Sprintf("%s:%d", conf.Host, conf.Port), opts...)
 		if err != nil {
 			log.Fatal().Err(err).Send()
 		}
 		cancel()
-		connections[i] = conn
-		clients[i] = pb.NewRecognizerClient(conn)
-		i++
+
+		recogniserClients[name] = grpc_recogniser.New(name, pb.NewRecognizerClient(conn), loadBlacklist(conf.Blacklist))
+	}
+
+	for name, conf := range config.HttpRecognisers {
+		switch conf.Type {
+		case http_recogniser.LeadmineType:
+			recogniserClients[name] = http_recogniser.NewLeadmineClient(name, conf.Url, loadBlacklist(conf.Blacklist))
+		}
 	}
 
 	r := gin.New()
 	r.Use(gin.LoggerWithFormatter(lib.JsonLogFormatter))
-	c := controller{clients: clients}
+
+	c := controller{
+		recognisers: recogniserClients,
+		htmlReader:  html.SnippetReader{},
+		blacklist:   loadBlacklist(config.Blacklist),
+	}
+
 	s := server{controller: c}
 	s.RegisterRoutes(r)
 	if err := r.Run(fmt.Sprintf(":%d", config.Server.HttpPort)); err != nil {
-		for _, conn := range connections {
-			if err := conn.Close(); err != nil {
-				log.Fatal().Err(err).Send()
-			}
-		}
 		log.Fatal().Err(err).Send()
 	}
+}
+
+func loadBlacklist(path string) blacklist.Blacklist {
+	var bl = blacklist.Blacklist{}
+	if path != "" {
+		loadedBlacklist, err := blacklist.Load(path)
+		if err != nil {
+			log.Fatal().Err(err).Send()
+		}
+		bl = *loadedBlacklist
+	}
+	return bl
 }

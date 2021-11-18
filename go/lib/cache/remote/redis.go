@@ -67,7 +67,7 @@ func (r *redisSetPipeline) Size() int {
 }
 
 func (r *redisGetPipeline) Get(token *pb.Snippet) {
-	r.cmds[token] = r.pipe.Get(token.GetToken())
+	r.cmds[token] = r.pipe.Get(token.GetNormalisedText())
 }
 
 func (r *redisGetPipeline) ExecGet(onResult func(*pb.Snippet, *cache.Lookup) error) error {

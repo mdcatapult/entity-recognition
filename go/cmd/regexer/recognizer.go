@@ -16,27 +16,31 @@ type recogniser struct {
 	regexps map[string]*regexp.Regexp
 }
 
-func (r recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
+func (r recogniser) GetStream(stream pb.Recognizer_GetStreamServer) error {
 	log.Info().Msg("received request")
 	// listen for tokens
 	for {
-		token, err := stream.Recv()
+		snippet, err := stream.Recv()
 		if err == io.EOF {
 			break
 		} else if err != nil {
 			return err
 		}
 
-		// normalize the token (removes punctuation and enforces NFKC encoding on the utf8 characters).
-		text.NormalizeSnippet(token)
+		// normalize the snippet (removes punctuation and enforces NFKC encoding on the utf8 characters).
+		// We might not really need to normalise here. Something to think about.
+		text.NormalizeSnippet(snippet)
 
-		// For every regexp try to match the token and send the recognised entity if there is a match.
+		// For every regexp try to match the snippet and send the recognised entity if there is a match.
 		for name, re := range r.regexps {
-			if re.MatchString(token.GetToken()) {
-				err := stream.Send(&pb.RecognizedEntity{
-					Entity:     token.GetToken(),
-					Position:   token.GetOffset(),
-					Dictionary: name,
+			if re.MatchString(snippet.GetNormalisedText()) {
+				err := stream.Send(&pb.Entity{
+					Name:     snippet.GetNormalisedText(),
+					Position: snippet.GetOffset(),
+					Xpath:    snippet.GetXpath(),
+					Identifiers: map[string]string{
+						name: snippet.GetText(),
+					},
 				})
 				if err != nil {
 					return err

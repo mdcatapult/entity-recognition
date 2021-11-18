@@ -17,26 +17,31 @@ type recogniser struct {
 }
 
 type requestVars struct {
-	tokenCache       map[*pb.Snippet]*cache.Lookup
-	tokenCacheMisses []*pb.Snippet
-	snippetHistory   []*pb.Snippet
-	tokenHistory     []string
-	stream           pb.Recognizer_RecognizeServer
-	pipe             remote.GetPipeline
+	snippetCache       map[*pb.Snippet]*cache.Lookup
+	snippetCacheMisses []*pb.Snippet
+	snippetHistory     []*pb.Snippet
+	stream             pb.Recognizer_GetStreamServer
+	pipe               remote.GetPipeline
+}
+
+func newEntityWithNormalisedText(snippet *pb.Snippet, lookup *cache.Lookup) *pb.Entity {
+	normalisedText, _, _ := text.NormalizeString(snippet.GetText())
+	return &pb.Entity{
+		Name:        normalisedText,
+		Position:    snippet.GetOffset(),
+		Recogniser:  lookup.Dictionary,
+		Identifiers: lookup.Identifiers,
+		Xpath:       snippet.GetXpath(),
+	}
 }
 
 func (r *recogniser) newResultHandler(vars *requestVars) func(snippet *pb.Snippet, lookup *cache.Lookup) error {
 	return func(snippet *pb.Snippet, lookup *cache.Lookup) error {
-		vars.tokenCache[snippet] = lookup
+		vars.snippetCache[snippet] = lookup
 		if lookup == nil {
 			return nil
 		}
-		entity := &pb.RecognizedEntity{
-			Entity:      snippet.GetToken(),
-			Position:    snippet.GetOffset(),
-			Dictionary:  lookup.Dictionary,
-			Identifiers: lookup.Identifiers,
-		}
+		entity := newEntityWithNormalisedText(snippet, lookup)
 
 		if err := vars.stream.Send(entity); err != nil {
 			return err
@@ -46,43 +51,51 @@ func (r *recogniser) newResultHandler(vars *requestVars) func(snippet *pb.Snippe
 	}
 }
 
+func joinSnippets(snips []*pb.Snippet) (originalText, normalisedText string) {
+	for _, snip := range snips {
+		originalText += snip.Text + " "
+		normalisedText += snip.NormalisedText + " "
+	}
+	return strings.TrimRight(originalText, " "), strings.TrimRight(normalisedText, " ")
+}
+
 func getCompoundSnippets(vars *requestVars, snippet *pb.Snippet) (snippets []*pb.Snippet, skipToken bool) {
 	// normalise the token (remove enclosing punctuation and enforce NFKC encoding).
 	// compoundTokenEnd is true if the last byte in the token is one of '.', '?', or '!'.
 	compoundTokenEnd := text.NormalizeAndLowercaseSnippet(snippet)
-	if len(snippet.Token) == 0 {
+	if len(snippet.Text) == 0 {
 		return nil, true
 	}
 
 	// manage the token history
 	if len(vars.snippetHistory) < config.CompoundTokenLength {
 		vars.snippetHistory = append(vars.snippetHistory, snippet)
-		vars.tokenHistory = append(vars.tokenHistory, snippet.GetToken())
 	} else {
 		vars.snippetHistory = append(vars.snippetHistory[1:], snippet)
-		vars.tokenHistory = append(vars.tokenHistory[1:], snippet.GetToken())
 	}
 
 	// construct the compound tokens to query against redis.
 	snippets = make([]*pb.Snippet, len(vars.snippetHistory))
-	for i, historicalToken := range vars.snippetHistory {
+	for i, historicalSnippet := range vars.snippetHistory {
+		originalText, normalisedText := joinSnippets(vars.snippetHistory[i:])
 		snippets[i] = &pb.Snippet{
-			Token:  strings.Join(vars.tokenHistory[i:], " "),
-			Offset: historicalToken.GetOffset(),
+			Text:           originalText,
+			NormalisedText: normalisedText,
+			Offset:         historicalSnippet.GetOffset(),
+			Xpath:          historicalSnippet.GetXpath(),
 		}
 	}
 
 	// If compoundTokenEnd is true, we can save some redis queries by resetting the token history.
 	if compoundTokenEnd {
 		vars.snippetHistory = []*pb.Snippet{}
-		vars.tokenHistory = []string{}
 	}
 
 	return snippets, false
 }
 
-func (r *recogniser) findOrQueueSnippet(vars *requestVars, token *pb.Snippet) error {
-	if lookup, ok := vars.tokenCache[token]; ok {
+func (r *recogniser) findOrQueueSnippet(vars *requestVars, snippet *pb.Snippet) error {
+	if lookup, ok := vars.snippetCache[snippet]; ok {
 		// if it's nil, we've already queried redis and it wasn't there
 		if lookup == nil {
 			return nil
@@ -90,16 +103,11 @@ func (r *recogniser) findOrQueueSnippet(vars *requestVars, token *pb.Snippet) er
 		// If it's empty, it's already queued but we don't know if its there or not.
 		// Append it to the cacheMisses to be found later.
 		if lookup.Dictionary == "" {
-			vars.tokenCacheMisses = append(vars.tokenCacheMisses, token)
+			vars.snippetCacheMisses = append(vars.snippetCacheMisses, snippet)
 			return nil
 		}
 		// Otherwise, construct an entity from the cache value and send it back to the caller.
-		entity := &pb.RecognizedEntity{
-			Entity:      token.GetToken(),
-			Position:    token.GetOffset(),
-			Dictionary:  lookup.Dictionary,
-			Identifiers: lookup.Identifiers,
-		}
+		entity := newEntityWithNormalisedText(snippet, lookup)
 		if err := vars.stream.Send(entity); err != nil {
 			return err
 		}
@@ -107,20 +115,19 @@ func (r *recogniser) findOrQueueSnippet(vars *requestVars, token *pb.Snippet) er
 		// Not in local cache.
 		// Queue the redis "GET" in the pipe and set the cache value to an empty db.Lookup
 		// (so that future equivalent tokens will be a cache miss).
-		vars.pipe.Get(token)
-		vars.tokenCache[token] = &cache.Lookup{}
+		vars.pipe.Get(snippet)
+		vars.snippetCache[snippet] = &cache.Lookup{}
 	}
 	return nil
 }
 
-func (r *recogniser) initializeRequest(stream pb.Recognizer_RecognizeServer) *requestVars {
+func (r *recogniser) initializeRequest(stream pb.Recognizer_GetStreamServer) *requestVars {
 	return &requestVars{
-		tokenCache:       make(map[*pb.Snippet]*cache.Lookup, config.PipelineSize),
-		tokenCacheMisses: make([]*pb.Snippet, config.PipelineSize),
-		snippetHistory:   []*pb.Snippet{},
-		tokenHistory:     []string{},
-		stream:           stream,
-		pipe:             r.remoteCache.NewGetPipeline(config.PipelineSize),
+		snippetCache:       make(map[*pb.Snippet]*cache.Lookup, config.PipelineSize),
+		snippetCacheMisses: make([]*pb.Snippet, config.PipelineSize),
+		snippetHistory:     []*pb.Snippet{},
+		stream:             stream,
+		pipe:               r.remoteCache.NewGetPipeline(config.PipelineSize),
 	}
 }
 
@@ -133,14 +140,9 @@ func (r *recogniser) runPipeline(vars *requestVars, onResult func(snippet *pb.Sn
 }
 
 func (r *recogniser) retryCacheMisses(vars *requestVars) error {
-	for _, token := range vars.tokenCacheMisses {
-		if lookup := vars.tokenCache[token]; lookup != nil {
-			entity := &pb.RecognizedEntity{
-				Entity:      token.GetToken(),
-				Position:    token.GetOffset(),
-				Dictionary:  lookup.Dictionary,
-				Identifiers: lookup.Identifiers,
-			}
+	for _, snippet := range vars.snippetCacheMisses {
+		if lookup := vars.snippetCache[snippet]; lookup != nil {
+			entity := newEntityWithNormalisedText(snippet, lookup)
 			if err := vars.stream.Send(entity); err != nil {
 				return err
 			}
@@ -149,13 +151,13 @@ func (r *recogniser) retryCacheMisses(vars *requestVars) error {
 	return nil
 }
 
-func (r *recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
+func (r *recogniser) GetStream(stream pb.Recognizer_GetStreamServer) error {
 	vars := r.initializeRequest(stream)
 	log.Info().Msg("received request")
 	onResult := r.newResultHandler(vars)
 
 	for {
-		token, err := stream.Recv()
+		snippet, err := stream.Recv()
 		if err == io.EOF {
 			// Number of tokens is unlikely to be a multiple of the pipeline size. There will still be tokens on the
 			// pipeline. Execute it now, then break.
@@ -169,13 +171,13 @@ func (r *recogniser) Recognize(stream pb.Recognizer_RecognizeServer) error {
 			return err
 		}
 
-		compoundTokens, skip := getCompoundSnippets(vars, token)
+		compoundSnippets, skip := getCompoundSnippets(vars, snippet)
 		if skip {
 			continue
 		}
 
-		for _, compoundToken := range compoundTokens {
-			if err := r.findOrQueueSnippet(vars, compoundToken); err != nil {
+		for _, compoundSnippet := range compoundSnippets {
+			if err := r.findOrQueueSnippet(vars, compoundSnippet); err != nil {
 				return err
 			}
 		}

@@ -7,7 +7,7 @@ PROTO_GEN_GO_GRPC := $(shell command -v protoc-gen-go-grpc 2> /dev/null)
 # Makes a copy of all the example config to put gitignored config files in the default location.
 .PHONY: config
 config:
-	for FILE in config/*.example.*; do cp $$FILE $$(echo $$FILE | sed 's/\.example//'); done
+	for FILE in $(shell find config/* -name *.example.*); do cp $$FILE $$(echo $$FILE | sed 's/\.example//'); done
 
 # Check for go, error if not present and link to install instructions.
 .PHONY: require-go
@@ -31,7 +31,7 @@ endif
 # Generates all mocks with mockery.
 .PHONY: mocks
 mocks: require-mockery
-	mockery --all --case underscore --output ./go/gen/mocks
+	mockery --all --case underscore --output ./go/gen/mocks --keeptree --dir go
 
 # Check for protoc and plugins, error if not present and link to install instructions.
 .PHONY: require-protoc
@@ -59,4 +59,4 @@ run: build
 
 .PHONY: format
 format: require-go
-	dirs=$$(go list -f {{.Dir}} ./...) && for d in $$dirs; do goimports -w $$d/*.go; done
+	find ./go -type f -name '*.go' -not -path "./go/gen/*" -exec ./scripts/goimports.sh {} \;

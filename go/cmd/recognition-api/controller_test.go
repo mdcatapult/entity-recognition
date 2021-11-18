@@ -1,19 +1,23 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks"
+	mock_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks/lib/recogniser"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/testhelpers"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
+	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/html"
 )
 
 type ControllerSuite struct {
@@ -25,10 +29,14 @@ func TestControllerSuite(t *testing.T) {
 	suite.Run(t, new(ControllerSuite))
 }
 
+func (s *ControllerSuite) SetupSuite() {
+	s.htmlReader = html.SnippetReader{}
+}
+
 func (s *ControllerSuite) Test_controller_HTMLToText() {
-	acetylcarnitineHTML, err := os.Open("resources/acetylcarnitine.html")
+	acetylcarnitineHTML, err := os.Open("../../resources/acetylcarnitine.html")
 	s.Require().Nil(err)
-	acetylcarnitineRawFile, err := os.Open("resources/acetylcarnitine.txt")
+	acetylcarnitineRawFile, err := os.Open("../../resources/acetylcarnitine.txt")
 	s.Require().Nil(err)
 	acetylcarnitineRAWBytes, err := ioutil.ReadAll(acetylcarnitineRawFile)
 	s.Require().Nil(err)
@@ -60,9 +68,9 @@ func (s *ControllerSuite) Test_controller_HTMLToText() {
 }
 
 func (s *ControllerSuite) Test_controller_TokenizeHTML() {
-	acetylcarnitineHTML, err := os.Open("resources/acetylcarnitine.html")
+	acetylcarnitineHTML, err := os.Open("../../resources/acetylcarnitine.html")
 	s.Require().Nil(err)
-	acetylcarnitineTokensFile, err := os.Open("resources/acetylcarnitine-tokens.json")
+	acetylcarnitineTokensFile, err := os.Open("../../resources/acetylcarnitine-tokens.json")
 	s.Require().Nil(err)
 	acetylcarnitineTokensBytes, err := ioutil.ReadAll(acetylcarnitineTokensFile)
 	s.Require().Nil(err)
@@ -95,51 +103,58 @@ func (s *ControllerSuite) Test_controller_TokenizeHTML() {
 }
 
 func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
-	buf := bytes.NewBuffer([]byte("<p>hello my name is jeff</p>"))
-	mockRecognizer_RecognizeClient := testhelpers.NewMockRecognizeClientStream(
-		testhelpers.Snip("hello", 3),
-		testhelpers.Snip("my", 9),
-		testhelpers.Snip("name", 12),
-		testhelpers.Snip("is", 17),
-		testhelpers.Snip("jeff", 20),
-	)
-	foundEntity := &pb.RecognizedEntity{
-		Entity:      "found entity",
-		Position:    2312,
-		Dictionary:  "test",
-		Identifiers: map[string]string{"many": "", "things": ""},
-	}
-	mockRecognizer_RecognizeClient.On("Recv").Return(foundEntity, nil).Once()
-	mockRecognizer_RecognizeClient.On("Recv").Return(nil, io.EOF).Once()
-
-	mockRecognizerClient := &mocks.RecognizerClient{}
-	mockRecognizerClient.On("Recognize", mock.AnythingOfType("*context.emptyCtx")).Return(mockRecognizer_RecognizeClient, nil).Once()
-	s.controller.clients = []pb.RecognizerClient{mockRecognizerClient}
-
-	type args struct {
-		reader io.Reader
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    []*pb.RecognizedEntity
-		wantErr error
-	}{
+	foundEntities := []*pb.Entity{
 		{
-			name: "happy path",
-			args: args{
-				reader: buf,
-			},
-			want:    []*pb.RecognizedEntity{foundEntity},
-			wantErr: nil,
+			Name:        "found entity",
+			Position:    2312,
+			Recogniser:  "test",
+			Identifiers: map[string]string{"many": "", "things": ""},
 		},
 	}
-	for _, tt := range tests {
-		s.T().Log(tt.name)
-		got, gotErr := s.controller.RecognizeInHTML(tt.args.reader)
-		s.ElementsMatch(tt.want, got)
-		s.Equal(tt.wantErr, gotErr)
+
+	sentSnippet := &pb.Snippet{
+		Text:   "found entity\n",
+		Offset: 3,
+		Xpath:  "/p",
 	}
-	mockRecognizerClient.AssertExpectations(s.T())
-	mockRecognizer_RecognizeClient.AssertExpectations(s.T())
+
+	reader := strings.NewReader("<p>found entity</p>")
+
+	// The mock recogniser is a little complicated so read carefully!
+	mockRecogniser := &mock_recogniser.Client{}
+	mockRecogniser.On("Recognise",
+		// Expected arguments
+		mock.AnythingOfType("<-chan snippet_reader.Value"),
+		lib.RecogniserOptions{},
+		mock.AnythingOfType("*sync.WaitGroup"),
+	).Return(
+		// Don't error.
+		nil,
+	).Run(func(args mock.Arguments) {
+		// The controller blocks until the recognisers receive the snippet_reader.Values that are being read from the
+		// html reader. This is because we are using unbuffered channels. Therefore, our mocked recogniser needs to
+		// listen on the channel and receive the values. We also need to listen for these messages in a separate
+		// goroutine so that our replacement function doesn't block before read the html! While reading, use this
+		// opportunity to make assertions about the snippets that are being sent.
+		go func() {
+			wg := args[2].(*sync.WaitGroup)
+			wg.Add(1)
+			err := snippet_reader.ReadChannelWithCallback(args[0].(<-chan snippet_reader.Value), func(snip *pb.Snippet) error {
+				s.Equal(sentSnippet, snip)
+				return nil
+			})
+			s.Nil(err)
+			wg.Done()
+		}()
+	})
+	mockRecogniser.On("Err").Return(nil)
+	mockRecogniser.On("Result").Return(foundEntities)
+	s.controller.recognisers = map[string]recogniser.Client{"mock": mockRecogniser}
+
+	opts := map[string]lib.RecogniserOptions{
+		"mock": {},
+	}
+	entities, err := s.controller.RecognizeInHTML(reader, opts)
+	s.ElementsMatch(foundEntities, entities)
+	s.Nil(err)
 }

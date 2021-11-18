@@ -10,8 +10,7 @@ func NewNativeReader() Reader {
 	return nativeReader{}
 }
 
-type nativeReader struct {}
-
+type nativeReader struct{}
 
 func (p nativeReader) Read(file *os.File) (chan Entry, chan error) {
 	entries := make(chan Entry)

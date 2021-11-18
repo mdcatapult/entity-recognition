@@ -1,10 +1,14 @@
 package main
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 
 	"github.com/gin-gonic/gin"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 )
 
 type HttpError struct {
@@ -34,7 +38,36 @@ func (s server) RegisterRoutes(r *gin.Engine) {
 }
 
 func (s server) RecognizeInHTML(c *gin.Context) {
-	entities, err := s.controller.RecognizeInHTML(c.Request.Body)
+	requestedRecognisers, ok := c.GetQueryArray("recogniser")
+	if !ok {
+		handleError(c, NewHttpError(400, errors.New("you must set at least one recogniser query parameter")))
+		return
+	}
+
+	recognisers := make(map[string]lib.RecogniserOptions, len(requestedRecognisers))
+	for _, recogniser := range requestedRecognisers {
+		recognisers[recogniser] = lib.RecogniserOptions{}
+
+		header := c.GetHeader(fmt.Sprintf("x-%s", recogniser))
+		if header == "" {
+			continue
+		}
+
+		b, err := base64.StdEncoding.DecodeString(header)
+		if err != nil {
+			handleError(c, NewHttpError(400, errors.New("invalid request header - must be base64 encoded")))
+			return
+		}
+
+		var opts lib.RecogniserOptions
+		if err := json.Unmarshal(b, &opts); err != nil {
+			handleError(c, NewHttpError(400, errors.New("invalid request header - must be valid json (base64 encoded)")))
+			return
+		}
+		recognisers[recogniser] = opts
+	}
+
+	entities, err := s.controller.RecognizeInHTML(c.Request.Body, recognisers)
 	if err != nil {
 		handleError(c, err)
 		return
