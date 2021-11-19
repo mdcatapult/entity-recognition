@@ -56,7 +56,6 @@ func (s server) GetRecognisers(c *gin.Context) {
 		}
 	}
 
-
 	recognisers := make(map[string]lib.RecogniserOptions, len(requestedRecognisers))
 	for _, recogniser := range requestedRecognisers {
 		recognisers[recogniser] = lib.RecogniserOptions{}

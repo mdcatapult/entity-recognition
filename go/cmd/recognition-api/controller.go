@@ -21,7 +21,7 @@ const (
 )
 
 var allowedContentTypeEnumMap = map[string]AllowedContentType{
-	"text/html": contentTypeHTML,
+	"text/html":  contentTypeHTML,
 	"text/plain": contentTypeRawtext,
 }
 
