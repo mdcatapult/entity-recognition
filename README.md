@@ -4,7 +4,7 @@ This is intended to be a monorepo [*monorepo*](https://www.atlassian.com/git/tut
 
 ## Overview
 There are currently 4 primary applications:
-1. **The recognition API**. This HTTP REST API calls out to the recognizer gRPC recognizer services. (See the [overview diagram](#diagrams)).
+1. **The recognition API**. This HTTP REST API calls out to the recognizer gRPC and HTTP recognizer services. (See the [overview diagram](#diagrams) and the [API docs](./go/cmd/recognition-api/api-doc.md)).
 2. **The regexer recognizer**. This simple gRPC recognizer service receives a stream of tokens and returns a stream of entities based on a regex match.
 3. **The dictionary recognizer**. This gRPC recognizer service recieves a stream of tokens and looks them up in a backend database, returning a stream of entities based on the result. (This can be complicated by a number of things, see the [diagram](#diagrams))
 4. **The dictionary importer**. This app reads a file line by line, parses it, and upserts it to a backend database that the dictionary recognizer is compatible with.
@@ -26,12 +26,12 @@ make run
 
 You can also just press the play button next to a main function in intellij :smiley:.
 ### Test
-Grab some html from a website (ctrl+U in chrome). Make a post request to `localhost:8080/html/text`, `localhost:8080/html/tokens`, or `localhost:8080/html/entities` with the html in the body of the request.
+Grab some html from a website (ctrl+U in chrome). Make a post request to `localhost:8080/text`, `localhost:8080/tokens`, or `localhost:8080/entities` with the html in the body of the request.
 
 For example:
 ```bash
 curl -L https://en.wikipedia.org/wiki/Acetylcarnitine > /tmp/acetylcarnitine.html
-curl -XPOST --data-binary "@/tmp/acetylcarnitine.html" 'http://localhost:8080/html/entities?recogniser=dictionary'
+curl -XPOST -H "Content-Type: text/html" --data-binary "@/tmp/acetylcarnitine.html" 'http://localhost:8080/entities?recogniser=dictionary'
 ```
 
 ### Code Generation

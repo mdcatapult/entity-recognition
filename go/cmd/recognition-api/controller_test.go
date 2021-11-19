@@ -96,7 +96,7 @@ func (s *ControllerSuite) Test_controller_TokenizeHTML() {
 	}
 	for _, tt := range tests {
 		s.T().Log(tt.name)
-		tokens, err := s.controller.TokenizeHTML(tt.args.reader)
+		tokens, err := s.controller.Tokenize(tt.args.reader, contentTypeHTML)
 		s.Equal(tt.wantErr, err)
 		s.Equal(fmt.Sprint(tt.want), fmt.Sprint(tokens))
 	}
@@ -154,7 +154,7 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 	opts := map[string]lib.RecogniserOptions{
 		"mock": {},
 	}
-	entities, err := s.controller.RecognizeInHTML(reader, opts)
+	entities, err := s.controller.Recognize(reader, contentTypeHTML, opts)
 	s.ElementsMatch(foundEntities, entities)
 	s.Nil(err)
 }
