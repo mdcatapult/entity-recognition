@@ -26,12 +26,12 @@ make run
 
 You can also just press the play button next to a main function in intellij :smiley:.
 ### Test
-Grab some html from a website (ctrl+U in chrome). Make a post request to `localhost:8080/html/text`, `localhost:8080/html/tokens`, or `localhost:8080/html/entities` with the html in the body of the request.
+Grab some html from a website (ctrl+U in chrome). Make a post request to `localhost:8080/text`, `localhost:8080/tokens`, or `localhost:8080/entities` with the html in the body of the request.
 
 For example:
 ```bash
 curl -L https://en.wikipedia.org/wiki/Acetylcarnitine > /tmp/acetylcarnitine.html
-curl -XPOST --data-binary "@/tmp/acetylcarnitine.html" 'http://localhost:8080/html/entities?recogniser=dictionary'
+curl -XPOST -H "Content-Type: text/html" --data-binary "@/tmp/acetylcarnitine.html" 'http://localhost:8080/entities?recogniser=dictionary'
 ```
 
 ### Code Generation

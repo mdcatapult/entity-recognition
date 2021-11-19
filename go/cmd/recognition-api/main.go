@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/text"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -82,6 +83,7 @@ func main() {
 	c := controller{
 		recognisers: recogniserClients,
 		htmlReader:  html.SnippetReader{},
+		textReader: text.SnippetReader{},
 		blacklist:   loadBlacklist(config.Blacklist),
 	}
 

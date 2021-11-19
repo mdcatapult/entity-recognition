@@ -32,17 +32,30 @@ type server struct {
 }
 
 func (s server) RegisterRoutes(r *gin.Engine) {
-	r.POST("/html/text", validateBody, s.HTMLToText)
-	r.POST("/html/tokens", validateBody, s.TokenizeHTML)
-	r.POST("/html/entities", validateBody, s.RecognizeInHTML)
+	r.POST("/text", validateBody, s.HTMLToText)
+	r.POST("/tokens", validateBody, s.Tokenize)
+	r.POST("/entities", validateBody, s.GetRecognisers, s.Recognize)
+	r.GET("/recognisers", s.ListRecognisers)
 }
 
-func (s server) RecognizeInHTML(c *gin.Context) {
-	requestedRecognisers, ok := c.GetQueryArray("recogniser")
-	if !ok {
-		handleError(c, NewHttpError(400, errors.New("you must set at least one recogniser query parameter")))
-		return
+func (s server) ListRecognisers(c *gin.Context) {
+	c.JSON(200, s.controller.ListRecognisers())
+}
+
+func (s server) GetRecognisers(c *gin.Context) {
+
+	var requestedRecognisers []string
+	allRecognisersFlag, ok := c.GetQuery("allRecognisers")
+	if ok && allRecognisersFlag == "true" {
+		requestedRecognisers = s.controller.ListRecognisers()
+	} else {
+		requestedRecognisers, ok = c.GetQueryArray("recogniser")
+		if !ok {
+			handleError(c, NewHttpError(400, errors.New("you must set at least one recogniser query parameter")))
+			return
+		}
 	}
+
 
 	recognisers := make(map[string]lib.RecogniserOptions, len(requestedRecognisers))
 	for _, recogniser := range requestedRecognisers {
@@ -67,7 +80,24 @@ func (s server) RecognizeInHTML(c *gin.Context) {
 		recognisers[recogniser] = opts
 	}
 
-	entities, err := s.controller.RecognizeInHTML(c.Request.Body, recognisers)
+	c.Set("recognisers", recognisers)
+	c.Next()
+}
+
+func (s server) Recognize(c *gin.Context) {
+	r, ok := c.Get("recognisers")
+	if !ok {
+		handleError(c, errors.New("recognisers are unset"))
+	}
+
+	recognisers := r.(map[string]lib.RecogniserOptions)
+
+	contentType, ok := allowedContentTypeEnumMap[c.ContentType()]
+	if !ok {
+		handleError(c, NewHttpError(400, errors.New("invalid content type - must be text/html or text/plain")))
+	}
+
+	entities, err := s.controller.Recognize(c.Request.Body, contentType, recognisers)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -76,8 +106,13 @@ func (s server) RecognizeInHTML(c *gin.Context) {
 	c.JSON(200, entities)
 }
 
-func (s server) TokenizeHTML(c *gin.Context) {
-	tokens, err := s.controller.TokenizeHTML(c.Request.Body)
+func (s server) Tokenize(c *gin.Context) {
+	contentType, ok := allowedContentTypeEnumMap[c.ContentType()]
+	if !ok {
+		handleError(c, NewHttpError(400, errors.New("invalid content type - must be text/html or text/plain")))
+	}
+
+	tokens, err := s.controller.Tokenize(c.Request.Body, contentType)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -87,6 +122,11 @@ func (s server) TokenizeHTML(c *gin.Context) {
 }
 
 func (s server) HTMLToText(c *gin.Context) {
+	contentType := allowedContentTypeEnumMap[c.ContentType()]
+	if contentType != contentTypeHTML {
+		handleError(c, NewHttpError(400, errors.New("invalid content type - must be text/html")))
+	}
+
 	data, err := s.controller.HTMLToText(c.Request.Body)
 	if err != nil {
 		handleError(c, err)
