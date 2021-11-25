@@ -1,7 +1,6 @@
 package lib
 
 import (
-	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -92,9 +91,6 @@ func InitializeConfig(defaultPath string, defaultConfig map[string]interface{}, 
 	if err := viper.Unmarshal(targetStruct); err != nil {
 		return err
 	}
-
-	fmt.Println(viper.AllSettings())
-	fmt.Println(targetStruct)
 
 	return nil
 }

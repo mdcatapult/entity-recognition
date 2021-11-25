@@ -52,21 +52,23 @@ func TestMain(m *testing.M) {
 }
 
 func TestInitializeConfigFromPath(t *testing.T) {
+	resetFlags()
+
 	var parsedConfig config
 	err := InitializeConfig(configFileName, map[string]interface{}{}, &parsedConfig)
 
 	assert.NoError(t, err)
-	assert.Equal(t, "configValue1", parsedConfig.ConfigKey1)
-	assert.Equal(t, "configValue3", parsedConfig.ConfigKey2.ConfigKey3)
+	assert.Equal(t, configValue1, parsedConfig.ConfigKey1)
+	assert.Equal(t, configValue3, parsedConfig.ConfigKey2.ConfigKey3)
 }
 
 func TestInitializeConfigEnvOverride(t *testing.T) {
+	resetFlags()
+
 	overrideValue := "anewvalue"
 	os.Setenv("CONFIGKEY1", overrideValue)
 	os.Setenv("CONFIGKEY2_CONFIGKEY3", overrideValue)
 	os.Setenv("KEYNOTINCONFIGMAP", overrideValue)
-
-	pflag.CommandLine = pflag.NewFlagSet(os.Args[0], pflag.ExitOnError)
 
 	var parsedConfig config
 	err := InitializeConfig(configFileName, map[string]interface{}{}, &parsedConfig)
@@ -80,9 +82,10 @@ func TestInitializeConfigEnvOverride(t *testing.T) {
 }
 
 func TestInitializeConfigEmptyPath(t *testing.T) {
+	resetFlags()
+
 	overrideValue := "some value"
 	os.Setenv("CONFIGKEY1", overrideValue)
-	pflag.CommandLine = pflag.NewFlagSet(os.Args[0], pflag.ExitOnError)
 
 	var parsedConfig config
 	err := InitializeConfig("", map[string]interface{}{}, &parsedConfig)
@@ -90,4 +93,8 @@ func TestInitializeConfigEmptyPath(t *testing.T) {
 
 	// when config path is empty, viper will listen to env vars
 	assert.Equal(t, overrideValue, parsedConfig.ConfigKey1)
+}
+
+func resetFlags() {
+	pflag.CommandLine = pflag.NewFlagSet(os.Args[0], pflag.ExitOnError)
 }
