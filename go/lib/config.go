@@ -17,21 +17,28 @@ type BaseConfig struct {
 }
 
 /**
-	InitializeConfig standardises config initialization across all apps. defaultPath is the default relative
+	InitializeConfig standardises config initialization across all apps.
+
+	Usage:
+
+	Config can be specified in a yml file. By default this is located at the defaultPath argument, but can be overridden
+	with the --config flag, which should contain a filepath. For example, if defaultPath is "./config/dictionary.yml",
+	then a k8s config map with a dictionary.yml key could be mounted to $(pwd)/config so that the config map
+	is available at the path.
+
+	Keys which exist on defaultConfig but NOT on the config yaml will also be used.
+
+	Env vars can be used to overwrite config keys IF the config yaml is empty OR the env var has the same name
+	as the key you want to overwrite (the env var must be uppercased).
+
+	Args:
+	defaultPath is the default relative
 	or absolute path to the config file. This is overridden with the --config flag.
 
 	defaultConfig is the default config, defined as a map[string]interface{} within the code itself.
 	It should be defined close to the "main" function and should be set up for local development.
 
 	targetStruct should be a pointer to a struct which the config can be unmarshalled to.
-
-	Keys which exist in the config map will be overridden by env vars which have the same, but capitalised name.
-	e.g. if "myKey" is in the config map, it will be overridden by $MYKEY.
-	Therefore for env vars to work, either they must already have a corresponding key in the config map OR config
-	map must be empty.
-
-	The config map is loaded from the `defaultPath` argument, but this can be overridden at runtime using
-	the --config flag.
 **/
 
 func InitializeConfig(defaultPath string, defaultConfig map[string]interface{}, targetStruct interface{}) error {
@@ -64,8 +71,8 @@ func InitializeConfig(defaultPath string, defaultConfig map[string]interface{}, 
 	viper.SetConfigName(strings.TrimSuffix(filepath.Base(configFile), filepath.Ext(configFile)))
 	viper.AddConfigPath(filepath.Dir(configFile))
 
-	// tell viper to prefer env vars over config keys. An env var must ALSO exist as a key in the
-	// config map into viper for viper to read the env var.
+	// tell viper to prefer env vars over config keys. An env var must ALSO exist as a key in
+	// viper's config for viper to be able to read the env var.
 	viper.AutomaticEnv()
 
 	// rewrite env var names to use "_" instead of "." when reading env vars
