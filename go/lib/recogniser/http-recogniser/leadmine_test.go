@@ -118,3 +118,113 @@ func (s *leadmineSuite) TestUrlWithOpts() {
 		s.Equal(tt.expected, actual)
 	}
 }
+
+func (s *leadmineSuite) Test_CorrectLeadmineEntityOffsets() {
+	for _, test := range []struct {
+		name string
+		entities []builderEntity
+		text string
+		expected []builderEntity
+	} {
+		{
+			name: "text with nothing special",
+			text: "entity",
+			entities: []builderEntity{
+				builderEntity{LeadmineEntity{}}.WithText("entity"),
+			},
+			expected: []builderEntity{
+				builderEntity{}.WithText("entity").WithEnd(6),
+			},
+		},
+		{
+			name: "empty entityText",
+			text: "",
+			entities: []builderEntity{
+				builderEntity{LeadmineEntity{}}.WithText(""),
+			},
+			expected: []builderEntity{
+				builderEntity{}.WithText("").WithEnd(0),
+			},
+		},
+		{
+			name: "text with '-' ",
+			text: "an-entity",
+			entities: []builderEntity{
+				builderEntity{LeadmineEntity{}}.WithText("an-entity"),
+			},
+			expected: []builderEntity{
+				builderEntity{}.WithText("an-entity").WithEnd(9),
+			},
+		},
+		{
+			name: "text with multiple '-' ",
+			text: "an-entity-text",
+			entities: []builderEntity{
+				builderEntity{LeadmineEntity{}}.WithText("an-entity-text"),
+			},
+			expected: []builderEntity{
+				builderEntity{}.WithText("an-entity-text").WithEnd(14),
+			},
+		},
+		{
+			name: "longer search text than entity text",
+			text: "entityText",
+			entities: []builderEntity{
+				builderEntity{LeadmineEntity{}}.WithText("entity"),
+			},
+			expected: []builderEntity{
+				builderEntity{}.WithText("entity").WithEnd(6),
+			},
+		},
+		{
+			name: "all special chars",
+			text: "+++---",
+			entities: []builderEntity{
+				builderEntity{LeadmineEntity{}}.WithText("+++---"),
+			},
+			expected: []builderEntity{
+				builderEntity{}.WithText("+++---").WithEnd(6),
+			},
+		},
+	}{
+
+		res, err := correctLeadmineEntityOffsets(&LeadmineResponse{
+			Created:  "",
+			Entities: getEntityPtrs(test.entities),
+		}, test.text)
+
+		s.NoError(err, test.name)
+		s.Equal(getEntities(test.expected), res, test.name)
+	}
+}
+
+type builderEntity struct {
+	LeadmineEntity
+}
+
+func (b builderEntity) WithEnd(end int) builderEntity{
+	b.End = end
+	b.EndInNormalizedDoc = end
+	return b
+}
+
+func (b builderEntity) WithText(text string) builderEntity {
+	b.EntityText = text
+	return b
+}
+
+func getEntities(b []builderEntity) []LeadmineEntity {
+	res := make([]LeadmineEntity, len(b))
+	for i, be := range b {
+		res[i] = be.LeadmineEntity
+	}
+	return res
+}
+
+func getEntityPtrs(b []builderEntity) []*LeadmineEntity {
+	res := make([]*LeadmineEntity, len(b))
+	for i, be := range b {
+		res[i] = &be.LeadmineEntity
+	}
+	return res
+}
