@@ -186,6 +186,16 @@ func (s *leadmineSuite) Test_CorrectLeadmineEntityOffsets() {
 				builderEntity{}.WithText("+++---").WithEnd(6),
 			},
 		},
+		{
+			name: "(+)-(Z)-antazirine",
+			text: "(+)-(Z)-antazirine",
+			entities: []builderEntity{
+				builderEntity{LeadmineEntity{}}.WithText("(+)-(Z)-antazirine"),
+			},
+			expected: []builderEntity{
+				builderEntity{}.WithText("(+)-(Z)-antazirine").WithEnd(18),
+			},
+		},
 	}{
 
 		res, err := correctLeadmineEntityOffsets(&LeadmineResponse{
