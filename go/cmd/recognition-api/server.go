@@ -159,7 +159,7 @@ func handleError(c *gin.Context, err error) {
 
 func abort(c *gin.Context, code int, err error) {
 	switch {
-	case code < 500:
+	case code <= 500:
 		c.JSON(code, map[string]interface{}{
 			"status":  code,
 			"message": err.Error(),
