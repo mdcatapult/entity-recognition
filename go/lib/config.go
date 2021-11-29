@@ -10,6 +10,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+const configFlag = "config"
+
 type BaseConfig struct {
 	LogLevel string `mapstructure:"log_level"`
 }
@@ -27,12 +29,15 @@ type BaseConfig struct {
 	e.g. if "myKey" is in the config map, it will be overridden by $MYKEY.
 	Therefore for env vars to work, either they must already have a corresponding key in the config map OR config
 	map must be empty.
+
+	The config map is loaded from the `defaultPath` argument, but this can be overridden at runtime using
+	the --config flag.
 **/
 
 func InitializeConfig(defaultPath string, defaultConfig map[string]interface{}, targetStruct interface{}) error {
 
-	// load the --config flag argument into viper
-	pflag.String("config", defaultPath, "The config file path.")
+	// load the config flag argument into viper
+	pflag.String(configFlag, defaultPath, "The config file path.")
 	pflag.Parse()
 
 	err := viper.BindPFlags(pflag.CommandLine)
@@ -42,6 +47,7 @@ func InitializeConfig(defaultPath string, defaultConfig map[string]interface{}, 
 
 	// load the config filepath from viper
 	configFile := viper.GetString("config")
+
 	if !filepath.IsAbs(configFile) {
 		configFile, err = filepath.Abs(configFile)
 		if err != nil {
@@ -59,7 +65,7 @@ func InitializeConfig(defaultPath string, defaultConfig map[string]interface{}, 
 	viper.AddConfigPath(filepath.Dir(configFile))
 
 	// tell viper to prefer env vars over config keys. An env var must ALSO exist as a key in the
-	// config map for viper to read it.
+	// config map into viper for viper to read the env var.
 	viper.AutomaticEnv()
 
 	// rewrite env var names to use "_" instead of "." when reading env vars

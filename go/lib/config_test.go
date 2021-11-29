@@ -31,23 +31,13 @@ func TestMain(m *testing.M) {
 		},
 	}
 
-	file, err := ioutil.TempFile(".", "*.yml")
+	filename, err := createConfigFile(configMap, ".", "*.yml")
 	if err != nil {
-		panic(err)
-	}
-	configFileName = file.Name()
-
-	data, err := yaml.Marshal(&configMap)
-	if err != nil {
-		panic(err)
-	}
-
-	if err := ioutil.WriteFile(configFileName, data, 0); err != nil {
 		panic(err)
 	}
 
 	code := m.Run()
-	os.Remove(configFileName)
+	os.Remove(filename)
 	os.Exit(code)
 }
 
@@ -93,6 +83,50 @@ func TestInitializeConfigEmptyPath(t *testing.T) {
 
 	// when config path is empty, viper will listen to env vars
 	assert.Equal(t, overrideValue, parsedConfig.ConfigKey1)
+
+	os.Unsetenv("CONFIGKEY1")
+}
+
+func TestInitializeConfigWithFlag(t *testing.T) {
+	resetFlags()
+
+	overrideConfigPath := "*.yml"
+	pflag.Set(configFlag, overrideConfigPath)
+	overrideValue := "this is overridden!"
+	overrideConfigMap := map[string]interface{}{
+		"configkey1": overrideValue,
+	}
+
+	filename, err := createConfigFile(overrideConfigMap, ".", overrideConfigPath)
+	if err != nil {
+		panic(err)
+	}
+
+	var parsedConfig config
+	err = InitializeConfig(configFileName, map[string]interface{}{}, &parsedConfig)
+
+	assert.NoError(t, err)
+	assert.Equal(t, overrideValue, parsedConfig.ConfigKey1)
+
+	os.Remove(filename)
+}
+
+func createConfigFile(configMap map[string]interface{}, path, name string) (fileName string, err error) {
+	file, err := ioutil.TempFile(path, name)
+	if err != nil {
+		return"", err
+	}
+	configFileName = file.Name()
+
+	data, err := yaml.Marshal(&configMap)
+	if err != nil {
+		panic(err)
+	}
+
+	if err := ioutil.WriteFile(configFileName, data, 0); err != nil {
+		return "", err
+	}
+	return file.Name(), nil
 }
 
 func resetFlags() {
