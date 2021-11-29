@@ -91,7 +91,7 @@ func TestInitializeConfigWithFlag(t *testing.T) {
 	resetFlags()
 
 	overrideConfigPath := "*.yml"
-	pflag.Set(configFlag, overrideConfigPath)
+	_ = pflag.Set(configFlag, overrideConfigPath)
 	overrideValue := "this is overridden!"
 	overrideConfigMap := map[string]interface{}{
 		"configkey1": overrideValue,
