@@ -130,70 +130,70 @@ func (s *leadmineSuite) Test_CorrectLeadmineEntityOffsets() {
 			name: "text with nothing special",
 			text: "entity",
 			entities: []builderEntity{
-				builderEntity{LeadmineEntity{}}.WithText("entity"),
+				builderEntity{LeadmineEntity{}}.withText("entity"),
 			},
 			expected: []builderEntity{
-				builderEntity{}.WithText("entity").WithEnd(6),
+				builderEntity{}.withText("entity").withEnd(6),
 			},
 		},
 		{
 			name: "empty entityText",
 			text: "",
 			entities: []builderEntity{
-				builderEntity{LeadmineEntity{}}.WithText(""),
+				builderEntity{LeadmineEntity{}}.withText(""),
 			},
 			expected: []builderEntity{
-				builderEntity{}.WithText("").WithEnd(0),
+				builderEntity{}.withText("").withEnd(0),
 			},
 		},
 		{
 			name: "text with '-' ",
 			text: "an-entity",
 			entities: []builderEntity{
-				builderEntity{LeadmineEntity{}}.WithText("an-entity"),
+				builderEntity{LeadmineEntity{}}.withText("an-entity"),
 			},
 			expected: []builderEntity{
-				builderEntity{}.WithText("an-entity").WithEnd(9),
+				builderEntity{}.withText("an-entity").withEnd(9),
 			},
 		},
 		{
 			name: "text with multiple '-' ",
 			text: "an-entity-text",
 			entities: []builderEntity{
-				builderEntity{LeadmineEntity{}}.WithText("an-entity-text"),
+				builderEntity{LeadmineEntity{}}.withText("an-entity-text"),
 			},
 			expected: []builderEntity{
-				builderEntity{}.WithText("an-entity-text").WithEnd(14),
+				builderEntity{}.withText("an-entity-text").withEnd(14),
 			},
 		},
 		{
 			name: "longer search text than entity text",
 			text: "entityText",
 			entities: []builderEntity{
-				builderEntity{LeadmineEntity{}}.WithText("entity"),
+				builderEntity{LeadmineEntity{}}.withText("entity"),
 			},
 			expected: []builderEntity{
-				builderEntity{}.WithText("entity").WithEnd(6),
+				builderEntity{}.withText("entity").withEnd(6),
 			},
 		},
 		{
 			name: "all special chars",
 			text: "+++---",
 			entities: []builderEntity{
-				builderEntity{LeadmineEntity{}}.WithText("+++---"),
+				builderEntity{LeadmineEntity{}}.withText("+++---"),
 			},
 			expected: []builderEntity{
-				builderEntity{}.WithText("+++---").WithEnd(6),
+				builderEntity{}.withText("+++---").withEnd(6),
 			},
 		},
 		{
 			name: "(+)-(Z)-antazirine",
 			text: "(+)-(Z)-antazirine",
 			entities: []builderEntity{
-				builderEntity{LeadmineEntity{}}.WithText("(+)-(Z)-antazirine"),
+				builderEntity{LeadmineEntity{}}.withText("(+)-(Z)-antazirine"),
 			},
 			expected: []builderEntity{
-				builderEntity{}.WithText("(+)-(Z)-antazirine").WithEnd(18),
+				builderEntity{}.withText("(+)-(Z)-antazirine").withEnd(18),
 			},
 		},
 	}{
@@ -212,13 +212,13 @@ type builderEntity struct {
 	LeadmineEntity
 }
 
-func (b builderEntity) WithEnd(end int) builderEntity{
+func (b builderEntity) withEnd(end int) builderEntity{
 	b.End = end
 	b.EndInNormalizedDoc = end
 	return b
 }
 
-func (b builderEntity) WithText(text string) builderEntity {
+func (b builderEntity) withText(text string) builderEntity {
 	b.EntityText = text
 	return b
 }
