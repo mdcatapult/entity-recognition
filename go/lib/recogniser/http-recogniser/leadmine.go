@@ -181,7 +181,8 @@ func correctLeadmineEntityOffsets(leadmineResponse *LeadmineResponse, text strin
 
 		// Only regex for the text (no extra stuff like word boundaries) because
 		// it slows things down considerably.
-		r, err := regexp.Compile(leadmineEntity.EntityText)
+		escapedString := regexp.QuoteMeta(leadmineEntity.EntityText)
+		r, err := regexp.Compile(escapedString)
 		if err != nil {
 			return nil, err
 		}
