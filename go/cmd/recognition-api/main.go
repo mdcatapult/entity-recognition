@@ -87,7 +87,7 @@ func main() {
 		blacklist:   loadBlacklist(config.Blacklist),
 	}
 
-	s := server{controller: c}
+	s := server{controller: &c}
 	s.RegisterRoutes(r)
 	if err := r.Run(fmt.Sprintf(":%d", config.Server.HttpPort)); err != nil {
 		log.Fatal().Err(err).Send()

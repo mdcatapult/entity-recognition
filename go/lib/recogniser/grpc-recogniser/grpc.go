@@ -25,12 +25,17 @@ func New(name string, client pb.RecognizerClient, blacklist blacklist.Blacklist)
 }
 
 type grpcRecogniser struct {
-	Name      string
-	client    pb.RecognizerClient
-	err       error
-	entities  []*pb.Entity
-	stream    pb.Recognizer_GetStreamClient
-	blacklist blacklist.Blacklist
+	Name       string
+	client     pb.RecognizerClient
+	err        error
+	entities   []*pb.Entity
+	stream     pb.Recognizer_GetStreamClient
+	blacklist  blacklist.Blacklist
+	exactMatch bool
+}
+
+func (g *grpcRecogniser) SetExactMatch(exact bool) {
+	g.exactMatch = exact
 }
 
 func (g *grpcRecogniser) Recognise(snipReaderValues <-chan snippet_reader.Value, _ lib.RecogniserOptions, wg *sync.WaitGroup) error {
@@ -95,7 +100,7 @@ func (g *grpcRecogniser) recognise(snipReaderValues <-chan snippet_reader.Value,
 				return err
 			}
 			return nil
-		})
+		}, g.exactMatch)
 	})
 	if err != nil {
 		g.err = err

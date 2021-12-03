@@ -27,6 +27,8 @@ func Tokenize(
 	exactMatch bool,
 ) error {
 
+	fmt.Println("exactMatch", exactMatch)
+
 	segmenter := segment.NewWordSegmenterDirect([]byte(snippet.GetText()))
 	buffer := bytes.NewBuffer([]byte{})
 
