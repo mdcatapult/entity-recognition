@@ -63,7 +63,7 @@ func Test_Tokenise(t *testing.T) {
 		//		Text: "@£$%^βωα*&^νπψ?!@£$%^, ανπψ/!?!?!?",
 		//	},
 		//	expectedText:   []string{"βωα", "νπψ", "ανπψ"},
-		//	expectedOffset: 0,
+		//	expectedOffset: []uint32{5, 11, 23},
 		//	exactMatch: false,
 		//},
 		{
@@ -76,14 +76,35 @@ func Test_Tokenise(t *testing.T) {
 			exactMatch:     false,
 		},
 		{
-			name: "given the input string 'some-text', it should return 1 token with exact match",
+			name: "given the input string 'some-text-', it should return 1 token with exact match",
 			snippet: &pb.Snippet{
-				Text: "some-text",
+				Text: "some-text-",
 			},
-			expectedText:   []string{"some-text"},
+			expectedText:   []string{"some-text-"},
 			expectedOffset: []uint32{0},
 			exactMatch:     true,
 		},
+		{
+			name: "given the input string ' some -text', it should return 1 token with exact match",
+			snippet: &pb.Snippet{
+				Text: " some -text",
+			},
+			expectedText:   []string{"some", "-text"},
+			expectedOffset: []uint32{1, 6},
+			exactMatch:     true,
+		},
+		//{
+		//	name: "given the input string ' some -text', it should return 1 token with non exact match",
+		//	snippet: &pb.Snippet{
+		//		Text: " some -text",
+		//	},
+		//	expectedText:   []string{"some", "-text"},
+		//	expectedOffset: []uint32{1, 6},
+		//	exactMatch:     true,
+		//},
+		//
+
+
 		//{
 		//	name: "given the input string 'some-text', it should return 2 tokens",
 		//	snippet: &pb.Snippet{
