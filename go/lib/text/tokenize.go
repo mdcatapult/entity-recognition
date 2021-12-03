@@ -11,7 +11,7 @@ import (
 
 // Tokenize delimits text by whitespace and executes a callback for every token it
 // finds.
-func Tokenize(snippet *pb.Snippet, onToken func(*pb.Snippet) error) error {
+func Tokenize(snippet *pb.Snippet, onToken func(*pb.Snippet) error, exactMatch bool) error {
 	// segmenter is a utf8 word boundary segmenter. Instead of splitting on all
 	// word boundaries, we check first that the boundary is whitespace.
 	segmenter := segment.NewWordSegmenterDirect([]byte(snippet.GetText()))
@@ -24,20 +24,37 @@ func Tokenize(snippet *pb.Snippet, onToken func(*pb.Snippet) error) error {
 
 		switch tokenType {
 		case 0:
-			// word boundary character
-			if tokenBytes[0] > 32 {
-				// not whitespace
+
+			if exactMatch {
+				// word boundary character
+				if tokenBytes[0] > 32 {
+					// not whitespace
+					if _, err := buf.Write(tokenBytes); err != nil {
+						return err
+					}
+					break
+				} else {
+					// if dash, write to buffer and continue loop
+					if string(tokenBytes[0]) == "-" {
+						if _, err := buf.Write(tokenBytes); err != nil {
+							return err
+						}
+						continue
+					}
+
+				}
+			} else {
 				if _, err := buf.Write(tokenBytes); err != nil {
 					return err
 				}
 				break
 			}
-			// whitespace: read the contents of the buffer into currentToken
-			var err error
-			currentToken, err = buf.ReadBytes(0)
-			if err != nil && err != io.EOF {
-				return err
-			}
+			//// whitespace: read the contents of the buffer into currentToken
+			//var err error
+			//currentToken, err = buf.ReadBytes(0)
+			//if err != nil && err != io.EOF {
+			//	return err
+			//}
 
 		default:
 			// anything but a word boundary (i.e. '-', 'hello')
@@ -45,6 +62,12 @@ func Tokenize(snippet *pb.Snippet, onToken func(*pb.Snippet) error) error {
 			if _, err := buf.Write(tokenBytes); err != nil {
 				return err
 			}
+		}
+
+		var err error
+		currentToken, err = buf.ReadBytes(0)
+		if err != nil && err != io.EOF {
+			return err
 		}
 
 		// if currentToken has contents, create a snippet and execute the callback.
@@ -60,7 +83,7 @@ func Tokenize(snippet *pb.Snippet, onToken func(*pb.Snippet) error) error {
 			}
 
 			// increment the position
-			position += uint32(len(tokenBytes) + len(currentToken))
+			position += uint32(len(tokenBytes)) // + len(currentToken))
 			// reset the currentToken value
 			currentToken = []byte{}
 		}
