@@ -33,16 +33,12 @@ func Tokenize(snippet *pb.Snippet, onToken func(*pb.Snippet) error, exactMatch b
 	// 'text'	add
 	// end		read
 
-
-
 	for segmenter.Segment() {
 		tokenBytes := segmenter.Bytes()
 		tokenType := segmenter.Type()
 
-
-
 		switch tokenType {
-		case 0:
+		case 0: // non alphanumeric
 			if exactMatch {
 				// word boundary character
 				if tokenBytes[0] > 32 {
@@ -50,30 +46,39 @@ func Tokenize(snippet *pb.Snippet, onToken func(*pb.Snippet) error, exactMatch b
 					if _, err := buf.Write(tokenBytes); err != nil {
 						return err
 					}
+					//position += uint32(len(string(tokenBytes)))
+					//fmt.Println("token:", string(tokenBytes), " position:", position)
+
 					break
 				} else { // is whitespace
-					readBufferAndWrite(currentToken, buf, snippet, position, onToken, tokenBytes)
+
+					readBufferAndWriteToken(currentToken, buf, snippet, &position, onToken, tokenBytes)
 				}
 
 			} else {
 				if _, err := buf.Write(tokenBytes); err != nil {
 					return err
 				}
+				//position += uint32(len(string(tokenBytes)))
+				//fmt.Println("token:", string(tokenBytes), " position:", position)
+
 				break
 			}
 
-		default:
+		default: // alphanumeric
 			// anything but a word boundary (i.e. '-', 'hello')
 			// write to buffer
 			if _, err := buf.Write(tokenBytes); err != nil {
 				return err
 			}
+			//position += uint32(len(string(tokenBytes)))
+			//fmt.Println("token:", string(tokenBytes), " position:", position)
+
 		}
 
 		if !exactMatch {
-			readBufferAndWrite(currentToken, buf, snippet, position, onToken, tokenBytes)
+			readBufferAndWriteToken(currentToken, buf, snippet, &position, onToken, tokenBytes)
 		}
-
 
 	}
 
@@ -102,11 +107,11 @@ func Tokenize(snippet *pb.Snippet, onToken func(*pb.Snippet) error, exactMatch b
 	return nil
 }
 
-func readBufferAndWrite(
+func readBufferAndWriteToken(
 	currentToken []byte,
 	buf *bytes.Buffer,
 	snippet *pb.Snippet,
-	position uint32,
+	position *uint32,
 	onToken func(*pb.Snippet) error,
 	tokenBytes []byte,
 	) error {
@@ -121,7 +126,7 @@ func readBufferAndWrite(
 	if len(currentToken) > 0 {
 		token := &pb.Snippet{
 			Text:   string(currentToken),
-			Offset: snippet.GetOffset() + position,
+			Offset: snippet.GetOffset() + *position,
 			Xpath:  snippet.Xpath,
 		}
 		err := onToken(token)
@@ -130,7 +135,7 @@ func readBufferAndWrite(
 		}
 
 		// increment the position
-		position += uint32(len(tokenBytes)) // + len(currentToken))
+		*position += uint32(len(tokenBytes)) // + len(currentToken))
 		// reset the currentToken value
 		currentToken = []byte{}
 	}
