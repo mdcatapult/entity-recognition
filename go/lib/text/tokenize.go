@@ -3,10 +3,10 @@ package text
 import (
 	"bytes"
 	"fmt"
-	"io"
-
 	"github.com/blevesearch/segment"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
+	"io"
+	"unicode/utf8"
 )
 
 // Tokenize delimits text by whitespace and executes a callback for every token it
@@ -25,7 +25,6 @@ func Tokenize(snippet *pb.Snippet, onToken func(*pb.Snippet) error, exactMatch b
 	// '-'		add				add, read	+ 1
 	// 'text	add				add, read	+ len(text)
 	//  end		read			add, read 	+ len(end)
-
 
 	// segmenter is a utf8 word boundary segmenter. Instead of splitting on all
 	// word boundaries, we check first that the boundary is whitespace.
@@ -112,6 +111,113 @@ func onNonExactMatch(
 	return nil
 }
 
+//////////////// <----------- ----------->
+
+var verbose = true
+
+func ExactMatch(
+	snippet *pb.Snippet,
+	onToken func(*pb.Snippet) error,
+) []*pb.Snippet {
+	const NonAlphaNumericChar = 0
+
+	segmenter := segment.NewWordSegmenterDirect([]byte(snippet.GetText()))
+	buffer := bytes.NewBuffer([]byte{})
+
+	var snippets []*pb.Snippet
+	var position = uint32(0)
+	var snippetOffset = uint32(0)
+	var canSetOffset = true
+
+	for segmenter.Segment() {
+		segmentBytes := segmenter.Bytes()
+
+		switch segmenter.Type() {
+		case NonAlphaNumericChar:
+			if isWhitespace(segmentBytes[0]) {
+				if buffer.Len() > 0 { // if we have something in the buffer make a new newSnippet
+					newSnippet := createSnippet(snippet, &snippetOffset, buffer)
+					snippets = append(snippets, newSnippet)
+					buffer.Reset()
+				}
+
+				canSetOffset = true // after whitespace we can always add a snippet index
+				incrementPosition(&position, segmentBytes)
+			} else {
+				writeTextToBufferAndUpdateOffset(&canSetOffset, &snippetOffset, &position, &segmentBytes, buffer)
+				incrementPosition(&position, segmentBytes)
+			}
+		default:
+			writeTextToBufferAndUpdateOffset(&canSetOffset, &snippetOffset, &position, &segmentBytes, buffer)
+			incrementPosition(&position, segmentBytes)
+		}
+	}
+
+	// if we have something in the buffer once the segmenter has finished, make a new snippet
+	if buffer.Len() > 0 { // if we have something at the buffer make a new newSnippet
+		newSnippet := createSnippet(snippet, &snippetOffset, buffer)
+		snippets = append(snippets, newSnippet)
+		buffer.Reset()
+	}
+
+	return snippets
+}
+
+func isWhitespace(b byte) bool {
+	whitespaceBoundary := byte(32)
+	return b <= whitespaceBoundary
+}
+
+func createSnippet(
+	snippet *pb.Snippet,
+	snippetOffset *uint32,
+	buffer *bytes.Buffer,
+) *pb.Snippet {
+
+	finalOffset := snippet.GetOffset() + *snippetOffset
+
+	return &pb.Snippet{
+		Text:   buffer.String(),
+		Offset: finalOffset,
+		Xpath:  snippet.GetXpath(),
+	}
+}
+
+func writeTextToBufferAndUpdateOffset(
+	canSetOffset *bool,
+	snippetOffset *uint32,
+	position *uint32,
+	segmentBytes *[]byte,
+	buffer *bytes.Buffer) error {
+
+	if *canSetOffset {
+		*snippetOffset = *position // we will use this as the start position of a snippet
+		*canSetOffset = false
+	}
+
+	_, err := buffer.Write(*segmentBytes)
+
+	return err
+}
+
+func incrementPosition(position *uint32, textBytes []byte) {
+	if verbose {
+		fmt.Println("position before bump: ", *position)
+	}
+
+	// get length of string (take account of greek chars) then update position
+	numCharsInString := utf8.RuneCountInString(string(textBytes))
+	*position += uint32(numCharsInString)
+
+	if verbose {
+		fmt.Println("text: ", string(textBytes), "len text:", len(string(textBytes)))
+		fmt.Println("position after bump: ", *position)
+		fmt.Println("--")
+	}
+}
+
+//////////////// <----------- ----------->
+
 func onExactMatch(
 	snippet *pb.Snippet,
 	onToken func(*pb.Snippet) error,
@@ -143,8 +249,6 @@ func onExactMatch(
 				fmt.Println("in whitespace")
 
 				lastSegmentWasWhitespace = true
-				//*position += 1
-				//readBufferAndWriteToken(*currentToken, buffer, snippet, &position, onToken, tokenBytes)
 
 			}
 
@@ -185,7 +289,7 @@ func readBufferAndWriteToken(
 		return err
 	}
 
-	fmt.Println("current token len: ", len(currentToken), "current token: ", string(currentToken) )
+	fmt.Println("current token len: ", len(currentToken), "current token: ", string(currentToken))
 
 	// if currentToken has contents, create a snippet and execute the callback.
 	if len(currentToken) > 0 {
