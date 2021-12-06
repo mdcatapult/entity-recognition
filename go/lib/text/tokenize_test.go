@@ -84,17 +84,8 @@ func Test_Tokenise(t *testing.T) {
 		//	expectedOffset: []uint32{0},
 		//	exactMatch:     true,
 		//},
-		{
-			name: "given the input string ' some -text', it should return 1 token with exact match",
-			snippet: &pb.Snippet{
-				Text: " some -text",
-			},
-			expectedText:   []string{"some", "-text"},
-			expectedOffset: []uint32{1, 6},
-			exactMatch:     true,
-		},
 		//{
-		//	name: "given the input string ' some -text', it should return 1 token with non exact match",
+		//	name: "given the input string ' some -text', it should return 1 token with exact match",
 		//	snippet: &pb.Snippet{
 		//		Text: " some -text",
 		//	},
@@ -102,6 +93,16 @@ func Test_Tokenise(t *testing.T) {
 		//	expectedOffset: []uint32{1, 6},
 		//	exactMatch:     true,
 		//},
+		{
+			name: "given the input string ' soadsfme -text', it should return 1 token with exact match",
+			snippet: &pb.Snippet{
+				Text: "£ some -text",
+			},
+			expectedText:   []string{ "£", "some", "-text"},
+			expectedOffset: []uint32{0, 2, 7},
+			exactMatch:     true,
+		},
+
 		//
 
 
@@ -153,13 +154,13 @@ func Test_Tokenise(t *testing.T) {
 
 		assert.Equal(t, len(test.expectedText), len(actualSnippets), test.name)
 
-		fmt.Println(actualSnippets, test.expectedText)
+		fmt.Println("actual snippets:", actualSnippets, "expected: ", test.expectedText)
 
 		for i, actualSnippet := range actualSnippets {
 
+			fmt.Println(i)
 			fmt.Println(actualSnippet.Text, test.name)
 			//fmt.Println("expected offset: ", test.expectedOffset[i], "actual offset", actualSnippet.Offset)
-			//assert.Equal(t, test.expectedOffset[i], actualSnippet.Offset)
 			assert.Equal(t, test.expectedOffset[i], actualSnippet.Offset)
 			assert.True(t, contains(actualSnippet.Text, test.expectedText), test.name)
 		}
