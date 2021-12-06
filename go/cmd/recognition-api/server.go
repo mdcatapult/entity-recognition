@@ -5,10 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-
 	"github.com/gin-gonic/gin"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
+	"io"
 )
 
 type HttpError struct {
@@ -32,10 +31,10 @@ type server struct {
 }
 
 func (s server) RegisterRoutes(r *gin.Engine) {
-	r.POST("/text", allowCORS, validateBody, s.HTMLToText)
-	r.POST("/tokens", allowCORS, validateBody, s.Tokenize)
-	r.POST("/entities", allowCORS, validateBody, s.GetRecognisers, s.Recognize)
-	r.GET("/recognisers", allowCORS, s.ListRecognisers)
+	r.POST("/text", validateBody, s.HTMLToText)
+	r.POST("/tokens", validateBody, s.Tokenize)
+	r.POST("/entities", validateBody, s.GetRecognisers, s.Recognize)
+	r.GET("/recognisers", s.ListRecognisers)
 }
 
 func (s server) ListRecognisers(c *gin.Context) {
@@ -168,8 +167,4 @@ func abort(c *gin.Context, code int, err error) {
 	default:
 		_ = c.AbortWithError(code, err)
 	}
-}
-
-func allowCORS(c *gin.Context) {
-	c.Header("Access-Control-Allow-Origin", "*")
 }
