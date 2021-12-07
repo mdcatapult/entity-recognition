@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/blevesearch/segment v0.9.0
 	github.com/elastic/go-elasticsearch/v7 v7.13.1
+	github.com/gin-contrib/cors v1.3.1 // indirect
 	github.com/gin-gonic/gin v1.7.4
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/onsi/gomega v1.16.0 // indirect

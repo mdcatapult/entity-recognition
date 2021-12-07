@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/gin-contrib/cors"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -77,8 +78,17 @@ func main() {
 		}
 	}
 
-	r := gin.New()
-	r.Use(gin.LoggerWithFormatter(lib.JsonLogFormatter))
+	r := gin.Default()
+	r.Use(
+		gin.LoggerWithFormatter(lib.JsonLogFormatter),
+		cors.New(cors.Config{
+			AllowOrigins:     []string{"*"},
+			AllowMethods:     []string{"GET", "POST"},
+			AllowHeaders:     []string{"Origin", "Content-Type"},
+			AllowCredentials: true,
+			MaxAge:           12 * time.Hour,
+		}),
+	)
 
 	c := controller{
 		recognisers: recogniserClients,
