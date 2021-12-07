@@ -9,6 +9,8 @@ import (
 	"unicode/utf8"
 )
 
+const NonAlphaNumericChar = 0
+
 // Tokenize delimits text by whitespace and executes a callback for every token it
 // finds.
 func Tokenize(snippet *pb.Snippet, onToken func(*pb.Snippet) error, exactMatch bool) error {
@@ -82,7 +84,7 @@ func onNonExactMatch(
 
 		switch tokenType {
 		case 0: // non alphanumeric
-			fmt.Println("non alpha: ", tokenBytes, string(tokenBytes), "position: ", *position)
+			//fmt.Println("non alpha: ", tokenBytes, string(tokenBytes), "position: ", *position)
 
 			if _, err := buffer.Write(tokenBytes); err != nil {
 				return err
@@ -94,7 +96,7 @@ func onNonExactMatch(
 		default: // alphanumeric
 			// anything but a word boundary (i.e. '-', 'hello')
 			// write to buffer
-			fmt.Println("alpha: ", tokenBytes, string(tokenBytes), "position: ", *position)
+			//fmt.Println("alpha: ", tokenBytes, string(tokenBytes), "position: ", *position)
 
 			if _, err := buffer.Write(tokenBytes); err != nil {
 				return err
@@ -113,13 +115,12 @@ func onNonExactMatch(
 
 //////////////// <----------- ----------->
 
-var verbose = true
+var verbose = false
 
 func ExactMatch(
 	snippet *pb.Snippet,
 	onToken func(*pb.Snippet) error,
 ) []*pb.Snippet {
-	const NonAlphaNumericChar = 0
 
 	segmenter := segment.NewWordSegmenterDirect([]byte(snippet.GetText()))
 	buffer := bytes.NewBuffer([]byte{})
@@ -150,6 +151,65 @@ func ExactMatch(
 		default:
 			writeTextToBufferAndUpdateOffset(&canSetOffset, &snippetOffset, &position, &segmentBytes, buffer)
 			incrementPosition(&position, segmentBytes)
+		}
+	}
+
+	// if we have something in the buffer once the segmenter has finished, make a new snippet
+	if buffer.Len() > 0 { // if we have something at the buffer make a new newSnippet
+		newSnippet := createSnippet(snippet, &snippetOffset, buffer)
+		snippets = append(snippets, newSnippet)
+		buffer.Reset()
+	}
+
+	return snippets
+}
+
+func NonExactMatch(snippet *pb.Snippet, onToken func(snippet2 *pb.Snippet) error) []*pb.Snippet {
+	segmenter := segment.NewWordSegmenterDirect([]byte(snippet.GetText()))
+	buffer := bytes.NewBuffer([]byte{})
+
+	var snippets []*pb.Snippet
+	var position = uint32(0)
+	var snippetOffset = uint32(0)
+	var canSetOffset = true
+
+	for segmenter.Segment() {
+		segmentBytes := segmenter.Bytes()
+
+		switch segmenter.Type() {
+		case NonAlphaNumericChar:
+			if isWhitespace(segmentBytes[0]) {
+				if buffer.Len() > 0 { // if we have something in the buffer make a new newSnippet
+					newSnippet := createSnippet(snippet, &snippetOffset, buffer)
+					snippets = append(snippets, newSnippet)
+					buffer.Reset()
+				}
+
+				canSetOffset = true // after whitespace, we can always add a snippet index
+				incrementPosition(&position, segmentBytes)
+			} else {
+				//newSnippet := createSnippet(snippet, &snippetOffset, buffer)
+				//snippets = append(snippets, newSnippet)
+				//
+				//incrementPosition(&position, buffer.Bytes())
+
+				//if string(segmentBytes) == "-" {
+				writeTextToBufferAndUpdateOffset(&canSetOffset, &snippetOffset, &position, &segmentBytes, buffer)
+				newSnippet := createSnippet(snippet, &position, buffer)
+				snippets = append(snippets, newSnippet)
+
+				buffer.Reset()
+				//writeTextToBufferAndUpdateOffset(&canSetOffset, &snippetOffset, &position, &segmentBytes, buffer)
+				incrementPosition(&position, segmentBytes)
+				//}
+			}
+		default:
+			writeTextToBufferAndUpdateOffset(&canSetOffset, &snippetOffset, &position, &segmentBytes, buffer)
+
+			newSnippet := createSnippet(snippet, &position, buffer)
+			snippets = append(snippets, newSnippet)
+			incrementPosition(&position, segmentBytes)
+			buffer.Reset()
 		}
 	}
 
@@ -201,19 +261,13 @@ func writeTextToBufferAndUpdateOffset(
 }
 
 func incrementPosition(position *uint32, textBytes []byte) {
-	if verbose {
-		fmt.Println("position before bump: ", *position)
-	}
 
 	// get length of string (take account of greek chars) then update position
 	numCharsInString := utf8.RuneCountInString(string(textBytes))
 	*position += uint32(numCharsInString)
 
-	if verbose {
-		fmt.Println("text: ", string(textBytes), "len text:", len(string(textBytes)))
-		fmt.Println("position after bump: ", *position)
-		fmt.Println("--")
-	}
+	fmt.Println(string(textBytes), "bumping pos by", utf8.RuneCountInString(string(textBytes)), "to", *position)
+
 }
 
 //////////////// <----------- ----------->
