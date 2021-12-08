@@ -39,26 +39,26 @@ func Tokenize(
 		case NonAlphaNumericChar:
 			if isWhitespace(segmentBytes[0]) {
 				if builder.Len() > 0 { // if we have something in the buffer make a new newSnippet
-					if err := onToken(createToken(*snippet, snippetOffset, builder.String())); err != nil {
+					if err := onToken(createToken(snippet, snippetOffset, builder.String())); err != nil {
 						return err
 					}
 					builder.Reset()
 				}
 
 				canSetOffset = true // after whitespace we can always add a snippet index
-				position = position + uint32(utf8.RuneCountInString(segmenter.Text()))
+				position += uint32(utf8.RuneCountInString(segmenter.Text()))
 			} else {
 				if err := writeTextToBufferAndUpdateOffset(&canSetOffset, &snippetOffset, position, segmentBytes, builder); err != nil {
 					return err
 				}
 				if !exactMatch {
 					canSetOffset = true // after whitespace we can always add a snippet index
-					if err := onToken(createToken(*snippet, position, builder.String())); err != nil {
+					if err := onToken(createToken(snippet, position, builder.String())); err != nil {
 						return err
 					}
 					builder.Reset()
 				}
-				position = position + uint32(utf8.RuneCountInString(segmenter.Text()))
+				position += uint32(utf8.RuneCountInString(segmenter.Text()))
 			}
 		default:
 			if err := writeTextToBufferAndUpdateOffset(&canSetOffset, &snippetOffset, position, segmentBytes, builder); err != nil {
@@ -66,18 +66,18 @@ func Tokenize(
 			}
 
 			if !exactMatch {
-				if err := onToken(createToken(*snippet, snippetOffset, builder.String())); err != nil {
+				if err := onToken(createToken(snippet, snippetOffset, builder.String())); err != nil {
 					return err
 				}
 				builder.Reset()
 			}
-			position = position + uint32(utf8.RuneCountInString(segmenter.Text()))
+			position += uint32(utf8.RuneCountInString(segmenter.Text()))
 		}
 	}
 
 	// if we have something in the buffer once the segmenter has finished, make a new snippet
 	if builder.Len() > 0 { // if we have something at the buffer make a new newSnippet
-		if err := onToken(createToken(*snippet, snippetOffset, builder.String())); err != nil {
+		if err := onToken(createToken(snippet, snippetOffset, builder.String())); err != nil {
 			return err
 		}
 		builder.Reset()
@@ -92,7 +92,7 @@ func isWhitespace(b byte) bool {
 }
 
 func createToken(
-	snippet pb.Snippet,
+	snippet *pb.Snippet,
 	snippetOffset uint32,
 	text string,
 ) *pb.Snippet {
