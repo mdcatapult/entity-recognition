@@ -56,7 +56,7 @@ func Test_ExactMatch(t *testing.T) {
 			expectedOffset: []uint32{100, 126, 141, 145},
 		},
 		{
-			name: "given some greek characters, etc",
+			name: "greek characters",
 			snippet: &pb.Snippet{
 				Text: "βωα -νπψ- lamb ανπψ",
 			},

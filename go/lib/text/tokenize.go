@@ -1,9 +1,9 @@
 package text
 
 import (
-	"bytes"
 	"github.com/blevesearch/segment"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
+	"strings"
 	"unicode/utf8"
 )
 
@@ -26,7 +26,7 @@ func Tokenize(
 ) error {
 
 	segmenter := segment.NewWordSegmenterDirect([]byte(snippet.GetText()))
-	buffer := bytes.NewBuffer([]byte{})
+	builder := &strings.Builder{}
 
 	var position = uint32(0)
 	var snippetOffset = uint32(0)
@@ -38,46 +38,49 @@ func Tokenize(
 		switch segmenter.Type() {
 		case NonAlphaNumericChar:
 			if isWhitespace(segmentBytes[0]) {
-				if buffer.Len() > 0 { // if we have something in the buffer make a new newSnippet
-					if err := onToken(createToken(*snippet, snippetOffset, *buffer)); err != nil {
+				if builder.Len() > 0 { // if we have something in the buffer make a new newSnippet
+					if err := onToken(createToken(*snippet, snippetOffset, builder.String())); err != nil {
 						return err
 					}
-					buffer.Reset()
+					builder.Reset()
 				}
 
 				canSetOffset = true // after whitespace we can always add a snippet index
 				position = position + uint32(utf8.RuneCountInString(segmenter.Text()))
 			} else {
-				writeTextToBufferAndUpdateOffset(&canSetOffset, &snippetOffset, &position, &segmentBytes, buffer)
-
+				if err := writeTextToBufferAndUpdateOffset(&canSetOffset, &snippetOffset, position, segmentBytes, builder); err != nil {
+					return err
+				}
 				if !exactMatch {
 					canSetOffset = true // after whitespace we can always add a snippet index
-					if err := onToken(createToken(*snippet, position, *buffer)); err != nil {
+					if err := onToken(createToken(*snippet, position, builder.String())); err != nil {
 						return err
 					}
-					buffer.Reset()
+					builder.Reset()
 				}
 				position = position + uint32(utf8.RuneCountInString(string(segmentBytes)))
 			}
 		default:
-			writeTextToBufferAndUpdateOffset(&canSetOffset, &snippetOffset, &position, &segmentBytes, buffer)
+			if err := writeTextToBufferAndUpdateOffset(&canSetOffset, &snippetOffset, position, segmentBytes, builder); err != nil {
+				return err
+			}
 
 			if !exactMatch {
-				if err := onToken(createToken(*snippet, snippetOffset, *buffer)); err != nil {
+				if err := onToken(createToken(*snippet, snippetOffset, builder.String())); err != nil {
 					return err
 				}
-				buffer.Reset()
+				builder.Reset()
 			}
 			position = position + uint32(utf8.RuneCountInString(string(segmentBytes)))
 		}
 	}
 
 	// if we have something in the buffer once the segmenter has finished, make a new snippet
-	if buffer.Len() > 0 { // if we have something at the buffer make a new newSnippet
-		if err := onToken(createToken(*snippet, snippetOffset, *buffer)); err != nil {
+	if builder.Len() > 0 { // if we have something at the buffer make a new newSnippet
+		if err := onToken(createToken(*snippet, snippetOffset, builder.String())); err != nil {
 			return err
 		}
-		buffer.Reset()
+		builder.Reset()
 	}
 
 	return nil
@@ -91,10 +94,10 @@ func isWhitespace(b byte) bool {
 func createToken(
 	snippet pb.Snippet,
 	snippetOffset uint32,
-	buffer bytes.Buffer,
+	text string,
 ) *pb.Snippet {
 	return &pb.Snippet{
-		Text:   buffer.String(),
+		Text:   text,
 		Offset: snippet.GetOffset() + snippetOffset,
 		Xpath:  snippet.GetXpath(),
 	}
@@ -103,16 +106,16 @@ func createToken(
 func writeTextToBufferAndUpdateOffset(
 	canSetOffset *bool,
 	snippetOffset *uint32,
-	position *uint32,
-	segmentBytes *[]byte,
-	buffer *bytes.Buffer) error {
+	position uint32,
+	text []byte,
+	builder *strings.Builder) error {
 
 	if *canSetOffset {
-		*snippetOffset = *position // we will use this as the start position of a snippet
+		*snippetOffset = position // we will use this as the start position of a snippet
 		*canSetOffset = false
 	}
 
-	_, err := buffer.Write(*segmentBytes)
+	_, err := builder.Write(text)
 
 	return err
 }
