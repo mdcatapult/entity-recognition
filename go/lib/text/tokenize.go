@@ -2,10 +2,8 @@ package text
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/blevesearch/segment"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
-	"io"
 	"unicode/utf8"
 )
 
@@ -27,8 +25,6 @@ func Tokenize(
 	exactMatch bool,
 ) error {
 
-	fmt.Println("exactMatch", exactMatch)
-
 	segmenter := segment.NewWordSegmenterDirect([]byte(snippet.GetText()))
 	buffer := bytes.NewBuffer([]byte{})
 
@@ -43,42 +39,42 @@ func Tokenize(
 		case NonAlphaNumericChar:
 			if isWhitespace(segmentBytes[0]) {
 				if buffer.Len() > 0 { // if we have something in the buffer make a new newSnippet
-					if err := onToken(createSnippet(snippet, &snippetOffset, buffer)); err != nil {
+					if err := onToken(createToken(*snippet, snippetOffset, *buffer)); err != nil {
 						return err
 					}
 					buffer.Reset()
 				}
 
 				canSetOffset = true // after whitespace we can always add a snippet index
-				incrementPosition(&position, segmentBytes)
+				position = position + uint32(utf8.RuneCountInString(segmenter.Text()))
 			} else {
 				writeTextToBufferAndUpdateOffset(&canSetOffset, &snippetOffset, &position, &segmentBytes, buffer)
 
 				if !exactMatch {
 					canSetOffset = true // after whitespace we can always add a snippet index
-					if err := onToken(createSnippet(snippet, &position, buffer)); err != nil {
+					if err := onToken(createToken(*snippet, position, *buffer)); err != nil {
 						return err
 					}
 					buffer.Reset()
 				}
-				incrementPosition(&position, segmentBytes)
+				position = position + uint32(utf8.RuneCountInString(string(segmentBytes)))
 			}
 		default:
 			writeTextToBufferAndUpdateOffset(&canSetOffset, &snippetOffset, &position, &segmentBytes, buffer)
 
 			if !exactMatch {
-				if err := onToken(createSnippet(snippet, &snippetOffset, buffer)); err != nil {
+				if err := onToken(createToken(*snippet, snippetOffset, *buffer)); err != nil {
 					return err
 				}
 				buffer.Reset()
 			}
-			incrementPosition(&position, segmentBytes)
+			position = position + uint32(utf8.RuneCountInString(string(segmentBytes)))
 		}
 	}
 
 	// if we have something in the buffer once the segmenter has finished, make a new snippet
 	if buffer.Len() > 0 { // if we have something at the buffer make a new newSnippet
-		if err := onToken(createSnippet(snippet, &snippetOffset, buffer)); err != nil {
+		if err := onToken(createToken(*snippet, snippetOffset, *buffer)); err != nil {
 			return err
 		}
 		buffer.Reset()
@@ -92,17 +88,14 @@ func isWhitespace(b byte) bool {
 	return b <= whitespaceBoundary
 }
 
-func createSnippet(
-	snippet *pb.Snippet,
-	snippetOffset *uint32,
-	buffer *bytes.Buffer,
+func createToken(
+	snippet pb.Snippet,
+	snippetOffset uint32,
+	buffer bytes.Buffer,
 ) *pb.Snippet {
-
-	finalOffset := snippet.GetOffset() + *snippetOffset
-
 	return &pb.Snippet{
 		Text:   buffer.String(),
-		Offset: finalOffset,
+		Offset: snippet.GetOffset() + snippetOffset,
 		Xpath:  snippet.GetXpath(),
 	}
 }
@@ -122,54 +115,4 @@ func writeTextToBufferAndUpdateOffset(
 	_, err := buffer.Write(*segmentBytes)
 
 	return err
-}
-
-func incrementPosition(position *uint32, textBytes []byte) {
-
-	// get length of string (take account of greek chars) then update position
-	numCharsInString := utf8.RuneCountInString(string(textBytes))
-	*position += uint32(numCharsInString)
-
-	//fmt.Println(string(textBytes), "bumping pos by", utf8.RuneCountInString(string(textBytes)), "to", *position)
-
-}
-
-func readBufferAndWriteToken(
-	currentToken []byte,
-	buf *bytes.Buffer,
-	snippet *pb.Snippet,
-	position **uint32,
-	onToken func(*pb.Snippet) error,
-	tokenBytes []byte,
-) error {
-
-	var err error
-	currentToken, err = buf.ReadBytes(0)
-	if err != nil && err != io.EOF {
-		return err
-	}
-
-	//fmt.Println("current token len: ", len(currentToken), "current token: ", string(currentToken))
-
-	// if currentToken has contents, create a snippet and execute the callback.
-	if len(currentToken) > 0 {
-		token := &pb.Snippet{
-			Text:   string(currentToken),
-			Offset: snippet.GetOffset() + **position,
-			Xpath:  snippet.Xpath,
-		}
-		err := onToken(token)
-		if err != nil {
-			return err
-		}
-
-		// increment the position
-		// reset the currentToken value
-		currentToken = []byte{}
-	}
-
-	**position += uint32(len(tokenBytes))
-	fmt.Println("after write : ", tokenBytes, string(tokenBytes), "bumping position by: ", uint32(len(tokenBytes)), "position now: ", **position)
-
-	return nil
 }
