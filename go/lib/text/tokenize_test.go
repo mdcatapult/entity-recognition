@@ -48,6 +48,15 @@ func Test_ExactMatch(t *testing.T) {
 			expectedOffset: []uint32{0, 26, 41, 45},
 		},
 		{
+			name: "exact match test with existing offset",
+			snippet: &pb.Snippet{
+				Text:   "Halogen-bonding-triggered supramolecular gel formation.",
+				Offset: 100,
+			},
+			expectedText:   []string{"Halogen-bonding-triggered", "supramolecular", "gel", "formation."},
+			expectedOffset: []uint32{100, 126, 141, 145},
+		},
+		{
 			name: "given some greek characters, etc",
 			snippet: &pb.Snippet{
 				Text: "βωα -νπψ- lamb ανπψ",
@@ -90,6 +99,15 @@ func Test_Non_ExactMatch(t *testing.T) {
 			},
 			expectedText:   []string{"some", "-", "text"},
 			expectedOffset: []uint32{0, 4, 5},
+		},
+		{
+			name: "given non-exact match it should break text on '-' with existing offset",
+			snippet: &pb.Snippet{
+				Text:   "some-text",
+				Offset: 100,
+			},
+			expectedText:   []string{"some", "-", "text"},
+			expectedOffset: []uint32{100, 104, 105},
 		},
 		{
 			name: "given non-exact match should handle spaces",
