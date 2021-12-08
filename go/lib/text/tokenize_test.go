@@ -71,6 +71,14 @@ func Test_ExactMatch(t *testing.T) {
 			expectedText:   []string{"(MDMA;", "Ecstasy)"},
 			expectedOffset: []uint32{0, 7},
 		},
+		{
+			name: "chemicals with / and (",
+			snippet: &pb.Snippet{
+				Text: "pluronic/poly(acrylic acid)",
+			},
+			expectedText:   []string{"pluronic/poly(acrylic", "acid)"},
+			expectedOffset: []uint32{0, 22},
+		},
 	} {
 		var tokens []*pb.Snippet
 		callback := func(snippet *pb.Snippet) error {
@@ -148,6 +156,14 @@ func Test_Non_ExactMatch(t *testing.T) {
 			},
 			expectedText:   []string{"(", "MDMA", ";", "Ecstasy", ")"},
 			expectedOffset: []uint32{0, 1, 5, 7, 14},
+		},
+		{
+			name: "chemicals with / and (",
+			snippet: &pb.Snippet{
+				Text: "pluronic/poly(acrylic acid)",
+			},
+			expectedText:   []string{"pluronic", "/", "poly", "(", "acrylic", "acid", ")"},
+			expectedOffset: []uint32{0, 8, 9, 13, 14, 22, 26},
 		},
 	} {
 		var tokens []*pb.Snippet
