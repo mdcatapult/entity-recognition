@@ -1,7 +1,6 @@
 package text
 
 import (
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"testing"
@@ -65,18 +64,19 @@ func Test_ExactMatch(t *testing.T) {
 			expectedOffset: []uint32{0, 4, 10, 15},
 		},
 	} {
-		var actualSnippets []*pb.Snippet
+		var tokens []*pb.Snippet
 		callback := func(snippet *pb.Snippet) error {
-			actualSnippets = append(actualSnippets, snippet)
+			tokens = append(tokens, snippet)
 			return nil
 		}
 
-		tokens := ExactMatch(test.snippet, callback, true)
+		err := ExactMatch(test.snippet, callback, true)
 
-		assert.Equal(t, len(test.expectedText), len(tokens))
+		assert.NoError(t, err, test.name)
+		assert.Equal(t, len(test.expectedText), len(tokens), test.name)
 
 		for i, token := range tokens {
-			assert.Equal(t, test.expectedOffset[i], token.Offset)
+			assert.Equal(t, test.expectedOffset[i], token.Offset, test.name)
 
 			assert.True(t, contains(token.Text, test.expectedText), test.name)
 		}
@@ -134,15 +134,15 @@ func Test_Non_ExactMatch(t *testing.T) {
 			expectedOffset: []uint32{1, 6, 7, 12, 16, 17},
 		},
 	} {
-		var actualSnippets []*pb.Snippet
+		var tokens []*pb.Snippet
 		callback := func(snippet *pb.Snippet) error {
-			actualSnippets = append(actualSnippets, snippet)
+			tokens = append(tokens, snippet)
 			return nil
 		}
 
-		tokens := ExactMatch(test.snippet, callback, false)
+		err := ExactMatch(test.snippet, callback, false)
 
-		fmt.Println(tokens)
+		assert.NoError(t, err)
 		assert.Equal(t, len(test.expectedText), len(tokens), test.name)
 
 		for i, token := range tokens {
