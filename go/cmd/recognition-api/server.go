@@ -136,7 +136,7 @@ func (s server) HTMLToText(c *gin.Context) {
 }
 
 func (s *server) getParams(c *gin.Context) {
-	s.controller.exactMatch = c.Query("xact-match") == "true"
+	s.controller.exactMatch = c.Query("exact-match") == "true"
 	c.Next()
 }
 
