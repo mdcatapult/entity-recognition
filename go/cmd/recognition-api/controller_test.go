@@ -99,9 +99,6 @@ func (s *ControllerSuite) Test_controller_TokenizeHTML() {
 		s.controller.exactMatch = false
 		tokens, err := s.controller.Tokenize(tt.args.reader, contentTypeHTML)
 
-		jtoks, _ := json.Marshal(tokens)
-
-		fmt.Println(string(jtoks))
 		s.Equal(tt.wantErr, err)
 		s.Equal(fmt.Sprint(tt.want), fmt.Sprint(tokens))
 	}
