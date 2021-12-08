@@ -58,7 +58,7 @@ func Tokenize(
 					}
 					builder.Reset()
 				}
-				position = position + uint32(utf8.RuneCountInString(string(segmentBytes)))
+				position = position + uint32(utf8.RuneCountInString(segmenter.Text()))
 			}
 		default:
 			if err := writeTextToBufferAndUpdateOffset(&canSetOffset, &snippetOffset, position, segmentBytes, builder); err != nil {
@@ -71,7 +71,7 @@ func Tokenize(
 				}
 				builder.Reset()
 			}
-			position = position + uint32(utf8.RuneCountInString(string(segmentBytes)))
+			position = position + uint32(utf8.RuneCountInString(segmenter.Text()))
 		}
 	}
 
