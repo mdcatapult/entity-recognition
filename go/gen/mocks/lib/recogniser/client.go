@@ -61,3 +61,8 @@ func (_m *Client) Result() []*pb.Entity {
 
 	return r0
 }
+
+// SetExactMatch provides a mock function with given fields: _a0
+func (_m *Client) SetExactMatch(_a0 bool) {
+	_m.Called(_a0)
+}

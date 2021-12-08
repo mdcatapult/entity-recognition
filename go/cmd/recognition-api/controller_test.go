@@ -96,7 +96,12 @@ func (s *ControllerSuite) Test_controller_TokenizeHTML() {
 	}
 	for _, tt := range tests {
 		s.T().Log(tt.name)
+		s.controller.exactMatch = false
 		tokens, err := s.controller.Tokenize(tt.args.reader, contentTypeHTML)
+
+		jtoks, _ := json.Marshal(tokens)
+
+		fmt.Println(string(jtoks))
 		s.Equal(tt.wantErr, err)
 		s.Equal(fmt.Sprint(tt.want), fmt.Sprint(tokens))
 	}
@@ -122,6 +127,9 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 
 	// The mock recogniser is a little complicated so read carefully!
 	mockRecogniser := &mock_recogniser.Client{}
+	mockRecogniser.On("SetExactMatch", true).Return()
+	s.controller.exactMatch = true
+
 	mockRecogniser.On("Recognise",
 		// Expected arguments
 		mock.AnythingOfType("<-chan snippet_reader.Value"),
