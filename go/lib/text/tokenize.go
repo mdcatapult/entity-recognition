@@ -36,9 +36,9 @@ func Tokenize(snippet *pb.Snippet, onToken func(*pb.Snippet) error, exactMatch b
 	var position uint32 = 0
 
 	if exactMatch {
-		onExactMatch(snippet, onToken, segmenter, buf, &currentToken, &position)
+		//onExactMatch(snippet, onToken, segmenter, buf, &currentToken, &position)
 	} else {
-		onNonExactMatch(snippet, onToken, segmenter, buf, &currentToken, &position)
+		//onNonExactMatch(snippet, onToken, segmenter, buf, &currentToken, &position)
 	}
 
 	if err := segmenter.Err(); err != nil {
@@ -70,49 +70,6 @@ func Tokenize(snippet *pb.Snippet, onToken func(*pb.Snippet) error, exactMatch b
 	return nil
 }
 
-func onNonExactMatch(
-	snippet *pb.Snippet,
-	onToken func(*pb.Snippet) error,
-	segmenter *segment.Segmenter,
-	buffer *bytes.Buffer,
-	currentToken *[]byte,
-	position *uint32) error {
-
-	for segmenter.Segment() {
-		tokenBytes := segmenter.Bytes()
-		tokenType := segmenter.Type()
-
-		switch tokenType {
-		case 0: // non alphanumeric
-			//fmt.Println("non alpha: ", tokenBytes, string(tokenBytes), "position: ", *position)
-
-			if _, err := buffer.Write(tokenBytes); err != nil {
-				return err
-			}
-			//fmt.Println("token:", string(tokenBytes), " position:", position)
-
-			break
-
-		default: // alphanumeric
-			// anything but a word boundary (i.e. '-', 'hello')
-			// write to buffer
-			//fmt.Println("alpha: ", tokenBytes, string(tokenBytes), "position: ", *position)
-
-			if _, err := buffer.Write(tokenBytes); err != nil {
-				return err
-			}
-			//position += uint32(len(string(tokenBytes)))
-			//fmt.Println("token:", string(tokenBytes), " position:", position)
-
-		}
-
-		readBufferAndWriteToken(*currentToken, buffer, snippet, &position, onToken, tokenBytes)
-
-	}
-
-	return nil
-}
-
 //////////////// <----------- ----------->
 
 var verbose = false
@@ -120,6 +77,7 @@ var verbose = false
 func ExactMatch(
 	snippet *pb.Snippet,
 	onToken func(*pb.Snippet) error,
+	exactMatch bool,
 ) []*pb.Snippet {
 
 	segmenter := segment.NewWordSegmenterDirect([]byte(snippet.GetText()))
@@ -137,6 +95,7 @@ func ExactMatch(
 		case NonAlphaNumericChar:
 			if isWhitespace(segmentBytes[0]) {
 				if buffer.Len() > 0 { // if we have something in the buffer make a new newSnippet
+
 					newSnippet := createSnippet(snippet, &snippetOffset, buffer)
 					snippets = append(snippets, newSnippet)
 					buffer.Reset()
@@ -146,10 +105,23 @@ func ExactMatch(
 				incrementPosition(&position, segmentBytes)
 			} else {
 				writeTextToBufferAndUpdateOffset(&canSetOffset, &snippetOffset, &position, &segmentBytes, buffer)
+
+				if !exactMatch {
+					canSetOffset = true // after whitespace we can always add a snippet index
+					newSnippet := createSnippet(snippet, &position, buffer)
+					snippets = append(snippets, newSnippet)
+					buffer.Reset()
+				}
 				incrementPosition(&position, segmentBytes)
 			}
 		default:
 			writeTextToBufferAndUpdateOffset(&canSetOffset, &snippetOffset, &position, &segmentBytes, buffer)
+
+			if !exactMatch {
+				newSnippet := createSnippet(snippet, &snippetOffset, buffer)
+				snippets = append(snippets, newSnippet)
+				buffer.Reset()
+			}
 			incrementPosition(&position, segmentBytes)
 		}
 	}
@@ -188,12 +160,7 @@ func NonExactMatch(snippet *pb.Snippet, onToken func(snippet2 *pb.Snippet) error
 				canSetOffset = true // after whitespace, we can always add a snippet index
 				incrementPosition(&position, segmentBytes)
 			} else {
-				//newSnippet := createSnippet(snippet, &snippetOffset, buffer)
-				//snippets = append(snippets, newSnippet)
-				//
-				//incrementPosition(&position, buffer.Bytes())
 
-				//if string(segmentBytes) == "-" {
 				writeTextToBufferAndUpdateOffset(&canSetOffset, &snippetOffset, &position, &segmentBytes, buffer)
 				newSnippet := createSnippet(snippet, &position, buffer)
 				snippets = append(snippets, newSnippet)
@@ -268,64 +235,6 @@ func incrementPosition(position *uint32, textBytes []byte) {
 
 	fmt.Println(string(textBytes), "bumping pos by", utf8.RuneCountInString(string(textBytes)), "to", *position)
 
-}
-
-//////////////// <----------- ----------->
-
-func onExactMatch(
-	snippet *pb.Snippet,
-	onToken func(*pb.Snippet) error,
-	segmenter *segment.Segmenter,
-	buffer *bytes.Buffer,
-	currentToken *[]byte,
-	position *uint32) error {
-
-	var lastSegmentWasWhitespace = false
-
-	for segmenter.Segment() {
-		tokenBytes := segmenter.Bytes()
-
-		switch segmenter.Type() {
-		case 0: // non alphanumeric
-			fmt.Println("non alpha: ", tokenBytes, string(tokenBytes), "position: ", *position)
-			// word boundary character
-
-			if tokenBytes[0] > 32 {
-				fmt.Println("in non whitespace")
-
-				// not whitespace
-				if _, err := buffer.Write(tokenBytes); err != nil {
-					return err
-				}
-
-				break
-			} else {
-				fmt.Println("in whitespace")
-
-				lastSegmentWasWhitespace = true
-
-			}
-
-			//if lastSegmentWasWhitespace {
-			readBufferAndWriteToken(*currentToken, buffer, snippet, &position, onToken, tokenBytes)
-
-			//}
-
-		default: // alphanumeric
-			//fmt.Println("alpha: ", tokenBytes, string(tokenBytes), "position: ", *position)
-
-			if _, err := buffer.Write(tokenBytes); err != nil {
-				return err
-			}
-
-			if lastSegmentWasWhitespace {
-				readBufferAndWriteToken(*currentToken, buffer, snippet, &position, onToken, tokenBytes)
-				lastSegmentWasWhitespace = false
-			}
-		}
-	}
-
-	return nil
 }
 
 func readBufferAndWriteToken(

@@ -62,7 +62,7 @@ func Test_ExactMatch(t *testing.T) {
 			return nil
 		}
 
-		tokens := ExactMatch(test.snippet, callback)
+		tokens := ExactMatch(test.snippet, callback, true)
 
 		assert.Equal(t, len(test.expectedText), len(tokens))
 
@@ -122,13 +122,13 @@ func Test_Non_ExactMatch(t *testing.T) {
 			return nil
 		}
 
-		tokens := NonExactMatch(test.snippet, callback)
+		tokens := ExactMatch(test.snippet, callback, false)
 
 		fmt.Println(tokens)
-		assert.Equal(t, len(test.expectedText), len(tokens))
+		assert.Equal(t, len(test.expectedText), len(tokens), test.name)
 
 		for i, token := range tokens {
-			assert.Equal(t, int(test.expectedOffset[i]), int(token.Offset))
+			assert.Equal(t, int(test.expectedOffset[i]), int(token.Offset), test.name)
 
 			assert.True(t, contains(token.Text, test.expectedText), test.name)
 		}
