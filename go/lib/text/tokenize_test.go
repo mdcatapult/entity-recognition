@@ -70,7 +70,7 @@ func Test_ExactMatch(t *testing.T) {
 			return nil
 		}
 
-		err := ExactMatch(test.snippet, callback, true)
+		err := Tokenize(test.snippet, callback, true)
 
 		assert.NoError(t, err, test.name)
 		assert.Equal(t, len(test.expectedText), len(tokens), test.name)
@@ -140,7 +140,7 @@ func Test_Non_ExactMatch(t *testing.T) {
 			return nil
 		}
 
-		err := ExactMatch(test.snippet, callback, false)
+		err := Tokenize(test.snippet, callback, false)
 
 		assert.NoError(t, err)
 		assert.Equal(t, len(test.expectedText), len(tokens), test.name)

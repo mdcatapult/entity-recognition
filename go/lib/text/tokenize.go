@@ -11,66 +11,17 @@ import (
 
 const NonAlphaNumericChar = 0
 
-// Tokenize delimits text by whitespace and executes a callback for every token it
-// finds.
-func Tokenize(snippet *pb.Snippet, onToken func(*pb.Snippet) error, exactMatch bool) error {
+// Tokenize
+/**
+	Tokenize splits snippet.Text into tokens and calls onToken for each token found.
+	onToken can be used to, for example, send tokens to a recognizer.
+	Each token's offset (position in snippet.Text) is calculated and set.
 
-	// token	exact_match		non-exact
-	// 'some'	add				add, read
-	// '-'		add				add, read
-	// 'text	add				add, read
-	//  end		read			add, read
-
-	// token	exact_match		non-exact	position index
-	// ' '		don't add 		don't add	+ 1
-	// 'some'	add				add, read	+ len(some)
-	// '-'		add				add, read	+ 1
-	// 'text	add				add, read	+ len(text)
-	//  end		read			add, read 	+ len(end)
-
-	// segmenter is a utf8 word boundary segmenter. Instead of splitting on all
-	// word boundaries, we check first that the boundary is whitespace.
-	segmenter := segment.NewWordSegmenterDirect([]byte(snippet.GetText()))
-	buf := bytes.NewBuffer([]byte{})
-	var currentToken []byte
-	var position uint32 = 0
-
-	if exactMatch {
-		//onExactMatch(snippet, onToken, segmenter, buf, &currentToken, &position)
-	} else {
-		//onNonExactMatch(snippet, onToken, segmenter, buf, &currentToken, &position)
-	}
-
-	if err := segmenter.Err(); err != nil {
-		return err
-	}
-
-	currentToken, err := buf.ReadBytes(0)
-
-	if err != nil && err != io.EOF {
-		return err
-	}
-
-	if len(currentToken) > 0 {
-
-		pbEntity := &pb.Snippet{
-			Text:   string(currentToken),
-			Offset: snippet.GetOffset() + position,
-			Xpath:  snippet.Xpath,
-		}
-
-		err := onToken(pbEntity)
-		if err != nil {
-			return err
-		}
-
-		position += uint32(len(currentToken)) // + len(currentToken))
-
-	}
-	return nil
-}
-
-func ExactMatch(
+	exactMatch controls whether the tokens are split only on whitespace or not.
+	E.g. with exactMatch, "some-text" is a single token. Without exact match, it is
+	three tokens: "some", "-", "text".
+**/
+func Tokenize(
 	snippet *pb.Snippet,
 	onToken func(*pb.Snippet) error,
 	exactMatch bool,
