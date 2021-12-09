@@ -42,28 +42,10 @@ func Tokenize(
 
 		switch segmenter.Type() {
 		case NonAlphaNumericChar:
-			if isWhitespace(segmentBytes[0]) {
-				if builder.Len() > 0 { // if we have something in the buffer make a new newSnippet
-					if err := onToken(createToken(snippet, snippetOffset, builder.String())); err != nil {
-						return err
-					}
-					builder.Reset()
-				}
-
-				canSetOffset = true // after whitespace we can always add a snippet index
-			} else {
-				if err := writeTextToBufferAndUpdateOffset(&canSetOffset, &snippetOffset, position, segmentBytes, builder); err != nil {
-					return err
-				}
-				if !exactMatch {
-					canSetOffset = true // after whitespace we can always add a snippet index
-					if err := onToken(createToken(snippet, position, builder.String())); err != nil {
-						return err
-					}
-					builder.Reset()
-				}
+			if err := handleNonAlphaNumericChar(segmenter, builder, onToken, snippet, &snippetOffset, &canSetOffset, position, exactMatch); err != nil {
+				return err
 			}
-		default:
+		default: // alphanumeric char
 			if err := writeTextToBufferAndUpdateOffset(&canSetOffset, &snippetOffset, position, segmentBytes, builder); err != nil {
 				return err
 			}
@@ -88,6 +70,40 @@ func Tokenize(
 		builder.Reset()
 	}
 
+	return nil
+}
+
+func handleNonAlphaNumericChar(
+	segmenter *segment.Segmenter,
+	builder *strings.Builder,
+	onToken func(snippet *pb.Snippet) error,
+	snippet *pb.Snippet,
+	snippetOffset *uint32,
+	canSetOffset *bool,
+	position uint32,
+	exactMatch bool,
+) error {
+	if isWhitespace(segmenter.Bytes()[0]) {
+		if builder.Len() > 0 { // if we have something in the buffer make a new newSnippet
+			if err := onToken(createToken(snippet, *snippetOffset, builder.String())); err != nil {
+				return err
+			}
+			builder.Reset()
+		}
+
+		*canSetOffset = true // after whitespace we can always add a snippet index
+	} else {
+		if err := writeTextToBufferAndUpdateOffset(canSetOffset, snippetOffset, position, segmenter.Bytes(), builder); err != nil {
+			return err
+		}
+		if !exactMatch {
+			*canSetOffset = true // after whitespace we can always add a snippet index
+			if err := onToken(createToken(snippet, position, builder.String())); err != nil {
+				return err
+			}
+			builder.Reset()
+		}
+	}
 	return nil
 }
 
