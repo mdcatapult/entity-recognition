@@ -33,6 +33,11 @@ func Tokenize(
 	var canSetOffset = true
 
 	for segmenter.Segment() {
+
+		if err := segmenter.Err(); err != nil {
+			return err
+		}
+
 		segmentBytes := segmenter.Bytes()
 
 		switch segmenter.Type() {
@@ -46,7 +51,6 @@ func Tokenize(
 				}
 
 				canSetOffset = true // after whitespace we can always add a snippet index
-				position += uint32(utf8.RuneCountInString(segmenter.Text()))
 			} else {
 				if err := writeTextToBufferAndUpdateOffset(&canSetOffset, &snippetOffset, position, segmentBytes, builder); err != nil {
 					return err
@@ -58,7 +62,6 @@ func Tokenize(
 					}
 					builder.Reset()
 				}
-				position += uint32(utf8.RuneCountInString(segmenter.Text()))
 			}
 		default:
 			if err := writeTextToBufferAndUpdateOffset(&canSetOffset, &snippetOffset, position, segmentBytes, builder); err != nil {
@@ -71,8 +74,10 @@ func Tokenize(
 				}
 				builder.Reset()
 			}
-			position += uint32(utf8.RuneCountInString(segmenter.Text()))
 		}
+
+		position += uint32(utf8.RuneCountInString(segmenter.Text()))
+
 	}
 
 	// if we have something in the buffer once the segmenter has finished, make a new snippet

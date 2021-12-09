@@ -36,7 +36,7 @@ var _ = Describe("Tokenise", func() {
 			expectedOffsets := []uint32{1, 3, 8}
 
 			err := Tokenize(snippet, onTokenCallback, true)
-			Ω(err).Should(BeNil())
+			Expect(err).Should(BeNil())
 			assertTokenize(tokens, expectedTexts, expectedOffsets)
 
 		})
@@ -50,7 +50,7 @@ var _ = Describe("Tokenise", func() {
 			expectedOffsets := []uint32{0}
 
 			err := Tokenize(snippet, onTokenCallback, true)
-			Ω(err).Should(BeNil())
+			Expect(err).Should(BeNil())
 
 			assertTokenize(tokens, expectedTexts, expectedOffsets)
 		})
@@ -62,7 +62,7 @@ var _ = Describe("Tokenise", func() {
 			expectedTexts := []string{"-", "apple", "!@£", "pie-face"}
 			expectedOffsets := []uint32{0, 2, 8, 12}
 			err := Tokenize(snippet, onTokenCallback, true)
-			Ω(err).Should(BeNil())
+			Expect(err).Should(BeNil())
 
 			assertTokenize(tokens, expectedTexts, expectedOffsets)
 		})
@@ -75,7 +75,7 @@ var _ = Describe("Tokenise", func() {
 			expectedTexts := []string{"Halogen-bonding-triggered", "supramolecular", "gel", "formation."}
 			expectedOffsets := []uint32{100, 126, 141, 145}
 			err := Tokenize(snippet, onTokenCallback, true)
-			Ω(err).Should(BeNil())
+			Expect(err).Should(BeNil())
 
 			assertTokenize(tokens, expectedTexts, expectedOffsets)
 		})
@@ -87,7 +87,7 @@ var _ = Describe("Tokenise", func() {
 			expectedTexts := []string{"βωα", "-νπψ-", "lamb", "ανπψ"}
 			expectedOffsets := []uint32{0, 4, 10, 15}
 			err := Tokenize(snippet, onTokenCallback, true)
-			Ω(err).Should(BeNil())
+			Expect(err).Should(BeNil())
 
 			assertTokenize(tokens, expectedTexts, expectedOffsets)
 		})
@@ -99,7 +99,7 @@ var _ = Describe("Tokenise", func() {
 			expectedTexts := []string{"(MDMA;", "Ecstasy)"}
 			expectedOffsets := []uint32{0, 7}
 			err := Tokenize(snippet, onTokenCallback, true)
-			Ω(err).Should(BeNil())
+			Expect(err).Should(BeNil())
 
 			assertTokenize(tokens, expectedTexts, expectedOffsets)
 		})
@@ -111,7 +111,7 @@ var _ = Describe("Tokenise", func() {
 			expectedTexts := []string{"pluronic/poly(acrylic", "acid)"}
 			expectedOffsets := []uint32{0, 22}
 			err := Tokenize(snippet, onTokenCallback, true)
-			Ω(err).Should(BeNil())
+			Expect(err).Should(BeNil())
 
 			assertTokenize(tokens, expectedTexts, expectedOffsets)
 		})
@@ -123,7 +123,7 @@ var _ = Describe("Tokenise", func() {
 			expectedTexts := []string{"verapamil+bufadienolide"}
 			expectedOffsets := []uint32{0}
 			err := Tokenize(snippet, onTokenCallback, true)
-			Ω(err).Should(BeNil())
+			Expect(err).Should(BeNil())
 
 			assertTokenize(tokens, expectedTexts, expectedOffsets)
 		})
@@ -138,7 +138,7 @@ var _ = Describe("Tokenise", func() {
 			expectedTexts := []string{"some", "-", "text"}
 			expectedOffsets := []uint32{0, 4, 5}
 			err := Tokenize(snippet, onTokenCallback, false)
-			Ω(err).Should(BeNil())
+			Expect(err).Should(BeNil())
 
 			assertTokenize(tokens, expectedTexts, expectedOffsets)
 		})
@@ -151,7 +151,7 @@ var _ = Describe("Tokenise", func() {
 			expectedTexts := []string{"some", "-", "text"}
 			expectedOffsets := []uint32{100, 104, 105}
 			err := Tokenize(snippet, onTokenCallback, false)
-			Ω(err).Should(BeNil())
+			Expect(err).Should(BeNil())
 
 			assertTokenize(tokens, expectedTexts, expectedOffsets)
 		})
@@ -163,7 +163,7 @@ var _ = Describe("Tokenise", func() {
 			expectedTexts := []string{"some", "text"}
 			expectedOffsets := []uint32{0, 5}
 			err := Tokenize(snippet, onTokenCallback, false)
-			Ω(err).Should(BeNil())
+			Expect(err).Should(BeNil())
 
 			assertTokenize(tokens, expectedTexts, expectedOffsets)
 		})
@@ -175,7 +175,7 @@ var _ = Describe("Tokenise", func() {
 			expectedTexts := []string{"βωα", "βωα", "hello"}
 			expectedOffsets := []uint32{0, 4, 8}
 			err := Tokenize(snippet, onTokenCallback, false)
-			Ω(err).Should(BeNil())
+			Expect(err).Should(BeNil())
 
 			assertTokenize(tokens, expectedTexts, expectedOffsets)
 		})
@@ -187,7 +187,7 @@ var _ = Describe("Tokenise", func() {
 			expectedTexts := []string{"some", "-", "text", "some", "-", "text"}
 			expectedOffsets := []uint32{1, 6, 7, 12, 16, 17}
 			err := Tokenize(snippet, onTokenCallback, false)
-			Ω(err).Should(BeNil())
+			Expect(err).Should(BeNil())
 
 			assertTokenize(tokens, expectedTexts, expectedOffsets)
 		})
@@ -199,7 +199,7 @@ var _ = Describe("Tokenise", func() {
 			expectedTexts := []string{"(", "MDMA", ";", "Ecstasy", ")"}
 			expectedOffsets := []uint32{0, 1, 5, 7, 14}
 			err := Tokenize(snippet, onTokenCallback, false)
-			Ω(err).Should(BeNil())
+			Expect(err).Should(BeNil())
 
 			assertTokenize(tokens, expectedTexts, expectedOffsets)
 		})
@@ -211,7 +211,7 @@ var _ = Describe("Tokenise", func() {
 			expectedTexts := []string{"pluronic", "/", "poly", "(", "acrylic", "acid", ")"}
 			expectedOffsets := []uint32{0, 8, 9, 13, 14, 22, 26}
 			err := Tokenize(snippet, onTokenCallback, false)
-			Ω(err).Should(BeNil())
+			Expect(err).Should(BeNil())
 
 			assertTokenize(tokens, expectedTexts, expectedOffsets)
 		})
@@ -223,7 +223,7 @@ var _ = Describe("Tokenise", func() {
 			expectedTexts := []string{"verapamil", "+", "bufadienolide"}
 			expectedOffsets := []uint32{0, 9, 10}
 			err := Tokenize(snippet, onTokenCallback, false)
-			Ω(err).Should(BeNil())
+			Expect(err).Should(BeNil())
 
 			assertTokenize(tokens, expectedTexts, expectedOffsets)
 		})
@@ -232,9 +232,9 @@ var _ = Describe("Tokenise", func() {
 
 func assertTokenize(tokens []*pb.Snippet, expectedTexts []string, expectedOffsets []uint32) {
 	fmt.Println(tokens, expectedTexts, expectedOffsets)
-	Ω(len(tokens)).Should(Equal(len(expectedTexts)))
-	Ω(hasTokens(expectedTexts, tokens)).Should(BeTrue())
-	Ω(hasOffsets(expectedOffsets, tokens)).Should(BeTrue())
+	Expect(len(tokens)).Should(Equal(len(expectedTexts)))
+	Expect(hasTokens(expectedTexts, tokens)).Should(BeTrue())
+	Expect(hasOffsets(expectedOffsets, tokens)).Should(BeTrue())
 }
 
 func hasTokens(expected []string, actual []*pb.Snippet) bool {
