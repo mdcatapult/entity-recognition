@@ -238,34 +238,18 @@ func assertTokenize(tokens []*pb.Snippet, expectedTexts []string, expectedOffset
 }
 
 func hasTokens(expected []string, actual []*pb.Snippet) bool {
-	for _, expectedText := range expected {
-
-		hasToken := false
-
-		for _, actualToken := range actual {
-			if actualToken.Text == expectedText {
-				hasToken = true
-			}
-		}
-
-		if !hasToken {
+	for i, expectedText := range expected {
+		if actual[i].Text != expectedText {
 			return false
 		}
+
 	}
 	return true
 }
 
 func hasOffsets(expected []uint32, actual []*pb.Snippet) bool {
-	for _, expectedOffset := range expected {
-
-		hasToken := false
-		for _, actualToken := range actual {
-			if actualToken.Offset == expectedOffset {
-				hasToken = true
-			}
-		}
-
-		if !hasToken {
+	for i, expectedOffset := range expected {
+		if actual[i].Offset != expectedOffset {
 			return false
 		}
 	}
