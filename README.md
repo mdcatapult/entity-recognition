@@ -34,6 +34,17 @@ curl -L https://en.wikipedia.org/wiki/Acetylcarnitine > /tmp/acetylcarnitine.htm
 curl -XPOST -H "Content-Type: text/html" --data-binary "@/tmp/acetylcarnitine.html" 'http://localhost:8080/entities?recogniser=dictionary'
 ```
 
+`Content-Type` and `x-leadmine-chemical-entities` headers are required in order for requests made via Firefox to work.  To facilitate local development CORS headers have been 'baked in' to the code in `go/cmd/recognition-api/main.go` (this is not ideal and we may wish to extract the CORS setup into config at some stage).
+The following annotations have been added to the ner-api-ingress yaml on k8s:
+
+```
+nginx.ingress.kubernetes.io/cors-allow-headers: x-leadmine-chemical-entities, content-type
+nginx.ingress.kubernetes.io/cors-allow-methods: PUT, GET, POST, OPTIONS
+nginx.ingress.kubernetes.io/cors-allow-origin: '*'
+nginx.ingress.kubernetes.io/enable-cors: "true"
+```
+
+
 ### Code Generation
 Some code in this repo is generated. The generated code is committed, so you don't need to regenerate it yourself. See the [Makefile](Makefile) for more info.
 
