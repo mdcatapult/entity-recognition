@@ -71,7 +71,7 @@ func onExactMatch(
 		switch segmenter.Type() {
 		case NonAlphaNumericChar:
 			if isWhitespace(textBytes[0]) {
-				if err := sendTokenAndResetBuilder(snippet, snippetOffset, builder, onToken); err != nil {
+				if err := sendSnippetAndResetBuilder(snippet, snippetOffset, builder, onToken); err != nil {
 					return err
 				}
 
@@ -90,13 +90,15 @@ func onExactMatch(
 	}
 
 	// write any remaining text in the string builder to a new snippet
-	if err := sendTokenAndResetBuilder(snippet, snippetOffset, builder, onToken); err != nil {
+	if err := sendSnippetAndResetBuilder(snippet, snippetOffset, builder, onToken); err != nil {
 		return err
 	}
 
 	return nil
 }
 
+// We can set a new snippet's offset at the start of the input snippet's text, or after whitespace.
+// On every call to this function we add the text from the segmenter to our buffer (string builder).
 func writeTextToBufferAndUpdateOffset(
 	canSetOffset *bool,
 	snippetOffset *uint32,
@@ -135,12 +137,12 @@ func onNonExactMatch(
 		switch segmenter.Type() {
 		case NonAlphaNumericChar:
 			if !isWhitespace(textBytes[0]) {
-				if err := writeTextAndSendSnippet(textBytes, onToken, snippet, snippetOffset); err != nil {
+				if err := createSnippetAndSendToCallback(textBytes, onToken, snippet, snippetOffset); err != nil {
 					return err
 				}
 			}
 		default:
-			if err := writeTextAndSendSnippet(textBytes, onToken, snippet, snippetOffset); err != nil {
+			if err := createSnippetAndSendToCallback(textBytes, onToken, snippet, snippetOffset); err != nil {
 				return err
 			}
 		}
@@ -151,15 +153,15 @@ func onNonExactMatch(
 	return nil
 }
 
-func writeTextAndSendSnippet(
+func createSnippetAndSendToCallback(
 	textBytes []byte,
 	onToken func(*pb.Snippet) error,
 	snippet *pb.Snippet,
 	snippetOffset uint32,
 ) error {
 
-	newToken := createToken(snippet, snippetOffset, string(textBytes))
-	if err := onToken(newToken); err != nil {
+	newSnippet := createSnippet(snippet, snippetOffset, string(textBytes))
+	if err := onToken(newSnippet); err != nil {
 		return err
 	}
 
@@ -170,15 +172,15 @@ func numCharsInSegment(text string) uint32 {
 	return uint32(utf8.RuneCountInString(text))
 }
 
-func sendTokenAndResetBuilder(
+func sendSnippetAndResetBuilder(
 	snippet *pb.Snippet,
 	snippetOffset uint32,
 	builder *strings.Builder,
 	onToken func(*pb.Snippet) error) error {
 
 	if builder.Len() > 0 {
-		newToken := createToken(snippet, snippetOffset, builder.String())
-		if err := onToken(newToken); err != nil {
+		newSnippet := createSnippet(snippet, snippetOffset, builder.String())
+		if err := onToken(newSnippet); err != nil {
 			return err
 		}
 		builder.Reset()
@@ -191,7 +193,7 @@ func isWhitespace(b byte) bool {
 	return b <= whitespaceBoundary
 }
 
-func createToken(
+func createSnippet(
 	snippet *pb.Snippet,
 	snippetOffset uint32,
 	text string,
