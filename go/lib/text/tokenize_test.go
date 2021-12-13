@@ -127,6 +127,21 @@ var _ = Describe("Tokenise", func() {
 
 			assertTokenize(tokens, expectedTexts, expectedOffsets)
 		})
+
+		It("two interesting characters: zhōng wén", func() {
+			snippet := &pb.Snippet{
+				Text: "中文",
+			}
+			expectedTexts := []string{"中文"}
+			expectedOffsets := []uint32{0}
+
+			err := Tokenize(snippet, onTokenCallback, true)
+			Expect(err).Should(BeNil())
+
+			assertTokenize(tokens, expectedTexts, expectedOffsets)
+		})
+
+
 	})
 
 	var _ = Describe("non-exact match", func() {
@@ -227,6 +242,20 @@ var _ = Describe("Tokenise", func() {
 
 			assertTokenize(tokens, expectedTexts, expectedOffsets)
 		})
+
+		It("two interesting characters: zhōng wén", func() {
+			snippet := &pb.Snippet{
+				Text: "中文",
+			}
+			expectedTexts := []string{"中", "文"}
+			expectedOffsets := []uint32{0, 1}
+
+			err := Tokenize(snippet, onTokenCallback, false)
+			Expect(err).Should(BeNil())
+
+			assertTokenize(tokens, expectedTexts, expectedOffsets)
+		})
+
 	})
 })
 

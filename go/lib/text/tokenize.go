@@ -26,11 +26,39 @@ func Tokenize(
 ) error {
 
 	segmenter := segment.NewWordSegmenterDirect([]byte(snippet.GetText()))
+
+	if exactMatch {
+		if err := onExactMatch(segmenter, onToken, snippet); err != nil {
+			return err
+		}
+	} else {
+		if err := onNonExactMatch(segmenter, onToken, snippet); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// onExactMatch combines adjacent non-whitespace tokens in to one token, this behaviour excludes terms like
+// 'copper-oxide' if our dictionary has both 'copper' and 'oxide', but not 'copper-oxide'.
+// The rationale for this is that 'copper-oxide' is something fundamentally different to 'copper' or 'oxide'.
+// The downside of this approach is that we do not find any terms with adjacent punctuation e.g. 'copper.', 'oxide!'.
+func onExactMatch(
+	segmenter *segment.Segmenter,
+	onToken func(*pb.Snippet) error,
+	snippet *pb.Snippet,
+) error {
+
+	// Given the snippet text 'apple-pie', the segmenter will split this in to three segments: 'apple', '-', 'pie'
+	// As the segmenter advances through the text, we add these segments to the string builder, but only allow taking an offset
+	// at the start of the snippet text (first segment), or after a whitespace character.
+	// In the example 'apple-pie' we assign the snippet's start offset to the position of the 'a' character of 'apple'.
+	var canSetOffset = true
+	var snippetOffset = uint32(0)
 	builder := &strings.Builder{}
 
 	var position = uint32(0)
-	var snippetOffset = uint32(0)
-	var canSetOffset = true
 
 	for segmenter.Segment() {
 
@@ -38,71 +66,122 @@ func Tokenize(
 			return err
 		}
 
-		segmentBytes := segmenter.Bytes()
+		textBytes := segmenter.Bytes()
 
 		switch segmenter.Type() {
 		case NonAlphaNumericChar:
-			if err := handleNonAlphaNumericChar(segmenter, builder, onToken, snippet, &snippetOffset, &canSetOffset, position, exactMatch); err != nil {
-				return err
-			}
-		default: // alphanumeric char
-			if err := writeTextToBufferAndUpdateOffset(&canSetOffset, &snippetOffset, position, segmentBytes, builder); err != nil {
-				return err
-			}
-
-			if !exactMatch {
-				if err := onToken(createToken(snippet, snippetOffset, builder.String())); err != nil {
+			if isWhitespace(textBytes[0]) {
+				if err := sendTokenAndResetBuilder(snippet, snippetOffset, builder, onToken); err != nil {
 					return err
 				}
-				builder.Reset()
+
+				canSetOffset = true // after whitespace we can always set a snippet's offset
+			} else {
+				if err := writeTextToBufferAndUpdateOffset(&canSetOffset, &snippetOffset, position, textBytes, builder); err != nil {
+					return err
+				}
+			}
+		default:
+			if err := writeTextToBufferAndUpdateOffset(&canSetOffset, &snippetOffset, position, textBytes, builder); err != nil {
+				return err
 			}
 		}
-
-		position += uint32(utf8.RuneCountInString(segmenter.Text()))
-
+		position += numCharsInSegment(segmenter.Text())
 	}
 
-	// if we have something in the buffer once the segmenter has finished, make a new snippet
-	if builder.Len() > 0 { // if we have something at the buffer make a new newSnippet
-		if err := onToken(createToken(snippet, snippetOffset, builder.String())); err != nil {
-			return err
-		}
-		builder.Reset()
+	// write any remaining text in the string builder to a new snippet
+	if err := sendTokenAndResetBuilder(snippet, snippetOffset, builder, onToken); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func handleNonAlphaNumericChar(
-	segmenter *segment.Segmenter,
-	builder *strings.Builder,
-	onToken func(snippet *pb.Snippet) error,
-	snippet *pb.Snippet,
-	snippetOffset *uint32,
+func writeTextToBufferAndUpdateOffset(
 	canSetOffset *bool,
+	snippetOffset *uint32,
 	position uint32,
-	exactMatch bool,
-) error {
-	if isWhitespace(segmenter.Bytes()[0]) {
-		if builder.Len() > 0 { // if we have something in the buffer make a new newSnippet
-			if err := onToken(createToken(snippet, *snippetOffset, builder.String())); err != nil {
-				return err
-			}
-			builder.Reset()
-		}
+	textBytes []byte,
+	builder *strings.Builder) error {
 
-		*canSetOffset = true // after whitespace we can always add a snippet index
-	} else {
-		if err := writeTextToBufferAndUpdateOffset(canSetOffset, snippetOffset, position, segmenter.Bytes(), builder); err != nil {
+	if *canSetOffset {
+		*snippetOffset = position // we will use this as the start position of a snippet
+		*canSetOffset = false
+	}
+
+	_, err := builder.Write(textBytes)
+
+	return err
+}
+
+// onNonExactMatch creates a snippet for every non whitespace character.
+// Given the snippet text '  Partick Thistle F.C' returns the snippets 'Partick', 'Thistle', 'F', '.', 'C'
+func onNonExactMatch(
+	segmenter *segment.Segmenter,
+	onToken func(*pb.Snippet) error,
+	snippet *pb.Snippet,
+) error {
+
+	var snippetOffset = uint32(0)
+
+	for segmenter.Segment() {
+
+		if err := segmenter.Err(); err != nil {
 			return err
 		}
-		if !exactMatch {
-			*canSetOffset = true // after whitespace we can always add a snippet index
-			if err := onToken(createToken(snippet, position, builder.String())); err != nil {
+
+		textBytes := segmenter.Bytes()
+
+		switch segmenter.Type() {
+		case NonAlphaNumericChar:
+			if !isWhitespace(textBytes[0]) {
+				if err := writeTextAndSendSnippet(textBytes, onToken, snippet, snippetOffset); err != nil {
+					return err
+				}
+			}
+		default:
+			if err := writeTextAndSendSnippet(textBytes, onToken, snippet, snippetOffset); err != nil {
 				return err
 			}
-			builder.Reset()
 		}
+
+		snippetOffset += numCharsInSegment(segmenter.Text())
+	}
+
+	return nil
+}
+
+func writeTextAndSendSnippet(
+	textBytes []byte,
+	onToken func(*pb.Snippet) error,
+	snippet *pb.Snippet,
+	snippetOffset uint32,
+) error {
+
+	newToken := createToken(snippet, snippetOffset, string(textBytes))
+	if err := onToken(newToken); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func numCharsInSegment(text string) uint32 {
+	return uint32(utf8.RuneCountInString(text))
+}
+
+func sendTokenAndResetBuilder(
+	snippet *pb.Snippet,
+	snippetOffset uint32,
+	builder *strings.Builder,
+	onToken func(*pb.Snippet) error) error {
+
+	if builder.Len() > 0 {
+		newToken := createToken(snippet, snippetOffset, builder.String())
+		if err := onToken(newToken); err != nil {
+			return err
+		}
+		builder.Reset()
 	}
 	return nil
 }
@@ -122,21 +201,4 @@ func createToken(
 		Offset: snippet.GetOffset() + snippetOffset,
 		Xpath:  snippet.GetXpath(),
 	}
-}
-
-func writeTextToBufferAndUpdateOffset(
-	canSetOffset *bool,
-	snippetOffset *uint32,
-	position uint32,
-	text []byte,
-	builder *strings.Builder) error {
-
-	if *canSetOffset {
-		*snippetOffset = position // we will use this as the start position of a snippet
-		*canSetOffset = false
-	}
-
-	_, err := builder.Write(text)
-
-	return err
 }
