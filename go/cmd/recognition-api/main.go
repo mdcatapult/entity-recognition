@@ -84,7 +84,7 @@ func main() {
 		cors.New(cors.Config{
 			AllowOrigins:     []string{"*"},
 			AllowMethods:     []string{"GET", "POST"},
-			AllowHeaders:     []string{"Origin", "Content-Type"},
+			AllowHeaders:     []string{"Origin", "Content-Type", "x-leadmine-chemical-entities"},
 			AllowCredentials: true,
 			MaxAge:           12 * time.Hour,
 		}),
