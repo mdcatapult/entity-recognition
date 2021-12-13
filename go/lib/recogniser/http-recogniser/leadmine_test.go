@@ -2,8 +2,10 @@ package http_recogniser
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	netUrl "net/url"
 	"os"
 	"sync"
 	"testing"
@@ -74,16 +76,17 @@ func (s *leadmineSuite) TestRecognise() {
 
 func (s *leadmineSuite) TestUrlWithOpts() {
 	tests := []struct {
-		name     string
-		url      string
-		opts     lib.RecogniserOptions
-		expected string
+		name           string
+		url            string
+		opts           lib.RecogniserOptions
+		expectedPath   string
+		expectedParams map[string]string
 	}{
 		{
-			name:     "no query parameters",
-			url:      "https://leadmine.wopr.inf.mdc/chemical-entities/entities",
-			opts:     lib.RecogniserOptions{},
-			expected: "https://leadmine.wopr.inf.mdc/chemical-entities/entities",
+			name:         "no query parameters",
+			url:          "https://leadmine.wopr.inf.mdc/chemical-entities/entities",
+			opts:         lib.RecogniserOptions{},
+			expectedPath: "https://leadmine.wopr.inf.mdc/chemical-entities/entities",
 		},
 		{
 			name: "one query parameter",
@@ -95,7 +98,10 @@ func (s *leadmineSuite) TestUrlWithOpts() {
 					},
 				},
 			},
-			expected: "https://leadmine.wopr.inf.mdc/chemical-entities/entities?inchi=true",
+			expectedPath: "https://leadmine.wopr.inf.mdc/chemical-entities/entities",
+			expectedParams: map[string]string{
+				"inchi": "true",
+			},
 		},
 		{
 			name: "multiple query parameters",
@@ -108,24 +114,33 @@ func (s *leadmineSuite) TestUrlWithOpts() {
 					},
 				},
 			},
-			expected: "https://leadmine.wopr.inf.mdc/chemical-entities/entities?inchi=true&inchi=yes&hello=dave",
+			expectedPath: "https://leadmine.wopr.inf.mdc/chemical-entities/entities",
+			expectedParams: map[string]string{
+				"inchi": "true",
+				"hello": "dave",
+			},
 		},
 	}
-	for _, tt := range tests {
-		s.T().Log(tt.name)
-		leadmine := leadmine{Url: tt.url}
-		actual := leadmine.urlWithOpts(tt.opts)
-		s.Equal(tt.expected, actual)
+	for _, test := range tests {
+		s.T().Log(test.name)
+		leadmine := leadmine{Url: test.url}
+		url, err := netUrl.Parse(leadmine.urlWithOpts(test.opts))
+		s.NoError(err)
+		s.Equal(test.expectedPath, fmt.Sprintf("%v://%v%v", url.Scheme, url.Host, url.Path))
+
+		for k, v := range test.expectedParams {
+			s.Equal(v, url.Query().Get(k))
+		}
 	}
 }
 
 func (s *leadmineSuite) Test_CorrectLeadmineEntityOffsets() {
 	for _, test := range []struct {
-		name string
+		name     string
 		entities builderEntities
-		text string
+		text     string
 		expected builderEntities
-	} {
+	}{
 		{
 			name: "text with nothing special",
 			text: "entity",
@@ -206,7 +221,7 @@ func (s *leadmineSuite) Test_CorrectLeadmineEntityOffsets() {
 				builderEntity{}.withText("(+)-(Z)-antazirine").withEnd(18),
 			},
 		},
-	}{
+	} {
 
 		res, err := correctLeadmineEntityOffsets(&LeadmineResponse{
 			Created:  "",
