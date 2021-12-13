@@ -5,7 +5,7 @@ blacklist: config/blacklists/global.yml
 
 grpc_recognisers:
   # The keys in this object will become recognition api query parameters.
-  # i.e. to use this recogniser, do http://localhost:8080/html/entites?recogniser=dictionary
+  # i.e. to use this recogniser, do http://localhost:8080/html/entities?recogniser=dictionary
   dictionary:
     host: localhost
     port: 50051
@@ -26,4 +26,10 @@ http_recognisers:
     type: leadmine
     url: https://leadmine.wopr.inf.mdc/proteins/entities
     blacklist: config/blacklists/leadmine-proteins.yml
+
+  leadmine-disease:
+    type: leadmine
+    url: https://leadmine.wopr.inf.mdc/diseases/entities
+
+
 
