@@ -128,8 +128,8 @@ func (s *leadmineSuite) TestUrlWithOpts() {
 		s.NoError(err)
 		s.Equal(test.expectedPath, fmt.Sprintf("%v://%v%v", url.Scheme, url.Host, url.Path))
 
-		for k, v := range test.expectedParams {
-			s.Equal(v, url.Query().Get(k))
+		for paramName, paramValue := range test.expectedParams {
+			s.Equal(paramValue, url.Query().Get(paramName))
 		}
 	}
 }
