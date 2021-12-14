@@ -46,7 +46,7 @@ func (x *Snippet) String() string {
 
 func (*Snippet) ProtoMessage() {}
 
-func (x *Snippet) ProtoReflect() protoreflect.Message {
+func (x *Snippet)rotoReflect() protoreflect.Message {
 	mi := &file_types_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
