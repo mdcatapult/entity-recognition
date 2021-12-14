@@ -20,7 +20,7 @@ const NonAlphaNumericChar = 0
 	three tokens: "some", "-", "text".
 **/
 func Tokenize(
-	snippet pb.Snippet,
+	snippet *pb.Snippet,
 	onToken func(*pb.Snippet) error,
 	exactMatch bool,
 ) error {
@@ -32,7 +32,7 @@ func Tokenize(
 			return err
 		}
 	} else {
-		if err := onNonExactMatch(segmenter, onToken, &snippet); err != nil {
+		if err := onNonExactMatch(segmenter, onToken, snippet); err != nil {
 			return err
 		}
 	}
@@ -47,7 +47,7 @@ func Tokenize(
 func onExactMatch(
 	segmenter *segment.Segmenter,
 	onToken func(*pb.Snippet) error,
-	snippet pb.Snippet,
+	snippet *pb.Snippet,
 ) error {
 
 	// Given the snippet text 'apple-pie', the segmenter will split this in to three segments: 'apple', '-', 'pie'
@@ -71,7 +71,7 @@ func onExactMatch(
 		switch segmenter.Type() {
 		case NonAlphaNumericChar:
 			if isWhitespace(textBytes[0]) {
-				if err := sendSnippetAndResetBuilder(&snippet, snippetOffset, builder, onToken); err != nil {
+				if err := sendSnippetAndResetBuilder(snippet, snippetOffset, builder, onToken); err != nil {
 					return err
 				}
 
@@ -90,7 +90,7 @@ func onExactMatch(
 	}
 
 	// write any remaining text in the string builder to a new snippet
-	if err := sendSnippetAndResetBuilder(&snippet, snippetOffset, builder, onToken); err != nil {
+	if err := sendSnippetAndResetBuilder(snippet, snippetOffset, builder, onToken); err != nil {
 		return err
 	}
 

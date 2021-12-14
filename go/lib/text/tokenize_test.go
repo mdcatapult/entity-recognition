@@ -29,7 +29,7 @@ var _ = Describe("Tokenise", func() {
 
 		It("special char and preceding/trailing spaces", func() {
 
-			snippet := pb.Snippet{
+			snippet := &pb.Snippet{
 				Text: " £ some text ",
 			}
 			expectedTexts := []string{"£", "some", "text"}
@@ -43,7 +43,7 @@ var _ = Describe("Tokenise", func() {
 
 		It("text starting with non alpha char, containing alpha and non alpha, ending in space", func() {
 
-			snippet := pb.Snippet{
+			snippet := &pb.Snippet{
 				Text: "some-text$ ",
 			}
 			expectedTexts := []string{"some-text$"}
@@ -56,7 +56,7 @@ var _ = Describe("Tokenise", func() {
 		})
 
 		It("text starting with non alpha char, containing alpha and non alpha, ending in space", func() {
-			snippet := pb.Snippet{
+			snippet := &pb.Snippet{
 				Text: "- apple !@£ pie-face ",
 			}
 			expectedTexts := []string{"-", "apple", "!@£", "pie-face"}
@@ -68,7 +68,7 @@ var _ = Describe("Tokenise", func() {
 		})
 
 		It("with existing offset", func() {
-			snippet := pb.Snippet{
+			snippet := &pb.Snippet{
 				Text:   "Halogen-bonding-triggered supramolecular gel formation.",
 				Offset: 100,
 			}
@@ -81,7 +81,7 @@ var _ = Describe("Tokenise", func() {
 		})
 
 		It("greek characters", func() {
-			snippet := pb.Snippet{
+			snippet := &pb.Snippet{
 				Text: "βωα -νπψ- lamb ανπψ",
 			}
 			expectedTexts := []string{"βωα", "-νπψ-", "lamb", "ανπψ"}
@@ -93,7 +93,7 @@ var _ = Describe("Tokenise", func() {
 		})
 
 		It("chemicals with ( and ;", func() {
-			snippet := pb.Snippet{
+			snippet := &pb.Snippet{
 				Text: "(MDMA; Ecstasy)",
 			}
 			expectedTexts := []string{"(MDMA;", "Ecstasy)"}
@@ -105,7 +105,7 @@ var _ = Describe("Tokenise", func() {
 		})
 
 		It("chemicals with / and (", func() {
-			snippet := pb.Snippet{
+			snippet := &pb.Snippet{
 				Text: "pluronic/poly(acrylic acid)",
 			}
 			expectedTexts := []string{"pluronic/poly(acrylic", "acid)"}
@@ -117,7 +117,7 @@ var _ = Describe("Tokenise", func() {
 		})
 
 		It("chemicals with +", func() {
-			snippet := pb.Snippet{
+			snippet := &pb.Snippet{
 				Text: "verapamil+bufadienolide",
 			}
 			expectedTexts := []string{"verapamil+bufadienolide"}
@@ -129,7 +129,7 @@ var _ = Describe("Tokenise", func() {
 		})
 
 		It("two interesting characters: zhōng wén", func() {
-			snippet := pb.Snippet{
+			snippet := &pb.Snippet{
 				Text: "中文",
 			}
 			expectedTexts := []string{"中文"}
@@ -141,12 +141,13 @@ var _ = Describe("Tokenise", func() {
 			assertTokenize(tokens, expectedTexts, expectedOffsets)
 		})
 
+
 	})
 
 	var _ = Describe("non-exact match", func() {
 
 		It("should break text on '-'", func() {
-			snippet := pb.Snippet{
+			snippet := &pb.Snippet{
 				Text: "some-text",
 			}
 			expectedTexts := []string{"some", "-", "text"}
@@ -158,7 +159,7 @@ var _ = Describe("Tokenise", func() {
 		})
 
 		It("should break text on '-' with existing offset", func() {
-			snippet := pb.Snippet{
+			snippet := &pb.Snippet{
 				Text:   "some-text",
 				Offset: 100,
 			}
@@ -171,7 +172,7 @@ var _ = Describe("Tokenise", func() {
 		})
 
 		It("should handle spaces'", func() {
-			snippet := pb.Snippet{
+			snippet := &pb.Snippet{
 				Text: "some text",
 			}
 			expectedTexts := []string{"some", "text"}
@@ -183,7 +184,7 @@ var _ = Describe("Tokenise", func() {
 		})
 
 		It("should handle special chars", func() {
-			snippet := pb.Snippet{
+			snippet := &pb.Snippet{
 				Text: "βωα βωα hello",
 			}
 			expectedTexts := []string{"βωα", "βωα", "hello"}
@@ -195,7 +196,7 @@ var _ = Describe("Tokenise", func() {
 		})
 
 		It("should handle trailing and leading spaces", func() {
-			snippet := pb.Snippet{
+			snippet := &pb.Snippet{
 				Text: " some -text some-text ",
 			}
 			expectedTexts := []string{"some", "-", "text", "some", "-", "text"}
@@ -207,7 +208,7 @@ var _ = Describe("Tokenise", func() {
 		})
 
 		It("chemicals with ( and ;", func() {
-			snippet := pb.Snippet{
+			snippet := &pb.Snippet{
 				Text: "(MDMA; Ecstasy)",
 			}
 			expectedTexts := []string{"(", "MDMA", ";", "Ecstasy", ")"}
@@ -219,7 +220,7 @@ var _ = Describe("Tokenise", func() {
 		})
 
 		It("chemicals with / and (", func() {
-			snippet := pb.Snippet{
+			snippet := &pb.Snippet{
 				Text: "pluronic/poly(acrylic acid)",
 			}
 			expectedTexts := []string{"pluronic", "/", "poly", "(", "acrylic", "acid", ")"}
@@ -231,7 +232,7 @@ var _ = Describe("Tokenise", func() {
 		})
 
 		It("chemicals with +", func() {
-			snippet := pb.Snippet{
+			snippet := &pb.Snippet{
 				Text: "verapamil+bufadienolide",
 			}
 			expectedTexts := []string{"verapamil", "+", "bufadienolide"}
@@ -243,7 +244,7 @@ var _ = Describe("Tokenise", func() {
 		})
 
 		It("two interesting characters: zhōng wén", func() {
-			snippet := pb.Snippet{
+			snippet := &pb.Snippet{
 				Text: "中文",
 			}
 			expectedTexts := []string{"中", "文"}

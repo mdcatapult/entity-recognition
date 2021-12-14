@@ -51,7 +51,7 @@ func (c controller) Tokenize(reader io.Reader, contentType AllowedContentType) (
 	// of delimiter, e.g. </br>. Here we tokenize the output and append that to our token slice.
 	var tokens []*pb.Snippet
 	onSnippet := func(snippet *pb.Snippet) error {
-		return text.Tokenize(*snippet, func(snippet *pb.Snippet) error {
+		return text.Tokenize(snippet, func(snippet *pb.Snippet) error {
 			text.NormalizeSnippet(snippet)
 			if len(snippet.NormalisedText) > 0 {
 				tokens = append(tokens, snippet)

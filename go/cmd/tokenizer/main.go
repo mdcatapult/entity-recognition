@@ -23,7 +23,7 @@ func (t tokenizer) Tokenize(stream pb.Tokenizer_TokenizeServer) error {
 			return err
 		}
 
-		err = text.Tokenize(*snippet, func(snippet *pb.Snippet) error {
+		err = text.Tokenize(snippet, func(snippet *pb.Snippet) error {
 			return stream.Send(snippet)
 		}, false)
 		if err != nil {
