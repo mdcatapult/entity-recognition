@@ -43,7 +43,7 @@ func Tokenize(
 // onExactMatch combines adjacent non-whitespace tokens in to one token, this behaviour excludes terms like
 // 'copper-oxide' if our dictionary has both 'copper' and 'oxide', but not 'copper-oxide'.
 // The rationale for this is that 'copper-oxide' is something fundamentally different to 'copper' or 'oxide'.
-// The downside of this approach is that we do not find any terms with adjacent punctuation e.g. 'copper.', 'oxide!'.
+// Given the text: 'apple-pie' returns one token: 'apple-pie,'
 func onExactMatch(
 	segmenter *segment.Segmenter,
 	onToken func(*pb.Snippet) error,
