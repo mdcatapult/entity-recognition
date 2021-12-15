@@ -25,7 +25,7 @@ func (t tokenizer) Tokenize(stream pb.Tokenizer_TokenizeServer) error {
 
 		err = text.Tokenize(snippet, func(snippet *pb.Snippet) error {
 			return stream.Send(snippet)
-		})
+		}, false)
 		if err != nil {
 			return err
 		}

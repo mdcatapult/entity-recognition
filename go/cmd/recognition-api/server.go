@@ -27,14 +27,14 @@ func NewHttpError(code int, err error) HttpError {
 }
 
 type server struct {
-	controller controller
+	controller *controller
 }
 
-func (s server) RegisterRoutes(r *gin.Engine) {
-	r.POST("/text", validateBody, s.HTMLToText)
-	r.POST("/tokens", validateBody, s.Tokenize)
-	r.POST("/entities", validateBody, s.GetRecognisers, s.Recognize)
-	r.GET("/recognisers", s.ListRecognisers)
+func (s server) RegisterRoutes(engine *gin.Engine) {
+	engine.POST("/text", validateBody, s.HTMLToText)
+	engine.POST("/tokens", validateBody, s.getParams, s.Tokenise)
+	engine.POST("/entities", validateBody, s.getParams, s.GetRecognisers, s.Recognize)
+	engine.GET("/recognisers", s.ListRecognisers)
 }
 
 func (s server) ListRecognisers(c *gin.Context) {
@@ -104,7 +104,7 @@ func (s server) Recognize(c *gin.Context) {
 	c.JSON(200, entities)
 }
 
-func (s server) Tokenize(c *gin.Context) {
+func (s server) Tokenise(c *gin.Context) {
 	contentType, ok := allowedContentTypeEnumMap[c.ContentType()]
 	if !ok {
 		handleError(c, NewHttpError(400, errors.New("invalid content type - must be text/html or text/plain")))
@@ -132,6 +132,11 @@ func (s server) HTMLToText(c *gin.Context) {
 	}
 
 	c.Data(200, "text/plain", data)
+}
+
+func (s *server) getParams(c *gin.Context) {
+	s.controller.exactMatch = c.Query("exact-match") == "true"
+	c.Next()
 }
 
 func validateBody(c *gin.Context) {

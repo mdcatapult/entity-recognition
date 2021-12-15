@@ -19,6 +19,8 @@ test:
   image: registry.mdcatapult.io/informatics/docker-images/ci/golang
   script:
     - go test ./go/... -coverpkg=./... -coverprofile=cover.out
+    - go install github.com/onsi/ginkgo/ginkgo@latest
+    - ginkgo go/lib/text
     - sed -i "/\/gen\//d" cover.out
     - go tool cover -func cover.out
   coverage: /total:\s+\(statements\)\s+(\d+.\d+\%)/

@@ -30,6 +30,7 @@ type controller struct {
 	htmlReader  snippet_reader.Client
 	textReader  snippet_reader.Client
 	blacklist   blacklist.Blacklist // a global blacklist to apply against all recognisers
+	exactMatch  bool
 }
 
 func (c controller) HTMLToText(reader io.Reader) ([]byte, error) {
@@ -56,7 +57,7 @@ func (c controller) Tokenize(reader io.Reader, contentType AllowedContentType) (
 				tokens = append(tokens, snippet)
 			}
 			return nil
-		})
+		}, c.exactMatch)
 	}
 
 	// Call htmlToText with our callback
@@ -96,6 +97,8 @@ func (c controller) Recognize(reader io.Reader, contentType AllowedContentType, 
 				error: fmt.Errorf("no such recogniser '%s'", recogniserName),
 			}
 		}
+
+		validRecogniser.SetExactMatch(c.exactMatch)
 
 		channels[recogniserName] = make(chan snippet_reader.Value)
 		err := validRecogniser.Recognise(channels[recogniserName], recogniserOptions, wg)

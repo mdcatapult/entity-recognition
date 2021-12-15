@@ -33,6 +33,11 @@ type leadmine struct {
 	err        error
 	entities   []*pb.Entity
 	blacklist  blacklist.Blacklist
+	exactMatch bool
+}
+
+func (l *leadmine) SetExactMatch(exact bool) {
+	l.exactMatch = exact
 }
 
 func (l *leadmine) reset() {
