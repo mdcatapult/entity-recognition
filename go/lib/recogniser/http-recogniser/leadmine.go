@@ -1,3 +1,7 @@
+/*
+	http_recogniser provides a client which uses HTTP to communicate with an HTTP server which can perform entity recognition.
+	Currently, the only such server is Leadmine Web Service, hence the references to Leadmine.
+*/
 package http_recogniser
 
 import (

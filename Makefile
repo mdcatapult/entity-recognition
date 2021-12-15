@@ -60,3 +60,10 @@ run: build
 .PHONY: format
 format: require-go
 	find ./go -type f -name '*.go' -not -path "./go/gen/*" -exec ./scripts/goimports.sh {} \;
+
+.PHONY: docs
+docs:
+	cd go/cmd/recognition-api; \
+	swagger generate spec -o ./swagger.json --scan-models; \
+	swagger serve -F=swagger swagger.json
+

@@ -1,3 +1,7 @@
+/*
+grpc_recogniser provides a client which uses gRPC to communicate with a gRPC server which can perform entity recognition.
+*/
+
 package grpc_recogniser
 
 import (
@@ -38,6 +42,8 @@ func (g *grpcRecogniser) SetExactMatch(exact bool) {
 	g.exactMatch = exact
 }
 
+// Recognise calls the helper function recognise. This listens for snippets on the given channel, and blocks with wg
+// until the gRPC recogniser has returned results for every snippet.
 func (g *grpcRecogniser) Recognise(snipReaderValues <-chan snippet_reader.Value, _ lib.RecogniserOptions, wg *sync.WaitGroup) error {
 	g.reset()
 
