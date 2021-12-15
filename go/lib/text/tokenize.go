@@ -27,17 +27,15 @@ func Tokenize(
 
 	segmenter := segment.NewWordSegmenterDirect([]byte(snippet.GetText()))
 
+	var err error
 	if exactMatch {
-		if err := onExactMatch(segmenter, onToken, snippet); err != nil {
-			return err
-		}
+		err = onExactMatch(segmenter, onToken, snippet)
 	} else {
-		if err := onNonExactMatch(segmenter, onToken, snippet); err != nil {
-			return err
-		}
+		err = onNonExactMatch(segmenter, onToken, snippet)
 	}
 
-	return nil
+	return err
+
 }
 
 // onExactMatch combines adjacent non-whitespace tokens in to one token, this behaviour excludes terms like
