@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"regexp"
@@ -17,6 +18,7 @@ type recogniser struct {
 }
 
 func (r recogniser) GetStream(stream pb.Recognizer_GetStreamServer) error {
+	fmt.Println("AAAAAAAA")
 	log.Info().Msg("received request")
 	// listen for tokens
 	for {

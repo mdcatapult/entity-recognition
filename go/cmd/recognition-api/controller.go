@@ -89,7 +89,10 @@ func (c controller) Recognize(reader io.Reader, contentType AllowedContentType, 
 
 	wg := &sync.WaitGroup{}
 	channels := make(map[string]chan snippet_reader.Value)
+	// TODO - does recogniserWithOptions need to be a map?
 	for recogniserName, recogniserOptions := range opts {
+
+		// TODO do we need to do this check if we already know what recognisers we have?
 		validRecogniser, ok := c.recognisers[recogniserName]
 		if !ok {
 			return nil, HttpError{
@@ -115,15 +118,17 @@ func (c controller) Recognize(reader io.Reader, contentType AllowedContentType, 
 		snippetReaderValues = c.textReader.ReadSnippets(reader)
 	}
 
+	// all the bits of text as snippets (with an error)
 	for snippetReaderValue := range snippetReaderValues {
-		SendToAll(snippetReaderValue, channels)
+		// TODO could the snippetReaderValue.Err value be an actual error here?
+		SendToAll(snippetReaderValue, channels) // every value goes to every channel (recogniser) which is defined above
 		if snippetReaderValue.Err != nil {
 			break
 		}
 	}
 
 	wg.Wait()
-	length := 0
+	length := 0 // TODO length of what? length of all entities? could we remove this and just use append
 	for recogniserName := range opts {
 		if err := c.recognisers[recogniserName].Err(); err != nil {
 			return nil, err

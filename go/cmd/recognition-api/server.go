@@ -152,6 +152,7 @@ func (s server) Recognize(c *gin.Context) {
 		handleError(c, NewHttpError(400, errors.New("invalid content type - must be text/html or text/plain")))
 	}
 
+	// TODO: next line blocks until all of the recognisers return. If a recogniser dies then this will get stuck.
 	entities, err := s.controller.Recognize(c.Request.Body, contentType, recognisers)
 	if err != nil {
 		handleError(c, err)

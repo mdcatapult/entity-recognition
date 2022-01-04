@@ -17,7 +17,7 @@ var EnclosingCharacters = map[byte]byte{
 	'"':  '"',
 	'\'': '\'',
 	':':  0,
-	';':  0,
+	';':  0, // TODO why are these zero - A they have no 'counterpart'?
 	',':  0,
 	'.':  0,
 	'?':  0,
@@ -47,31 +47,38 @@ func RemoveFirstChar(in string) string {
 	return in[1:]
 }
 
-func NormalizeAndLowercaseSnippet(snippet *pb.Snippet) bool {
-	compoundTokenEnd := NormalizeSnippet(snippet)
+// NormalizeAndLowercaseSnippet normalizes snippet and returns whether this is the end of a compound token.
+func NormalizeAndLowercaseSnippet(snippet *pb.Snippet) (compoundTokenEnd bool) {
+	compoundTokenEnd = NormalizeSnippet(snippet)
 	snippet.NormalisedText = strings.ToLower(snippet.NormalisedText)
 	return compoundTokenEnd
 }
 
-func NormalizeSnippet(snippet *pb.Snippet) bool {
+// NormalizeSnippet runs NormalizeString on a snippets text, and returns whether this is the end
+// of a compound token.
+func NormalizeSnippet(snippet *pb.Snippet) (compoundTokenEnd bool) {
 	if snippet == nil {
 		return false
 	}
 
-	var compoundTokenEnd bool
 	var offset uint32
 	snippet.NormalisedText, compoundTokenEnd, offset = NormalizeString(snippet.Text)
+
+	//fmt.Println("OFFSET:", offset)
 	snippet.Offset += offset
 
 	return compoundTokenEnd
 }
 
-func NormalizeAndLowercaseString(token string) (normalizedToken string, compoundTokenEnd bool, offset uint32) {
-	normalizedToken, compoundTokenEnd, offset = NormalizeString(token)
+//NormalizeAndLowercaseString normalizes the given string and returns the result along with
+// whether this is the end of a compound token and
+func NormalizeAndLowercaseString(inputString string) (normalizedToken string, compoundTokenEnd bool, offset uint32) {
+	normalizedToken, compoundTokenEnd, offset = NormalizeString(inputString)
 	normalizedToken = strings.ToLower(normalizedToken)
 	return
 }
 
+// NormalizeString TODO what is offset?
 func NormalizeString(token string) (normalizedToken string, compoundTokenEnd bool, offset uint32) {
 
 	// Check length so we dont get a seg fault
@@ -82,7 +89,7 @@ func NormalizeString(token string) (normalizedToken string, compoundTokenEnd boo
 		return "", ok, offset
 	}
 
-	// remove quotes, brackets etc. from start and increase offset if so.
+	// remove quotes, brackets etc. from start and increase offset if so. // TODO what is the offset?
 	// If we find the counterpart character (e.g. "]" being the counterpart of "[")
 	// within the token, we don't remove it.
 	if counterpart, ok := EnclosingCharacters[token[0]]; ok {

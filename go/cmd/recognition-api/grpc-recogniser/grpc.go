@@ -1,5 +1,6 @@
 /*
 grpc_recogniser provides a client which uses gRPC to communicate with a gRPC server which can perform entity recognition.
+This is used by the recognition API
 */
 
 package grpc_recogniser
@@ -22,7 +23,7 @@ func New(name string, client pb.RecognizerClient, blacklist blacklist.Blacklist)
 		Name:      name,
 		client:    client,
 		err:       nil,
-		entities:  nil,
+		entities:  nil, // TODO could be an empty slice?
 		stream:    nil,
 		blacklist: blacklist,
 	}
@@ -98,8 +99,8 @@ func (g *grpcRecogniser) recognise(snipReaderValues <-chan snippet_reader.Value,
 		}
 	}()
 
-	// Read from the input channel, tokenise the snippets we read and send them on the stream.
-	err := snippet_reader.ReadChannelWithCallback(snipReaderValues, func(snippet *pb.Snippet) error {
+	// Send token to stream when a token is found
+	onTokenizeCallback := func(snippet *pb.Snippet) error {
 		return text.Tokenize(snippet, func(snippet *pb.Snippet) error {
 
 			if err := g.stream.Send(snippet); err != nil {
@@ -107,7 +108,10 @@ func (g *grpcRecogniser) recognise(snipReaderValues <-chan snippet_reader.Value,
 			}
 			return nil
 		}, g.exactMatch)
-	})
+	}
+
+	// Read from the input channel, tokenise the snippets we read and send them on the stream.
+	err := snippet_reader.ReadChannelWithCallback(snipReaderValues, onTokenizeCallback)
 	if err != nil {
 		g.err = err
 	}

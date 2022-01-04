@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/gin-contrib/cors"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/cmd/recognition-api/grpc-recogniser"
+	http_recogniser2 "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/cmd/recognition-api/http-recogniser"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -12,8 +14,6 @@ import (
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
-	grpc_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser/grpc-recogniser"
-	http_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser/http-recogniser"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/html"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/text"
 	"google.golang.org/grpc"
@@ -32,7 +32,7 @@ type recognitionAPIConfig struct {
 		Blacklist string
 	} `mapstructure:"grpc_recognisers"`
 	HttpRecognisers map[string]struct {
-		Type      http_recogniser.Type
+		Type      http_recogniser2.Type
 		Url       string
 		Blacklist string
 	} `mapstructure:"http_recognisers"`
@@ -73,8 +73,8 @@ func main() {
 
 	for name, conf := range config.HttpRecognisers {
 		switch conf.Type {
-		case http_recogniser.LeadmineType:
-			recogniserClients[name] = http_recogniser.NewLeadmineClient(name, conf.Url, loadBlacklist(conf.Blacklist))
+		case http_recogniser2.LeadmineType:
+			recogniserClients[name] = http_recogniser2.NewLeadmineClient(name, conf.Url, loadBlacklist(conf.Blacklist))
 		}
 	}
 
