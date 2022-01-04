@@ -120,10 +120,14 @@ func (s server) GetRecognisers(c *gin.Context) {
 //
 //    + name: exact-match
 //      description:  Boolean value of whether to perform exact matching during tokenising.  With exact matching, "some-text" is a single token - "some-text". Without exact matching, tokenising is more fine grained. "some-text" would be three tokens: "some", "-", "text".
-//
 //      in: query
 //      type: boolean
 //      required: false
+//
+//	 + name: Body
+//  	description: The HTML document to scan for entities
+//  	in: body
+//		required: true
 //
 // 	Consumes:
 //		- text/html
@@ -170,6 +174,11 @@ func (s server) Recognize(c *gin.Context) {
 //      type: boolean
 //      required: false
 //
+//	 + name: Body
+//  	description: The text document to tokenise
+//  	in: body
+//		required: true
+//
 // 	Consumes:
 //		- text/html
 //		- text/plain
@@ -197,6 +206,11 @@ func (s server) Tokenise(c *gin.Context) {
 
 // swagger:route POST /text Endpoints text
 // HTMLToText converts an HTML document into plain text.
+//	Parameters:
+//	 + name: Body
+//  	description: The HTML document to convert
+//  	in: body
+//		required: true
 //
 // 	Consumes:
 //		- text/html
