@@ -10,7 +10,7 @@ There are currently 4 primary applications:
 4. **The dictionary importer**. This app reads a file line by line, parses it, and upserts it to a backend database that the dictionary recognizer is compatible with.
 
 ## Documentation
-To see documentation around endpoints and types, `make docs`. This requires go-swagger which can be installed from source:
+To see documentation around endpoints and types, `make docs` from project root. This requires go-swagger which can be installed from source:
 
 ```
 dir=$(mktemp -d) 
