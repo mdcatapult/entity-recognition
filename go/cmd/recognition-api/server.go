@@ -55,6 +55,7 @@ func (s server) ListRecognisers(c *gin.Context) {
 	c.JSON(200, s.controller.ListRecognisers())
 }
 
+// TODO: break out and test
 func (s server) GetRecognisers(c *gin.Context) {
 
 	var requestedRecognisers []string
@@ -140,17 +141,19 @@ func (s server) GetRecognisers(c *gin.Context) {
 //      200: []Entity
 //  	400: description: Bad request - invalid content type.
 func (s server) Recognize(c *gin.Context) {
-	r, ok := c.Get("recognisers")
+	requestedRecognisers, ok := c.Get("recognisers")
 	if !ok {
 		handleError(c, errors.New("recognisers are unset"))
 	}
-
-	recognisers := r.(map[string]lib.RecogniserOptions)
 
 	contentType, ok := allowedContentTypeEnumMap[c.ContentType()]
 	if !ok {
 		handleError(c, NewHttpError(400, errors.New("invalid content type - must be text/html or text/plain")))
 	}
+
+	recognisers := requestedRecognisers.(map[string]lib.RecogniserOptions)
+
+	// TODO: extract query params and put them into l.Options
 
 	// TODO: next line blocks until all of the recognisers return. If a recogniser dies then this will get stuck.
 	entities, err := s.controller.Recognize(c.Request.Body, contentType, recognisers)

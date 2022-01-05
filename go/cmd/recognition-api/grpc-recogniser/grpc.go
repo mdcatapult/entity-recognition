@@ -11,7 +11,6 @@ import (
 	"sync"
 
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
 	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
@@ -45,7 +44,7 @@ func (g *grpcRecogniser) SetExactMatch(exact bool) {
 
 // Recognise calls the helper function recognise. This listens for snippets on the given channel, and blocks with wg
 // until the gRPC recogniser has returned results for every snippet.
-func (g *grpcRecogniser) Recognise(snipReaderValues <-chan snippet_reader.Value, _ lib.RecogniserOptions, wg *sync.WaitGroup) error {
+func (g *grpcRecogniser) Recognise(snipReaderValues <-chan snippet_reader.Value, wg *sync.WaitGroup) error {
 	g.reset()
 
 	var err error

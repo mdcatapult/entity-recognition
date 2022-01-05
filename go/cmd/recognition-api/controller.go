@@ -86,7 +86,7 @@ func (c controller) ListRecognisers() []string {
 }
 
 // Recognize performs entity recognition by calling recognise() on each recogniser in recogniserToOpts.
-func (c controller) Recognize(reader io.Reader, contentType AllowedContentType, recogniserToOpts map[string]lib.RecogniserOptions) ([]*pb.Entity, error) {
+func (controller controller) Recognize(reader io.Reader, contentType AllowedContentType, recogniserToOpts map[string]lib.RecogniserOptions) ([]*pb.Entity, error) {
 
 	wg := &sync.WaitGroup{}
 	channels := make(map[string]chan snippet_reader.Value)
@@ -94,7 +94,7 @@ func (c controller) Recognize(reader io.Reader, contentType AllowedContentType, 
 	for recogniserName, recogniserOptions := range recogniserToOpts {
 
 		// TODO do we need to do this check if we already know what recognisers we have?
-		validRecogniser, ok := c.recognisers[recogniserName]
+		validRecogniser, ok := controller.recognisers[recogniserName]
 		if !ok {
 			return nil, HttpError{
 				code:  400,
@@ -102,10 +102,10 @@ func (c controller) Recognize(reader io.Reader, contentType AllowedContentType, 
 			}
 		}
 
-		validRecogniser.SetExactMatch(c.exactMatch)
+		validRecogniser.SetExactMatch(controller.exactMatch)
 
 		channels[recogniserName] = make(chan snippet_reader.Value)
-		err := validRecogniser.Recognise(channels[recogniserName], recogniserOptions, wg)
+		err := validRecogniser.Recognise(channels[recogniserName], wg)
 		if err != nil {
 			return nil, err
 		}
@@ -114,9 +114,9 @@ func (c controller) Recognize(reader io.Reader, contentType AllowedContentType, 
 	var snippetReaderValues <-chan snippet_reader.Value
 	switch contentType {
 	case contentTypeHTML:
-		snippetReaderValues = c.htmlReader.ReadSnippets(reader)
+		snippetReaderValues = controller.htmlReader.ReadSnippets(reader)
 	case contentTypeRawtext:
-		snippetReaderValues = c.textReader.ReadSnippets(reader)
+		snippetReaderValues = controller.textReader.ReadSnippets(reader)
 	}
 
 	// all the bits of text as snippets (with an error)
@@ -131,18 +131,18 @@ func (c controller) Recognize(reader io.Reader, contentType AllowedContentType, 
 	wg.Wait()
 	length := 0 // TODO length of what? length of all entities? could we remove this and just use append
 	for recogniserName := range recogniserToOpts {
-		if err := c.recognisers[recogniserName].Err(); err != nil {
+		if err := controller.recognisers[recogniserName].Err(); err != nil {
 			return nil, err
 		}
-		length += len(c.recognisers[recogniserName].Result())
+		length += len(controller.recognisers[recogniserName].Result())
 	}
 
 	allowedEntities := make([]*pb.Entity, 0, length)
 	for recogniserName := range recogniserToOpts {
-		recognisedEntities := c.recognisers[recogniserName].Result()
+		recognisedEntities := controller.recognisers[recogniserName].Result()
 
 		// apply global blacklist
-		allowedEntities = append(allowedEntities, c.blacklist.FilterEntities(recognisedEntities)...)
+		allowedEntities = append(allowedEntities, controller.blacklist.FilterEntities(recognisedEntities)...)
 
 	}
 

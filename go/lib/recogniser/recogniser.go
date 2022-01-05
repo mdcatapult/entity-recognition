@@ -4,7 +4,6 @@ import (
 	"sync"
 
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
 )
 
@@ -15,7 +14,7 @@ import (
 //
 // swagger:model RecogniserClient
 type Client interface {
-	Recognise(<-chan snippet_reader.Value, lib.RecogniserOptions, *sync.WaitGroup) error
+	Recognise(<-chan snippet_reader.Value, *sync.WaitGroup) error
 	Err() error
 	Result() []*pb.Entity
 	SetExactMatch(bool)
