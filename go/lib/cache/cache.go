@@ -12,5 +12,4 @@ type Type string
 
 const (
 	Redis         Type = "redis"
-	Elasticsearch Type = "elasticsearch"
 )

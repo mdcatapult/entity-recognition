@@ -1,6 +1,5 @@
 log_level: info
 server:
   grpc_port: 50051
-cache_type: redis
 pipeline_size: 10000
 compound_token_length: 10
