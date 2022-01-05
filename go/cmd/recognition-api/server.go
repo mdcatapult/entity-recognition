@@ -57,6 +57,8 @@ func (s server) ListRecognisers(c *gin.Context) {
 	c.JSON(200, s.controller.ListRecognisers())
 }
 
+// GetRecognisers is a gin middleware func which uses the "recogniser" query param to populate recognisers. (may be specified multiple times).
+// The x-{recogniserName} header is also read to add config options to the relevant recogniser.
 func (s server) GetRecognisers(c *gin.Context) {
 
 	var requestedRecognisers []string
@@ -81,23 +83,21 @@ func (s server) GetRecognisers(c *gin.Context) {
 			continue
 		}
 
-		b, err := base64.StdEncoding.DecodeString(header)
+		headerBytes, err := base64.StdEncoding.DecodeString(header)
 		if err != nil {
 			handleError(c, NewHttpError(400, errors.New("invalid request header - must be base64 encoded")))
 			return
 		}
 
 		var opts lib.RecogniserOptions
-		if err := json.Unmarshal(b, &opts); err != nil {
+		if err := json.Unmarshal(headerBytes, &opts); err != nil {
 			handleError(c, NewHttpError(400, errors.New("invalid request header - must be valid json (base64 encoded)")))
 			return
 		}
 		recognisers[i].HttpOptions = opts.HttpOptions
-
 	}
 
 	c.Set(recognisersKey, recognisers)
-
 	c.Next()
 }
 
