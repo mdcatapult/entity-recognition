@@ -34,7 +34,9 @@ var _ = Describe("GetRecognisers", func() {
 
 			router.GET("/statusCodeTests", server{}.GetRecognisers)
 
-			go router.Run("localhost:9999")
+			go func() {
+				_ = router.Run("localhost:9999")
+			}()
 
 			// wait for server to start
 			time.Sleep(1 * time.Second)
@@ -112,7 +114,9 @@ var _ = Describe("GetRecognisers", func() {
 			router.GET("/singleRecogniser", server{}.GetRecognisers, singleRecogniserAsserter)
 			router.GET("/multipleRecognisers", server{}.GetRecognisers, multipleRecognisersAsserter)
 			router.GET("/allRecognisers", testServer.GetRecognisers, allRecognisersAsserter)
-			go router.Run("localhost:9998")
+			go func() {
+				_ = router.Run("localhost:9998")
+			}()
 		})
 
 		var _ = It("Should add single recogniser to context", func() {

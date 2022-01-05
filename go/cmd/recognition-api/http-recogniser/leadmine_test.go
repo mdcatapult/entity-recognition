@@ -59,7 +59,7 @@ func (s *leadmineSuite) TestRecognise() {
 	wg := &sync.WaitGroup{}
 
 	// Call the function we're testing!
-	err = testLeadmine.Recognise(snipChan, testOptions, wg)
+	err = testLeadmine.Recognise(snipChan, wg, testOptions.HttpOptions)
 	s.Nil(err)
 
 	// Get the expected response from resources.
@@ -124,7 +124,7 @@ func (s *leadmineSuite) TestUrlWithParams() {
 	for _, test := range tests {
 		s.T().Log(test.name)
 		leadmine := leadmine{Url: test.url}
-		url, err := netUrl.Parse(leadmine.urlWithParams(test.opts))
+		url, err := netUrl.Parse(leadmine.urlWithParams(test.opts.HttpOptions.QueryParameters))
 		s.NoError(err)
 		s.Equal(test.expectedPath, fmt.Sprintf("%v://%v%v", url.Scheme, url.Host, url.Path))
 

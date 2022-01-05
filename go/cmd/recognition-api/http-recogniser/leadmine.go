@@ -32,14 +32,13 @@ func NewLeadmineClient(name, url string, blacklist blacklist.Blacklist) recognis
 }
 
 type leadmine struct {
-	Name                     string
-	Url                      string
-	httpClient               lib.HttpClient
-	err                      error
-	entities                 []*pb.Entity
-	blacklist                blacklist.Blacklist
-	exactMatch               bool
-	leadmineWebServiceParams url.Values // HTTP params to send to Leadmine Web Service
+	Name       string
+	Url        string
+	httpClient lib.HttpClient
+	err        error
+	entities   []*pb.Entity
+	blacklist  blacklist.Blacklist
+	exactMatch bool
 }
 
 func (l *leadmine) SetExactMatch(exact bool) {
