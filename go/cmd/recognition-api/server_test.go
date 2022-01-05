@@ -117,6 +117,9 @@ var _ = Describe("GetRecognisers", func() {
 			go func() {
 				_ = router.Run("localhost:9998")
 			}()
+
+			// wait for server to start
+			time.Sleep(1 * time.Second)
 		})
 
 		var _ = It("Should add single recogniser to context", func() {

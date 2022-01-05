@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-contrib/cors"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/cmd/recognition-api/grpc-recogniser"
-	http_recogniser2 "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/cmd/recognition-api/http-recogniser"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/cmd/recognition-api/http-recogniser"
 	"google.golang.org/grpc/credentials/insecure"
 	"time"
 
@@ -33,7 +33,7 @@ type recognitionAPIConfig struct {
 		Blacklist string
 	} `mapstructure:"grpc_recognisers"`
 	HttpRecognisers map[string]struct {
-		Type      http_recogniser2.Type
+		Type      http_recogniser.Type
 		Url       string
 		Blacklist string
 	} `mapstructure:"http_recognisers"`
@@ -74,8 +74,8 @@ func main() {
 
 	for name, conf := range config.HttpRecognisers {
 		switch conf.Type {
-		case http_recogniser2.LeadmineType:
-			recogniserClients[name] = http_recogniser2.NewLeadmineClient(name, conf.Url, loadBlacklist(conf.Blacklist))
+		case http_recogniser.LeadmineType:
+			recogniserClients[name] = http_recogniser.NewLeadmineClient(name, conf.Url, loadBlacklist(conf.Blacklist))
 		}
 	}
 
