@@ -86,26 +86,26 @@ func (c controller) ListRecognisers() []string {
 }
 
 // Recognize performs entity recognition by calling recognise() on each recogniser in recogniserToOpts.
-func (controller controller) Recognize(reader io.Reader, contentType AllowedContentType, recogniserToOpts map[string]lib.RecogniserOptions) ([]*pb.Entity, error) {
+func (controller controller) Recognize(reader io.Reader, contentType AllowedContentType, requestedRecognisers []lib.RecogniserOptions) ([]*pb.Entity, error) {
 
 	wg := &sync.WaitGroup{}
 	channels := make(map[string]chan snippet_reader.Value)
-	// TODO - does recogniserWithOptions need to be a map?
-	for recogniserName, recogniserOptions := range recogniserToOpts {
 
-		// TODO do we need to do this check if we already know what recognisers we have?
-		validRecogniser, ok := controller.recognisers[recogniserName]
+	for _, recogniser := range requestedRecognisers {
+
+		// check that requested recogniser has been configured on controller
+		validRecogniser, ok := controller.recognisers[recogniser.Name]
 		if !ok {
 			return nil, HttpError{
 				code:  400,
-				error: fmt.Errorf("no such recogniser '%s'", recogniserName),
+				error: fmt.Errorf("no such recogniser '%s'", recogniser.Name),
 			}
 		}
 
 		validRecogniser.SetExactMatch(controller.exactMatch)
 
-		channels[recogniserName] = make(chan snippet_reader.Value)
-		err := validRecogniser.Recognise(channels[recogniserName], wg)
+		channels[recogniser.Name] = make(chan snippet_reader.Value)
+		err := validRecogniser.Recognise(channels[recogniser.Name], wg, recogniser.HttpOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -129,17 +129,15 @@ func (controller controller) Recognize(reader io.Reader, contentType AllowedCont
 	}
 
 	wg.Wait()
-	length := 0 // TODO length of what? length of all entities? could we remove this and just use append
-	for recogniserName := range recogniserToOpts {
-		if err := controller.recognisers[recogniserName].Err(); err != nil {
+	for _, recogniser := range requestedRecognisers {
+		if err := controller.recognisers[recogniser.Name].Err(); err != nil {
 			return nil, err
 		}
-		length += len(controller.recognisers[recogniserName].Result())
 	}
 
-	allowedEntities := make([]*pb.Entity, 0, length)
-	for recogniserName := range recogniserToOpts {
-		recognisedEntities := controller.recognisers[recogniserName].Result()
+	allowedEntities := make([]*pb.Entity, 0)
+	for _, recogniser := range requestedRecognisers {
+		recognisedEntities := controller.recognisers[recogniser.Name].Result()
 
 		// apply global blacklist
 		allowedEntities = append(allowedEntities, controller.blacklist.FilterEntities(recognisedEntities)...)

@@ -5,7 +5,7 @@ import (
 )
 
 type RecogniserOptions struct {
-	//RecogniserName string
+	Name string
 	HttpOptions
 }
 

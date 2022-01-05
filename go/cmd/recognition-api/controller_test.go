@@ -156,9 +156,7 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 	mockRecogniser.On("Result").Return(foundEntities)
 	s.controller.recognisers = map[string]recogniser.Client{"mock": mockRecogniser}
 
-	opts := map[string]lib.RecogniserOptions{
-		"mock": {},
-	}
+	opts := []lib.RecogniserOptions{{}}
 	entities, err := s.controller.Recognize(reader, contentTypeHTML, opts)
 	s.ElementsMatch(foundEntities, entities)
 	s.Nil(err)

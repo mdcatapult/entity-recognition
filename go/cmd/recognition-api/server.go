@@ -16,6 +16,8 @@ import (
 	"io"
 )
 
+const recognisersKey = "recognisers"
+
 type HttpError struct {
 	code int
 	error
@@ -55,7 +57,6 @@ func (s server) ListRecognisers(c *gin.Context) {
 	c.JSON(200, s.controller.ListRecognisers())
 }
 
-// TODO: break out and test
 func (s server) GetRecognisers(c *gin.Context) {
 
 	var requestedRecognisers []string
@@ -70,9 +71,10 @@ func (s server) GetRecognisers(c *gin.Context) {
 		}
 	}
 
-	recognisers := make(map[string]lib.RecogniserOptions, len(requestedRecognisers))
-	for _, recogniser := range requestedRecognisers {
-		recognisers[recogniser] = lib.RecogniserOptions{}
+	recognisers := make([]lib.RecogniserOptions, len(requestedRecognisers))
+	for i, recogniser := range requestedRecognisers {
+
+		recognisers[i] = lib.RecogniserOptions{Name: recogniser}
 
 		header := c.GetHeader(fmt.Sprintf("x-%s", recogniser))
 		if header == "" {
@@ -90,10 +92,12 @@ func (s server) GetRecognisers(c *gin.Context) {
 			handleError(c, NewHttpError(400, errors.New("invalid request header - must be valid json (base64 encoded)")))
 			return
 		}
-		recognisers[recogniser] = opts
+		recognisers[i].HttpOptions = opts.HttpOptions
+
 	}
 
-	c.Set("recognisers", recognisers)
+	c.Set(recognisersKey, recognisers)
+
 	c.Next()
 }
 
@@ -141,7 +145,7 @@ func (s server) GetRecognisers(c *gin.Context) {
 //      200: []Entity
 //  	400: description: Bad request - invalid content type.
 func (s server) Recognize(c *gin.Context) {
-	requestedRecognisers, ok := c.Get("recognisers")
+	requestedRecognisers, ok := c.Get(recognisersKey)
 	if !ok {
 		handleError(c, errors.New("recognisers are unset"))
 	}
@@ -151,9 +155,7 @@ func (s server) Recognize(c *gin.Context) {
 		handleError(c, NewHttpError(400, errors.New("invalid content type - must be text/html or text/plain")))
 	}
 
-	recognisers := requestedRecognisers.(map[string]lib.RecogniserOptions)
-
-	// TODO: extract query params and put them into l.Options
+	recognisers := requestedRecognisers.([]lib.RecogniserOptions)
 
 	// TODO: next line blocks until all of the recognisers return. If a recogniser dies then this will get stuck.
 	entities, err := s.controller.Recognize(c.Request.Body, contentType, recognisers)
