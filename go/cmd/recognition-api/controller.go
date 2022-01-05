@@ -85,12 +85,13 @@ func (c controller) ListRecognisers() []string {
 	return recognisers
 }
 
-func (c controller) Recognize(reader io.Reader, contentType AllowedContentType, opts map[string]lib.RecogniserOptions) ([]*pb.Entity, error) {
+// Recognize performs entity recognition by calling recognise() on each recogniser in recogniserToOpts.
+func (c controller) Recognize(reader io.Reader, contentType AllowedContentType, recogniserToOpts map[string]lib.RecogniserOptions) ([]*pb.Entity, error) {
 
 	wg := &sync.WaitGroup{}
 	channels := make(map[string]chan snippet_reader.Value)
 	// TODO - does recogniserWithOptions need to be a map?
-	for recogniserName, recogniserOptions := range opts {
+	for recogniserName, recogniserOptions := range recogniserToOpts {
 
 		// TODO do we need to do this check if we already know what recognisers we have?
 		validRecogniser, ok := c.recognisers[recogniserName]
@@ -129,7 +130,7 @@ func (c controller) Recognize(reader io.Reader, contentType AllowedContentType, 
 
 	wg.Wait()
 	length := 0 // TODO length of what? length of all entities? could we remove this and just use append
-	for recogniserName := range opts {
+	for recogniserName := range recogniserToOpts {
 		if err := c.recognisers[recogniserName].Err(); err != nil {
 			return nil, err
 		}
@@ -137,7 +138,7 @@ func (c controller) Recognize(reader io.Reader, contentType AllowedContentType, 
 	}
 
 	allowedEntities := make([]*pb.Entity, 0, length)
-	for recogniserName := range opts {
+	for recogniserName := range recogniserToOpts {
 		recognisedEntities := c.recognisers[recogniserName].Result()
 
 		// apply global blacklist

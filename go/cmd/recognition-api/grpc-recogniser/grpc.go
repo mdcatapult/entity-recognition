@@ -23,7 +23,7 @@ func New(name string, client pb.RecognizerClient, blacklist blacklist.Blacklist)
 		Name:      name,
 		client:    client,
 		err:       nil,
-		entities:  nil, // TODO could be an empty slice?
+		entities:  nil,
 		stream:    nil,
 		blacklist: blacklist,
 	}
@@ -114,6 +114,7 @@ func (g *grpcRecogniser) recognise(snipReaderValues <-chan snippet_reader.Value,
 	err := snippet_reader.ReadChannelWithCallback(snipReaderValues, onTokenizeCallback)
 	if err != nil {
 		g.err = err
+		return
 	}
 
 	// Close the stream. This lets the server know we've stopped sending, then it will know to send an io.EOF

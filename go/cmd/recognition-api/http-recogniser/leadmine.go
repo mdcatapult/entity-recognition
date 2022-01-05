@@ -57,7 +57,7 @@ func (l *leadmine) Result() []*pb.Entity {
 	return l.entities
 }
 
-func (l *leadmine) urlWithOpts(opts lib.RecogniserOptions) string {
+func (l *leadmine) urlWithParams(opts lib.RecogniserOptions) string {
 	if len(opts.QueryParameters) == 0 {
 		return l.Url
 	}
@@ -78,6 +78,8 @@ func (l *leadmine) handleError(err error) {
 	l.err = err
 }
 
+// Recognise calls the helper method l.recognise to call Leadmine Web Service to perform entity recognition.
+// Found entities are put into l.entities, and errors into l.err.
 func (l *leadmine) Recognise(snipReaderValues <-chan snippet_reader.Value, opts lib.RecogniserOptions, wg *sync.WaitGroup) error {
 	l.reset()
 	go l.recognise(snipReaderValues, opts, wg)
@@ -210,7 +212,7 @@ func correctLeadmineEntityOffsets(leadmineResponse *LeadmineResponse, text strin
 }
 
 func (l *leadmine) callLeadmineWebService(opts lib.RecogniserOptions, text string) (*LeadmineResponse, error) {
-	req, err := http.NewRequest(http.MethodPost, l.urlWithOpts(opts), strings.NewReader(text))
+	req, err := http.NewRequest(http.MethodPost, l.urlWithParams(opts), strings.NewReader(text))
 	if err != nil {
 		return nil, err
 	}

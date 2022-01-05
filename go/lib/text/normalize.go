@@ -26,6 +26,9 @@ var EnclosingCharacters = map[byte]byte{
 	'!':  0,
 }
 
+// TokenDelimiters is a collection of characters which delimit tokens during normalization.
+// There is no need to include whitespace because the tokeniser will already have split tokens up
+// based on whitespace.
 var TokenDelimiters = map[byte]struct{}{
 	')': {},
 	']': {},
@@ -79,7 +82,7 @@ func NormalizeAndLowercaseString(inputString string) (normalizedToken string, co
 
 //NormalizeString
 /* NormalizeString normalizes the argument and returns the result, along with whether this is the end of
-* a compound token and whether the first char was removed (useful for adjusting offsets on snippets).
+* a compound token based on TokenDelimiters, and whether the first char was removed (useful for adjusting offsets on snippets).
 *
 * To 'normalize' is to remove certain trailing and leading characters which are not part of the meaning of the
 * wider string, e.g. 'aspirin)' would have the trailing bracket removed.

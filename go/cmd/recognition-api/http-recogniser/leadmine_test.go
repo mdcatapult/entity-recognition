@@ -74,7 +74,7 @@ func (s *leadmineSuite) TestRecognise() {
 	s.EqualValues(expectedEntities, testLeadmine.entities)
 }
 
-func (s *leadmineSuite) TestUrlWithOpts() {
+func (s *leadmineSuite) TestUrlWithParams() {
 	tests := []struct {
 		name           string
 		url            string
@@ -124,7 +124,7 @@ func (s *leadmineSuite) TestUrlWithOpts() {
 	for _, test := range tests {
 		s.T().Log(test.name)
 		leadmine := leadmine{Url: test.url}
-		url, err := netUrl.Parse(leadmine.urlWithOpts(test.opts))
+		url, err := netUrl.Parse(leadmine.urlWithParams(test.opts))
 		s.NoError(err)
 		s.Equal(test.expectedPath, fmt.Sprintf("%v://%v%v", url.Scheme, url.Host, url.Path))
 
