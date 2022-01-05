@@ -130,8 +130,8 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 	mockRecogniser.On("Recognise",
 		// Expected arguments
 		mock.AnythingOfType("<-chan snippet_reader.Value"),
-		lib.RecogniserOptions{},
 		mock.AnythingOfType("*sync.WaitGroup"),
+		lib.HttpOptions{},
 	).Return(
 		// Don't error.
 		nil,
@@ -142,7 +142,7 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 		// goroutine so that our replacement function doesn't block before read the html! While reading, use this
 		// opportunity to make assertions about the snippets that are being sent.
 		go func() {
-			wg := args[2].(*sync.WaitGroup)
+			wg := args[1].(*sync.WaitGroup)
 			wg.Add(1)
 			err := snippet_reader.ReadChannelWithCallback(args[0].(<-chan snippet_reader.Value), func(snip *pb.Snippet) error {
 				s.Equal(sentSnippet, snip)
@@ -156,7 +156,8 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 	mockRecogniser.On("Result").Return(foundEntities)
 	s.controller.recognisers = map[string]recogniser.Client{"mock": mockRecogniser}
 
-	opts := []lib.RecogniserOptions{{}}
+	// this is failing because the controller recogniser is the mock recogniser above. We need to ask recognise() to use it.
+	opts := []lib.RecogniserOptions{{Name: "mock"}}
 	entities, err := s.controller.Recognize(reader, contentTypeHTML, opts)
 	s.ElementsMatch(foundEntities, entities)
 	s.Nil(err)
