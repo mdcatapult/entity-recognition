@@ -11,7 +11,6 @@ type Lookup struct {
 type Type string
 
 const (
-	Local         Type = "local"
 	Redis         Type = "redis"
 	Elasticsearch Type = "elasticsearch"
 )
