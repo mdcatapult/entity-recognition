@@ -88,7 +88,6 @@ func (c controller) ListRecognisers() []string {
 // Recognize performs entity recognition by calling recognise() on each recogniser in recogniserToOpts.
 func (controller controller) Recognize(reader io.Reader, contentType AllowedContentType, requestedRecognisers []lib.RecogniserOptions) ([]*pb.Entity, error) {
 
-	fmt.Println("requested recogs: ", requestedRecognisers)
 	wg := &sync.WaitGroup{}
 	channels := make(map[string]chan snippet_reader.Value)
 

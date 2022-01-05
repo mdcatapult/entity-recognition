@@ -6,6 +6,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/cmd/recognition-api/grpc-recogniser"
 	http_recogniser2 "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/cmd/recognition-api/http-recogniser"
+	"google.golang.org/grpc/credentials/insecure"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -53,7 +54,7 @@ func main() {
 
 	// general grpc options
 	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithInsecure())
+	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	opts = append(opts, grpc.WithBlock())
 
 	// for each recogniser in the config, instantiate a client and save the connection
