@@ -160,13 +160,13 @@ func (l *leadmine) convertLeadmineEntities(correctedLeadmineEntities []LeadmineE
 			position++
 		}
 
-		//metadata, err := json.Marshal(LeadmineMetadata{
-		//	EntityGroup:     entity.EntityGroup,
-		//	RecognisingDict: entity.RecognisingDict,
-		//})
-		//if err != nil {
-		//	return nil, err
-		//}
+		metadata, err := json.Marshal(LeadmineMetadata{
+			EntityGroup:     entity.EntityGroup,
+			RecognisingDict: entity.RecognisingDict,
+		})
+		if err != nil {
+			return nil, err
+		}
 
 		recognisedEntities = append(recognisedEntities, &pb.Entity{
 			Name:       entity.EntityText,
@@ -176,7 +176,7 @@ func (l *leadmine) convertLeadmineEntities(correctedLeadmineEntities []LeadmineE
 			Identifiers: map[string]string{
 				"resolvedEntity": entity.ResolvedEntity,
 			},
-			//Metadata: metadata,
+			Metadata: metadata,
 		})
 	}
 	return recognisedEntities, nil

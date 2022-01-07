@@ -1,11 +1,8 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
 	"testing"
 
-	"github.com/go-redis/redis"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	mocks "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks/lib/cache/remote"
@@ -273,29 +270,4 @@ func (s *RecognizerSuite) Test_recogniser_getCompoundTokens() {
 			s.Equal(snip, tt.args.vars.snippetHistory[j])
 		}
 	}
-}
-
-func (suite *RecognizerSuite) TestRedis() {
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-	proteinKey := "vps35"
-
-	inputMetadata := "{\"dictionary\":\"pubchem_synonyms\",\"identifiers\":{\"Accession\":\"O74552\"},\"metadata\":{\"Accession\":\"O74552\",\"Accession 2\":\"P78830\",\"Protein\":\"Vacuolar protein sorting-associated protein 35\"}}"
-
-	// insert metadata into redis
-	err := redisClient.Set(proteinKey, inputMetadata, 0).Err()
-	suite.Require().NoError(err, "could not insert into redis")
-
-	// retrieve metadata from redis
-	res := redisClient.Get(proteinKey)
-	suite.Require().NoError(res.Err())
-
-	outputMetadata := make(map[string]interface{})
-	resBytes, _ := res.Bytes()
-	json.Unmarshal(resBytes, &outputMetadata)
-	fmt.Println(outputMetadata)
-
 }

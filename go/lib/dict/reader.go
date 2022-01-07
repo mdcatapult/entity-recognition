@@ -14,7 +14,7 @@ type DictConfig struct {
 type Entry struct {
 	Synonyms    []string
 	Identifiers map[string]string
-	Metadata    []byte
+	Metadata    map[string]interface{}
 }
 
 type Format string

@@ -107,15 +107,21 @@ func main() {
 func addToPipe(entry dict.Entry, pipe remote.SetPipeline) error {
 	// Mid process, some stuff to do
 	for _, synonym := range entry.Synonyms {
-		b, err := json.Marshal(cache.Lookup{
+
+		metadata, err := json.Marshal(entry.Metadata)
+		if err != nil {
+			return err
+		}
+
+		bytes, err := json.Marshal(cache.Lookup{
 			Dictionary:  config.Dictionary.Name,
 			Identifiers: entry.Identifiers,
-			Metadata:   entry.Metadata,
+			Metadata:    metadata,
 		})
 		if err != nil {
 			return err
 		}
-		pipe.Set(synonym, b)
+		pipe.Set(synonym, bytes)
 	}
 	return nil
 }

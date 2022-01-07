@@ -36,9 +36,16 @@ func Test_Redis_Recogniser(t *testing.T) {
 	})
 
 	data := dict.Entry{
-		Synonyms:    []string{"whee"},
+		Synonyms:    []string{"entity"},
 		Identifiers: map[string]string{"id key": "id value"},
-		Metadata:    map[string]string{"meta": "eyJlbnRpdHlHcm91cCI6IkNoZW1pY2FsIiwiUmVjb2duaXNpbmdEaWN0Ijp7ImVuZm9yY2VCcmFja2V0aW5nIjp0cnVlLCJlbnRpdHlUeXBlIjoiTW9sIiwiaHRtbENvbG9yIjoicGluayIsIm1heENvcnJlY3Rpb25EaXN0YW5jZSI6MCwibWluaW11bUNvcnJlY3RlZEVudGl0eUxlbmd0aCI6OSwibWluaW11bUVudGl0eUxlbmd0aCI6MCwic291cmNlIjoiIn19"},
+		Metadata: map[string]interface{}{
+			"entityGroup": "Chemical",
+			"RecognisingDict": map[string]interface{}{
+				"enforceBracketing": true,
+				"entityType":        "Mol",
+				"htmlColor":         "pink",
+			},
+		},
 	}
 
 	// insert data into redis
@@ -50,9 +57,14 @@ func Test_Redis_Recogniser(t *testing.T) {
 	entities, err := readFromRedis(redisClient, synonym)
 	assert.NoError(t, err)
 
-	assert.Equal(t, len(entities), 1)
-	assert.Equal(t, entities[0].Metadata, data.Metadata)
-	assert.Equal(t, entities[0].Identifiers, data.Identifiers)
+	assert.Equal(t, 1, len(entities))
+
+	var actualMetadata map[string]interface{}
+	err = json.Unmarshal(entities[0].Metadata, &actualMetadata)
+
+	assert.NoError(t, err)
+	assert.Equal(t, data.Metadata, actualMetadata)
+	assert.Equal(t, data.Identifiers, entities[0].Identifiers)
 }
 
 // addToRedis inserts entry into client's pipeline.
@@ -70,10 +82,15 @@ func addToRedis(client remote.Client, entry dict.Entry) error {
 		}
 		entry.Synonyms[i] = strings.Join(normalizedTokens, " ")
 
+		metadata, err := json.Marshal(entry.Metadata)
+		if err != nil {
+			return err
+		}
+
 		bytes, err := json.Marshal(cache.Lookup{
 			Dictionary:  config.Dictionary.Name,
 			Identifiers: entry.Identifiers,
-			Metadata:    entry.Metadata,
+			Metadata:    metadata,
 		})
 		if err != nil {
 			return err
