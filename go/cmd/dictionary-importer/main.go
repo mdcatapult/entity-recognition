@@ -110,6 +110,7 @@ func addToPipe(entry dict.Entry, pipe remote.SetPipeline) error {
 		b, err := json.Marshal(cache.Lookup{
 			Dictionary:  config.Dictionary.Name,
 			Identifiers: entry.Identifiers,
+			Metadata:   entry.Metadata,
 		})
 		if err != nil {
 			return err

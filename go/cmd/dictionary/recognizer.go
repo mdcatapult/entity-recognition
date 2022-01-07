@@ -21,21 +21,24 @@ type requestVars struct {
 	snippetCacheMisses []*pb.Snippet
 	snippetHistory     []*pb.Snippet
 	stream             pb.Recognizer_GetStreamServer
-	pipe               remote.GetPipeline
+	pipeline           remote.GetPipeline
 }
 
 func newEntityWithNormalisedText(snippet *pb.Snippet, lookup *cache.Lookup) *pb.Entity {
+
 	normalisedText, _, _ := text.NormalizeString(snippet.GetText())
+
 	return &pb.Entity{
 		Name:        normalisedText,
 		Position:    snippet.GetOffset(),
 		Recogniser:  lookup.Dictionary,
 		Identifiers: lookup.Identifiers,
 		Xpath:       snippet.GetXpath(),
+		Metadata:    lookup.Metadata,
 	}
 }
 
-func (r *recogniser) newResultHandler(vars *requestVars) func(snippet *pb.Snippet, lookup *cache.Lookup) error {
+func (recogniser *recogniser) newResultHandler(vars *requestVars) func(snippet *pb.Snippet, lookup *cache.Lookup) error {
 	return func(snippet *pb.Snippet, lookup *cache.Lookup) error {
 		vars.snippetCache[snippet] = lookup
 		if lookup == nil {
@@ -94,7 +97,7 @@ func getCompoundSnippets(vars *requestVars, snippet *pb.Snippet) (snippets []*pb
 	return snippets, false
 }
 
-func (r *recogniser) findOrQueueSnippet(vars *requestVars, snippet *pb.Snippet) error {
+func (recogniser *recogniser) findOrQueueSnippet(vars *requestVars, snippet *pb.Snippet) error {
 	if lookup, ok := vars.snippetCache[snippet]; ok {
 		// if it's nil, we've already queried redis and it wasn't there
 		if lookup == nil {
@@ -113,33 +116,33 @@ func (r *recogniser) findOrQueueSnippet(vars *requestVars, snippet *pb.Snippet) 
 		}
 	} else {
 		// Not in local cache.
-		// Queue the redis "GET" in the pipe and set the cache value to an empty db.Lookup
+		// Queue the redis "GET" in the pipeline and set the cache value to an empty db.Lookup
 		// (so that future equivalent tokens will be a cache miss).
-		vars.pipe.Get(snippet)
+		vars.pipeline.Get(snippet)
 		vars.snippetCache[snippet] = &cache.Lookup{}
 	}
 	return nil
 }
 
-func (r *recogniser) initializeRequest(stream pb.Recognizer_GetStreamServer) *requestVars {
+func (recogniser *recogniser) initializeRequest(stream pb.Recognizer_GetStreamServer) *requestVars {
 	return &requestVars{
 		snippetCache:       make(map[*pb.Snippet]*cache.Lookup, config.PipelineSize),
 		snippetCacheMisses: make([]*pb.Snippet, config.PipelineSize),
 		snippetHistory:     []*pb.Snippet{},
 		stream:             stream,
-		pipe:               r.remoteCache.NewGetPipeline(config.PipelineSize),
+		pipeline:           recogniser.remoteCache.NewGetPipeline(config.PipelineSize),
 	}
 }
 
-func (r *recogniser) runPipeline(vars *requestVars, onResult func(snippet *pb.Snippet, lookup *cache.Lookup) error) error {
-	if err := vars.pipe.ExecGet(onResult); err != nil {
+func (recogniser *recogniser) runPipeline(vars *requestVars, onResult func(snippet *pb.Snippet, lookup *cache.Lookup) error) error {
+	if err := vars.pipeline.ExecGet(onResult); err != nil {
 		return err
 	}
-	vars.pipe = r.remoteCache.NewGetPipeline(config.PipelineSize)
+	vars.pipeline = recogniser.remoteCache.NewGetPipeline(config.PipelineSize)
 	return nil
 }
 
-func (r *recogniser) retryCacheMisses(vars *requestVars) error {
+func (recogniser *recogniser) retryCacheMisses(vars *requestVars) error {
 	for _, snippet := range vars.snippetCacheMisses {
 		if lookup := vars.snippetCache[snippet]; lookup != nil {
 			entity := newEntityWithNormalisedText(snippet, lookup)
@@ -151,18 +154,18 @@ func (r *recogniser) retryCacheMisses(vars *requestVars) error {
 	return nil
 }
 
-func (r *recogniser) GetStream(stream pb.Recognizer_GetStreamServer) error {
-	vars := r.initializeRequest(stream)
+func (recogniser *recogniser) GetStream(stream pb.Recognizer_GetStreamServer) error {
+	vars := recogniser.initializeRequest(stream)
 	log.Info().Msg("received request")
-	onResult := r.newResultHandler(vars)
+	onResult := recogniser.newResultHandler(vars)
 
 	for {
 		snippet, err := stream.Recv()
 		if err == io.EOF {
 			// Number of tokens is unlikely to be a multiple of the pipeline size. There will still be tokens on the
 			// pipeline. Execute it now, then break.
-			if vars.pipe.Size() > 0 {
-				if err := r.runPipeline(vars, onResult); err != nil {
+			if vars.pipeline.Size() > 0 {
+				if err := recogniser.runPipeline(vars, onResult); err != nil {
 					return err
 				}
 			}
@@ -177,17 +180,17 @@ func (r *recogniser) GetStream(stream pb.Recognizer_GetStreamServer) error {
 		}
 
 		for _, compoundSnippet := range compoundSnippets {
-			if err := r.findOrQueueSnippet(vars, compoundSnippet); err != nil {
+			if err = recogniser.findOrQueueSnippet(vars, compoundSnippet); err != nil {
 				return err
 			}
 		}
 
-		if vars.pipe.Size() > config.PipelineSize {
-			if err := r.runPipeline(vars, onResult); err != nil {
+		if vars.pipeline.Size() > config.PipelineSize {
+			if err = recogniser.runPipeline(vars, onResult); err != nil {
 				return err
 			}
 		}
 	}
 
-	return r.retryCacheMisses(vars)
+	return recogniser.retryCacheMisses(vars)
 }

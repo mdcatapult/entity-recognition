@@ -26,26 +26,26 @@ type redisClient struct {
 }
 
 type redisGetPipeline struct {
-	pipe redis.Pipeliner
-	cmds map[*pb.Snippet]*redis.StringCmd
+	pipeline redis.Pipeliner
+	cmds     map[*pb.Snippet]*redis.StringCmd
 }
 
 type redisSetPipeline struct {
-	pipe redis.Pipeliner
-	cmds map[string]*redis.StatusCmd
+	pipeline redis.Pipeliner
+	cmds     map[string]*redis.StatusCmd
 }
 
 func (r *redisClient) NewGetPipeline(size int) GetPipeline {
 	return &redisGetPipeline{
-		pipe: r.Pipeline(),
-		cmds: make(map[*pb.Snippet]*redis.StringCmd, size),
+		pipeline: r.Pipeline(),
+		cmds:     make(map[*pb.Snippet]*redis.StringCmd, size),
 	}
 }
 
 func (r *redisClient) NewSetPipeline(size int) SetPipeline {
 	return &redisSetPipeline{
-		pipe: r.Pipeline(),
-		cmds: make(map[string]*redis.StatusCmd, size),
+		pipeline: r.Pipeline(),
+		cmds:     make(map[string]*redis.StatusCmd, size),
 	}
 }
 
@@ -53,12 +53,14 @@ func (r *redisClient) Ready() bool {
 	return r.Ping().Err() == nil
 }
 
+// Set adds (key, data) to the pipeline. It won't go to redis until you call ExecSet.
 func (r *redisSetPipeline) Set(key string, data []byte) {
-	r.cmds[key] = r.pipe.Set(key, data, 0)
+	r.cmds[key] = r.pipeline.Set(key, data, 0)
 }
 
+// ExecSet empties the contents of the pipeline into redis.
 func (r *redisSetPipeline) ExecSet() error {
-	_, err := r.pipe.Exec()
+	_, err := r.pipeline.Exec()
 	return err
 }
 
@@ -66,19 +68,23 @@ func (r *redisSetPipeline) Size() int {
 	return len(r.cmds)
 }
 
-func (r *redisGetPipeline) Get(token *pb.Snippet) {
-	r.cmds[token] = r.pipe.Get(token.GetNormalisedText())
+// Get queues a GET request from redis with token.GetNormalisedText() as the key. It won't be returned until
+// you call ExecGet!
+func (redisPipeline *redisGetPipeline) Get(token *pb.Snippet) {
+	redisPipeline.cmds[token] = redisPipeline.pipeline.Get(token.GetNormalisedText())
 }
 
-func (r *redisGetPipeline) ExecGet(onResult func(*pb.Snippet, *cache.Lookup) error) error {
+// ExecGet retrieves values from redis based on the keys queued in the pipeline and executes
+// the callback for each.
+func (redisPipeline *redisGetPipeline) ExecGet(onResult func(*pb.Snippet, *cache.Lookup) error) error {
 
-	_, err := r.pipe.Exec()
+	_, err := redisPipeline.pipeline.Exec()
 	if err != nil && err != redis.Nil {
 		return err
 	}
 
-	for key, cmd := range r.cmds {
-		b, err := cmd.Bytes()
+	for key, cmd := range redisPipeline.cmds {
+		actualThing, err := cmd.Bytes()
 		if err == redis.Nil {
 			if err = onResult(key, nil); err != nil {
 				return err
@@ -89,7 +95,7 @@ func (r *redisGetPipeline) ExecGet(onResult func(*pb.Snippet, *cache.Lookup) err
 		}
 
 		var lookup cache.Lookup
-		if err = json.Unmarshal(b, &lookup); err != nil {
+		if err = json.Unmarshal(actualThing, &lookup); err != nil {
 			return err
 		}
 
@@ -101,6 +107,6 @@ func (r *redisGetPipeline) ExecGet(onResult func(*pb.Snippet, *cache.Lookup) err
 	return nil
 }
 
-func (r *redisGetPipeline) Size() int {
-	return len(r.cmds)
+func (redisPipeline *redisGetPipeline) Size() int {
+	return len(redisPipeline.cmds)
 }

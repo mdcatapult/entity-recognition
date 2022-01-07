@@ -8,7 +8,8 @@ import (
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache/remote"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/dict"
 	"google.golang.org/grpc"
-	"net"
+	"net
+	"os"
 )
 
 // config structure

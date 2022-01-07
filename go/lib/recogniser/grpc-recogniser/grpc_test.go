@@ -38,11 +38,11 @@ func Test_grpcRecogniser_recognise(t *testing.T) {
 	// This mock stream must match the text that has been supplied to the recogniser
 	// in the snipChan
 	mockRecognizer_RecognizeClient := testhelpers.NewMockRecognizeClientStream(
-		testhelpers.Snip("found", "", 3, "/p"),
-		testhelpers.Snip("entity", "", 9, "/p"),
+		testhelpers.CreateSnippet("found", "", 3, "/p"),
+		testhelpers.CreateSnippet("entity", "", 9, "/p"),
 
 		// this should be blacklisted and therefore does not feature in expectedRecognisedEntities
-		testhelpers.Snip("protein", "", 23, "/p"),
+		testhelpers.CreateSnippet("protein", "", 23, "/p"),
 	)
 
 	// mock the grpc server's response
