@@ -23,6 +23,8 @@ test:
     - ginkgo go/lib/text
     - sed -i "/\/gen\//d" cover.out
     - go tool cover -func cover.out
+  services:
+    - redis:latest
   coverage: /total:\s+\(statements\)\s+(\d+.\d+\%)/
 
 release:
