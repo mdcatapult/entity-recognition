@@ -21,6 +21,7 @@ import (
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache/remote"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/dict"
+	recogniser_client "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
 	grpc_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser/grpc-recogniser"
 	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
@@ -54,7 +55,13 @@ func Test_Redis_Recogniser(t *testing.T) {
 
 	synonym := data.Synonyms[0]
 
-	entities, err := readFromRedis(redisClient, synonym)
+	// set up grpc client
+	conn, err := getReadConnection(redisClient)
+	assert.NoError(t, err)
+	recogniser := grpc_recogniser.New("my recogniser", pb.NewRecognizerClient(conn), blacklist.Blacklist{})
+
+	// perform the read
+	entities, err := readFromRedis(recogniser, synonym)
 	assert.NoError(t, err)
 
 	assert.Equal(t, 1, len(entities))
@@ -112,43 +119,13 @@ func addToRedis(client remote.Client, entry dict.Entry) error {
 }
 
 // readFromRedis is a helper function which takes a remote.Client and looks up synonym in it using
-// a grpc_recogniser.
-func readFromRedis(client remote.Client, synonym string) (entities []*pb.Entity, err error) {
-
-	grpcServer := grpc.NewServer()
-	pb.RegisterRecognizerServer(grpcServer, &recogniser{
-		remoteCache: client,
-	})
-
-	port := 50053
-
-	lis, err := net.Listen("tcp", ":50053")
-	if err != nil {
-		fmt.Println("ERROR: failed to serve", err.Error())
-	}
-	go grpcServer.Serve(lis)
-
-	// set up grpc client
-	var clientOptions []grpc.DialOption
-	clientOptions = append(clientOptions, grpc.WithInsecure())
-	clientOptions = append(clientOptions, grpc.WithBlock())
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-
-	conn, err := grpc.DialContext(ctx, fmt.Sprintf("%s:%d", "localhost", port), clientOptions...)
-
-	if err != nil {
-		log.Fatal().Err(err).Send()
-	}
-
-	cancel()
-
-	// set up grpc client
-	recogniser := grpc_recogniser.New("my recogniser", pb.NewRecognizerClient(conn), blacklist.Blacklist{})
+// a grpc_recogniser. Blocks until lookup is complete.
+func readFromRedis(recogniser recogniser_client.Client, synonym string) (entities []*pb.Entity, err error) {
 
 	wg := &sync.WaitGroup{}
 	snippetChannel := make(chan snippet_reader.Value)
 	if err := recogniser.Recognise(snippetChannel, lib.RecogniserOptions{}, wg); err != nil {
-		fmt.Println("RECOGNISER ERROR: ", err.Error())
+		return nil, err
 	}
 
 	time.Sleep(1 * time.Second)
@@ -168,4 +145,32 @@ func readFromRedis(client remote.Client, synonym string) (entities []*pb.Entity,
 	wg.Wait()
 
 	return recogniser.Result(), recogniser.Err()
+}
+
+func getReadConnection(client remote.Client) (*grpc.ClientConn, error) {
+
+	grpcServer := grpc.NewServer()
+	pb.RegisterRecognizerServer(grpcServer, &recogniser{
+		remoteCache: client,
+	})
+
+	port := 50053
+
+	lis, err := net.Listen("tcp", ":50053")
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		if err := grpcServer.Serve(lis); err != nil {
+			fmt.Println("ERROR: failed to serve", err.Error())
+		}
+	}()
+
+	// set up grpc client
+	var clientOptions []grpc.DialOption
+	clientOptions = append(clientOptions, grpc.WithInsecure())
+	clientOptions = append(clientOptions, grpc.WithBlock())
+
+	return grpc.DialContext(context.Background(), fmt.Sprintf("%s:%d", "localhost", port), clientOptions...)
 }
