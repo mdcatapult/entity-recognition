@@ -63,10 +63,10 @@ func Test_grpcRecogniser_recognise(t *testing.T) {
 		},
 	}
 
-	wg := &sync.WaitGroup{}
-	testRecogniser.recognise(snipChan, wg)
+	waitGroup := &sync.WaitGroup{}
+	testRecogniser.recognise(snipChan, waitGroup )
 
-	wg.Wait()
+	waitGroup.Wait()
 
 	mockRecognizer_RecognizeClient.AssertExpectations(t)
 	assert.Nil(t, testRecogniser.err)

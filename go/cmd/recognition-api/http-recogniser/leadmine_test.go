@@ -56,10 +56,10 @@ func (s *leadmineSuite) TestRecognise() {
 	// Set up function arguments
 	snipChan := html.SnippetReader{}.ReadSnippets(sourceHtml)
 	testOptions := lib.RecogniserOptions{}
-	wg := &sync.WaitGroup{}
+	waitGroup := &sync.WaitGroup{}
 
 	// Call the function we're testing!
-	err = testLeadmine.Recognise(snipChan, wg, testOptions.HttpOptions)
+	err = testLeadmine.Recognise(snipChan, waitGroup , testOptions.HttpOptions)
 	s.Nil(err)
 
 	// Get the expected response from resources.
@@ -69,7 +69,7 @@ func (s *leadmineSuite) TestRecognise() {
 	err = json.Unmarshal(b, &expectedEntities)
 	s.Require().Nil(err)
 
-	wg.Wait()
+	waitGroup.Wait()
 	s.Nil(testLeadmine.err)
 	s.EqualValues(expectedEntities, testLeadmine.entities)
 }

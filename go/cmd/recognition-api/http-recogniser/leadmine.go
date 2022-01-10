@@ -81,15 +81,15 @@ func (l *leadmine) handleError(err error) {
 
 // Recognise calls the helper method l.recognise to call Leadmine Web Service to perform entity recognition.
 // Found entities are put into l.entities, and errors into l.err.
-func (l *leadmine) Recognise(snipReaderValues <-chan snippet_reader.Value, wg *sync.WaitGroup, httpOptions lib.HttpOptions) error {
+func (l *leadmine) Recognise(snipReaderValues <-chan snippet_reader.Value, waitGroup *sync.WaitGroup, httpOptions lib.HttpOptions) error {
 	l.reset()
-	go l.recognise(snipReaderValues, wg, httpOptions)
+	go l.recognise(snipReaderValues, waitGroup , httpOptions)
 	return nil
 }
 
-func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, wg *sync.WaitGroup, httpOptions lib.HttpOptions) {
-	wg.Add(1)
-	defer wg.Done()
+func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, waitGroup *sync.WaitGroup, httpOptions lib.HttpOptions) {
+	waitGroup.Add(1)
+	defer waitGroup.Done()
 
 	snips := make(map[int]*pb.Snippet)
 	var text string

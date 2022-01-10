@@ -39,60 +39,60 @@ type grpcRecogniser struct {
 	exactMatch bool
 }
 
-func (g *grpcRecogniser) SetExactMatch(exact bool) {
-	g.exactMatch = exact
+func (grpcRecogniser *grpcRecogniser) SetExactMatch(exact bool) {
+	grpcRecogniser.exactMatch = exact
 }
 
-// Recognise calls the helper function recognise. This listens for snippets on the given channel, and blocks with wg
+// Recognise calls the helper function recognise. This listens for snippets on the given channel, and blocks with waitGroup 
 // until the gRPC recogniser has returned results for every snippet.
-func (g *grpcRecogniser) Recognise(snipReaderValues <-chan snippet_reader.Value, wg *sync.WaitGroup, _ lib.HttpOptions) error {
-	g.reset()
+func (grpcRecogniser *grpcRecogniser) Recognise(snipReaderValues <-chan snippet_reader.Value, waitGroup *sync.WaitGroup, _ lib.HttpOptions) error {
+	grpcRecogniser.reset()
 
 	var err error
-	g.stream, err = g.client.GetStream(context.Background())
+	grpcRecogniser.stream, err = grpcRecogniser.client.GetStream(context.Background())
 	if err != nil {
 		return err
 	}
 
-	go g.recognise(snipReaderValues, wg)
+	go grpcRecogniser.recognise(snipReaderValues, waitGroup )
 
 	return nil
 }
 
-func (g *grpcRecogniser) reset() {
-	g.err = nil
-	g.entities = nil
-	g.stream = nil
+func (grpcRecogniser *grpcRecogniser) reset() {
+	grpcRecogniser.err = nil
+	grpcRecogniser.entities = nil
+	grpcRecogniser.stream = nil
 }
 
-// This function doesn't return anything. Instead we expect the caller to check `recogniser.Err()` when the
+// This function doesn't return anything. Instead, we expect the caller to check `recogniser.Err()` when the
 // wait group completes.
-func (g *grpcRecogniser) recognise(snipReaderValues <-chan snippet_reader.Value, wg *sync.WaitGroup) {
+func (grpcRecogniser *grpcRecogniser) recognise(snipReaderValues <-chan snippet_reader.Value, waitGroup *sync.WaitGroup) {
 	// Add to the work group - makes the caller wait.
-	wg.Add(1)
+	waitGroup.Add(1)
 
 	// In a separate goroutine, listen on the stream for entities and append to the entities field of the receiver.
-	// The stream will exit successfully with an io.EOF. Only call wg.Done() when we've finished listening to the response.
+	// The stream will exit successfully with an io.EOF. Only call waitGroup.Done() when we've finished listening to the response.
 	go func() {
-		defer wg.Done()
+		defer waitGroup.Done()
 		for {
-			entity, err := g.stream.Recv()
+			entity, err := grpcRecogniser.stream.Recv()
 			if err == io.EOF {
 				return
 			} else if err != nil {
-				g.err = err
+				grpcRecogniser.err = err
 				return
 			}
 
-			if !g.blacklist.Allowed(entity.Name) {
+			if !grpcRecogniser.blacklist.Allowed(entity.Name) {
 				continue
 			}
 
-			g.entities = append(g.entities, &pb.Entity{
+			grpcRecogniser.entities = append(grpcRecogniser.entities, &pb.Entity{
 				Name:        entity.Name,
 				Position:    entity.Position,
 				Xpath:       entity.Xpath,
-				Recogniser:  g.Name,
+				Recogniser:  grpcRecogniser.Name,
 				Identifiers: entity.Identifiers,
 				Metadata:    entity.Metadata,
 			})
@@ -103,32 +103,32 @@ func (g *grpcRecogniser) recognise(snipReaderValues <-chan snippet_reader.Value,
 	onTokenizeCallback := func(snippet *pb.Snippet) error {
 		return text.Tokenize(snippet, func(snippet *pb.Snippet) error {
 
-			if err := g.stream.Send(snippet); err != nil {
+			if err := grpcRecogniser.stream.Send(snippet); err != nil {
 				return err
 			}
 			return nil
-		}, g.exactMatch)
+		}, grpcRecogniser.exactMatch)
 	}
 
 	// Read from the input channel, tokenise the snippets we read and send them on the stream.
 	err := snippet_reader.ReadChannelWithCallback(snipReaderValues, onTokenizeCallback)
 	if err != nil {
-		g.err = err
+		grpcRecogniser.err = err
 		return
 	}
 
 	// Close the stream. This lets the server know we've stopped sending, then it will know to send an io.EOF
 	// back to us.
-	if err := g.stream.CloseSend(); err != nil {
-		g.err = err
+	if err := grpcRecogniser.stream.CloseSend(); err != nil {
+		grpcRecogniser.err = err
 		return
 	}
 }
 
-func (g *grpcRecogniser) Err() error {
-	return g.err
+func (grpcRecogniser *grpcRecogniser) Err() error {
+	return grpcRecogniser.err
 }
 
-func (g *grpcRecogniser) Result() []*pb.Entity {
-	return g.entities
+func (grpcRecogniser *grpcRecogniser) Result() []*pb.Entity {
+	return grpcRecogniser.entities
 }

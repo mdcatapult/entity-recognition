@@ -142,14 +142,14 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 		// goroutine so that our replacement function doesn't block before read the html! While reading, use this
 		// opportunity to make assertions about the snippets that are being sent.
 		go func() {
-			wg := args[1].(*sync.WaitGroup)
-			wg.Add(1)
+			waitGroup := args[1].(*sync.WaitGroup)
+			waitGroup.Add(1)
 			err := snippet_reader.ReadChannelWithCallback(args[0].(<-chan snippet_reader.Value), func(snip *pb.Snippet) error {
 				s.Equal(sentSnippet, snip)
 				return nil
 			})
 			s.Nil(err)
-			wg.Done()
+			waitGroup.Done()
 		}()
 	})
 	mockRecogniser.On("Err").Return(nil)
