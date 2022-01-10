@@ -84,7 +84,7 @@ func (redisPipeline *redisGetPipeline) ExecGet(onResult func(*pb.Snippet, *cache
 	}
 
 	for key, cmd := range redisPipeline.cmds {
-		actualThing, err := cmd.Bytes()
+		bytes, err := cmd.Bytes()
 		if err == redis.Nil {
 			if err = onResult(key, nil); err != nil {
 				return err
@@ -95,7 +95,7 @@ func (redisPipeline *redisGetPipeline) ExecGet(onResult func(*pb.Snippet, *cache
 		}
 
 		var lookup cache.Lookup
-		if err = json.Unmarshal(actualThing, &lookup); err != nil {
+		if err = json.Unmarshal(bytes, &lookup); err != nil {
 			return err
 		}
 
