@@ -27,23 +27,21 @@ func Tokenize(
 
 	segmenter := segment.NewWordSegmenterDirect([]byte(snippet.GetText()))
 
+	var err error
 	if exactMatch {
-		if err := onExactMatch(segmenter, onToken, snippet); err != nil {
-			return err
-		}
+		err = onExactMatch(segmenter, onToken, snippet)
 	} else {
-		if err := onNonExactMatch(segmenter, onToken, snippet); err != nil {
-			return err
-		}
+		err = onNonExactMatch(segmenter, onToken, snippet)
 	}
 
-	return nil
+	return err
+
 }
 
 // onExactMatch combines adjacent non-whitespace tokens in to one token, this behaviour excludes terms like
 // 'copper-oxide' if our dictionary has both 'copper' and 'oxide', but not 'copper-oxide'.
 // The rationale for this is that 'copper-oxide' is something fundamentally different to 'copper' or 'oxide'.
-// The downside of this approach is that we do not find any terms with adjacent punctuation e.g. 'copper.', 'oxide!'.
+// Given the text: 'apple-pie' returns one token: 'apple-pie,'
 func onExactMatch(
 	segmenter *segment.Segmenter,
 	onToken func(*pb.Snippet) error,

@@ -17,17 +17,14 @@ import (
 // config structure
 type dictionaryImporterConfig struct {
 	lib.BaseConfig
-	Dictionary      dict.DictConfig
-	BackendDatabase cache.Type `mapstructure:"dictionary_backend"`
-	PipelineSize    int        `mapstructure:"pipeline_size"`
-	Redis           remote.RedisConfig
-	Elasticsearch   remote.ElasticsearchConfig
+	Dictionary   dict.DictConfig
+	PipelineSize int `mapstructure:"pipeline_size"`
+	Redis        remote.RedisConfig
 }
 
 var defaultConfig = map[string]interface{}{
-	"log_level":          "info",
-	"dictionary_backend": cache.Redis,
-	"pipeline_size":      10000,
+	"log_level":     "info",
+	"pipeline_size": 10000,
 	"dictionary": map[string]interface{}{
 		"name":   "pubchem_synonyms",
 		"path":   "./dictionaries/pubchem.tsv",
@@ -36,11 +33,6 @@ var defaultConfig = map[string]interface{}{
 	"redis": map[string]interface{}{
 		"host": "localhost",
 		"port": 6379,
-	},
-	"elasticsearch": map[string]interface{}{
-		"host":  "localhost",
-		"port":  9200,
-		"index": "pubchem",
 	},
 }
 
@@ -54,19 +46,8 @@ func main() {
 	}
 
 	// Get a redis client
-	var dbClient remote.Client
+	var redisClient = remote.NewRedisClient(config.Redis)
 	var err error
-	switch config.BackendDatabase {
-	case cache.Redis:
-		dbClient = remote.NewRedisClient(config.Redis)
-	case cache.Elasticsearch:
-		dbClient, err = remote.NewElasticsearchClient(config.Elasticsearch)
-		if err != nil {
-			log.Fatal().Err(err).Send()
-		}
-	default:
-		log.Fatal().Str("backend database", string(config.BackendDatabase)).Msg("invalid backend database type")
-	}
 
 	dictFile, err := os.Open(config.Dictionary.Path)
 	if err != nil {
@@ -74,12 +55,12 @@ func main() {
 	}
 
 	entries := 0
-	pipe := dbClient.NewSetPipeline(config.PipelineSize)
+	pipeline := redisClient.NewSetPipeline(config.PipelineSize)
 	onEntry := func(entry dict.Entry) error {
 		entries++
 
 		if entries%50000 == 0 {
-			log.Info().Int("entries", entries).Str("backend", string(config.BackendDatabase)).Msg("importing")
+			log.Info().Int("entries", entries).Msg("importing")
 		}
 
 		for i, synonym := range entry.Synonyms {
@@ -94,25 +75,25 @@ func main() {
 			entry.Synonyms[i] = strings.Join(normalizedTokens, " ")
 		}
 
-		if err := addToPipe(entry, pipe); err != nil {
+		if err := addToPipe(entry, pipeline); err != nil {
 			return err
 		}
 
-		if pipe.Size() > config.PipelineSize {
-			awaitDB(dbClient)
-			if err := pipe.ExecSet(); err != nil {
+		if pipeline.Size() > config.PipelineSize {
+			awaitDB(redisClient)
+			if err := pipeline.ExecSet(); err != nil {
 				return err
 			}
 
-			pipe = dbClient.NewSetPipeline(config.PipelineSize)
+			pipeline = redisClient.NewSetPipeline(config.PipelineSize)
 		}
 
 		return nil
 	}
 
 	onEOF := func() error {
-		if pipe.Size() > 0 {
-			return pipe.ExecSet()
+		if pipeline.Size() > 0 {
+			return pipeline.ExecSet()
 		}
 
 		return nil
@@ -125,28 +106,15 @@ func main() {
 
 func addToPipe(entry dict.Entry, pipe remote.SetPipeline) error {
 	// Mid process, some stuff to do
-	switch config.BackendDatabase {
-	case cache.Redis:
-		for _, s := range entry.Synonyms {
-			b, err := json.Marshal(cache.Lookup{
-				Dictionary:  config.Dictionary.Name,
-				Identifiers: entry.Identifiers,
-			})
-			if err != nil {
-				return err
-			}
-			pipe.Set(s, b)
-		}
-	case cache.Elasticsearch:
-		b, err := json.Marshal(remote.EsLookup{
+	for _, synonym := range entry.Synonyms {
+		b, err := json.Marshal(cache.Lookup{
 			Dictionary:  config.Dictionary.Name,
-			Synonyms:    entry.Synonyms,
 			Identifiers: entry.Identifiers,
 		})
 		if err != nil {
 			return err
 		}
-		pipe.Set("", b)
+		pipe.Set(synonym, b)
 	}
 	return nil
 }
