@@ -4,5 +4,4 @@ type Type string
 
 const (
 	LeadmineType Type = "leadmine"
-	DummyType    Type = "dummy"
 )

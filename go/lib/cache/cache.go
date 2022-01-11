@@ -9,7 +9,3 @@ type Lookup struct {
 	Metadata    json.RawMessage   `json:"metadata"`
 }
 type Type string
-
-const (
-	Redis         Type = "redis"
-)

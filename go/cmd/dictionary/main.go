@@ -18,15 +18,15 @@ type dictionaryRecogniserConfig struct {
 	Server     struct {
 		GrpcPort int `mapstructure:"grpc_port"`
 	}
-	PipelineSize        int        `mapstructure:"pipeline_size"`
+	PipelineSize        int `mapstructure:"pipeline_size"`
 	Redis               remote.RedisConfig
 	CompoundTokenLength int `mapstructure:"compound_token_length"`
 }
 
 var config dictionaryRecogniserConfig
 var defaultConfig = map[string]interface{}{
-	"log_level":          "info",
-	"pipeline_size":      10000,
+	"log_level":     "info",
+	"pipeline_size": 10000,
 	"dictionary": map[string]interface{}{
 		"type": "pubchem",
 		"name": "pubchem_data",

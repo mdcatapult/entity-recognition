@@ -34,7 +34,7 @@ func (s *RecognizerSuite) Test_recognizer_Recognize() {
 	s.remoteCache = mockDBClient
 	mockGetPipeline := &mocks.GetPipeline{}
 	mockDBClient.On("NewGetPipeline", testConfig.PipelineSize).Return(mockGetPipeline).Times(2)
-	snippets := testhelpers.Snips("hello", "my", "name", "is", "jeff")
+	snippets := testhelpers.CreateSnippets("hello", "my", "name", "is", "jeff")
 	mockStream := testhelpers.NewMockRecognizeServerStream(snippets...)
 	v := &requestVars{}
 	for i, snippet := range snippets {
@@ -60,7 +60,7 @@ func (s *RecognizerSuite) Test_recogniser_queryToken() {
 	s.remoteCache = mockDBClient
 	mockGetPipeline := &mocks.GetPipeline{}
 	mockDBClient.On("NewGetPipeline", testConfig.PipelineSize).Return(mockGetPipeline).Once()
-	mockStream := testhelpers.NewMockRecognizeServerStream(testhelpers.Snips("hello", "my", "name", "is", "jeff")...)
+	mockStream := testhelpers.NewMockRecognizeServerStream(testhelpers.CreateSnippets("hello", "my", "name", "is", "jeff")...)
 	notInDB := &pb.Snippet{
 		Text: "not in db",
 	}
@@ -149,14 +149,14 @@ func (s *RecognizerSuite) Test_recogniser_queryToken() {
 			args: args{
 				vars: &requestVars{
 					snippetCache: tokenCache,
-					pipe:         mockGetPipeline,
+					pipeline:     mockGetPipeline,
 				},
 				token: notInCache,
 			},
 			wantErr: nil,
 			wantVars: &requestVars{
 				snippetCache: tokenCacheWithMissingToken,
-				pipe:         mockGetPipeline,
+				pipeline:     mockGetPipeline,
 			},
 		},
 	}
@@ -185,7 +185,7 @@ func (s *RecognizerSuite) Test_recogniser_getCompoundTokens() {
 				vars: &requestVars{
 					snippetHistory: []*pb.Snippet{},
 				},
-				token: testhelpers.Snip("Hello", "hello", 0, ""),
+				token: testhelpers.CreateSnippet("Hello", "hello", 0, ""),
 			},
 			want: []*pb.Snippet{
 				{
@@ -206,9 +206,9 @@ func (s *RecognizerSuite) Test_recogniser_getCompoundTokens() {
 			name: "detect end of sentence (for current token)",
 			args: args{
 				vars: &requestVars{
-					snippetHistory: testhelpers.Snips("got"),
+					snippetHistory: testhelpers.CreateSnippets("got"),
 				},
-				token: testhelpers.Snip("Hello.", "hello", 0, ""),
+				token: testhelpers.CreateSnippet("Hello.", "hello", 0, ""),
 			},
 			want: []*pb.Snippet{
 				{
@@ -228,24 +228,24 @@ func (s *RecognizerSuite) Test_recogniser_getCompoundTokens() {
 			name: "less than compound token length",
 			args: args{
 				vars: &requestVars{
-					snippetHistory: testhelpers.Snips("old"),
+					snippetHistory: testhelpers.CreateSnippets("old"),
 				},
-				token: testhelpers.Snip("new", "new", 0, ""),
+				token: testhelpers.CreateSnippet("new", "new", 0, ""),
 			},
-			want: testhelpers.Snips("old new", "new"),
+			want: testhelpers.CreateSnippets("old new", "new"),
 			wantVars: &requestVars{
-				snippetHistory: testhelpers.Snips("old", "new"),
+				snippetHistory: testhelpers.CreateSnippets("old", "new"),
 			},
 		},
 		{
 			name: "at compound token length",
 			args: args{
 				vars: &requestVars{
-					snippetHistory: testhelpers.Snips("old", "new", "black", "white", "quavers"),
+					snippetHistory: testhelpers.CreateSnippets("old", "new", "black", "white", "quavers"),
 				},
-				token: testhelpers.Snip("latest", "latest", 0, ""),
+				token: testhelpers.CreateSnippet("latest", "latest", 0, ""),
 			},
-			want: testhelpers.Snips(
+			want: testhelpers.CreateSnippets(
 				"new black white quavers latest",
 				"black white quavers latest",
 				"white quavers latest",
@@ -253,7 +253,7 @@ func (s *RecognizerSuite) Test_recogniser_getCompoundTokens() {
 				"latest",
 			),
 			wantVars: &requestVars{
-				snippetHistory: testhelpers.Snips("new", "black", "white", "quavers", "latest"),
+				snippetHistory: testhelpers.CreateSnippets("new", "black", "white", "quavers", "latest"),
 			},
 		},
 	}
