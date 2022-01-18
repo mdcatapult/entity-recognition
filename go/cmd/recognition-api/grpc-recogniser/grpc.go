@@ -38,7 +38,7 @@ func (g *grpcRecogniser) SetExactMatch(exact bool) {
 	g.exactMatch = exact
 }
 
-func (g *grpcRecogniser) Recognise(snipReaderValues <-chan snippet_reader.Value, waitGroup *sync.WaitGroup, _ lib.HttpOptions) error {
+func (g *grpcRecogniser) Recognise(snipReaderValues <-chan snippet_reader.Value, wg *sync.WaitGroup, _ lib.HttpOptions) error {
 	g.reset()
 
 	var err error
@@ -47,7 +47,7 @@ func (g *grpcRecogniser) Recognise(snipReaderValues <-chan snippet_reader.Value,
 		return err
 	}
 
-	go g.recognise(snipReaderValues, waitGroup)
+	go g.recognise(snipReaderValues, wg)
 
 	return nil
 }
