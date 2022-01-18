@@ -156,7 +156,6 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 	mockRecogniser.On("Result").Return(foundEntities)
 	s.controller.recognisers = map[string]recogniser.Client{"mock": mockRecogniser}
 
-	// this is failing because the controller recogniser is the mock recogniser above. We need to ask recognise() to use it.
 	opts := []lib.RecogniserOptions{{Name: "mock"}}
 	entities, err := s.controller.Recognize(reader, contentTypeHTML, opts)
 	s.ElementsMatch(foundEntities, entities)
