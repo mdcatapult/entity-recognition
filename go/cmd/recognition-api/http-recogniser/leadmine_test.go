@@ -56,10 +56,10 @@ func (s *leadmineSuite) TestRecognise() {
 	// Set up function arguments
 	snipChan := html.SnippetReader{}.ReadSnippets(sourceHtml)
 	testOptions := lib.RecogniserOptions{}
-	wg := &sync.WaitGroup{}
+	waitGroup := &sync.WaitGroup{}
 
 	// Call the function we're testing!
-	err = testLeadmine.Recognise(snipChan, testOptions, wg)
+	err = testLeadmine.Recognise(snipChan, waitGroup , testOptions.HttpOptions)
 	s.Nil(err)
 
 	// Get the expected response from resources.
@@ -69,12 +69,12 @@ func (s *leadmineSuite) TestRecognise() {
 	err = json.Unmarshal(b, &expectedEntities)
 	s.Require().Nil(err)
 
-	wg.Wait()
+	waitGroup.Wait()
 	s.Nil(testLeadmine.err)
 	s.EqualValues(expectedEntities, testLeadmine.entities)
 }
 
-func (s *leadmineSuite) TestUrlWithOpts() {
+func (s *leadmineSuite) TestUrlWithParams() {
 	tests := []struct {
 		name           string
 		url            string
@@ -124,7 +124,7 @@ func (s *leadmineSuite) TestUrlWithOpts() {
 	for _, test := range tests {
 		s.T().Log(test.name)
 		leadmine := leadmine{Url: test.url}
-		url, err := netUrl.Parse(leadmine.urlWithOpts(test.opts))
+		url, err := netUrl.Parse(leadmine.urlWithParams(test.opts.HttpOptions.QueryParameters))
 		s.NoError(err)
 		s.Equal(test.expectedPath, fmt.Sprintf("%v://%v%v", url.Scheme, url.Host, url.Path))
 

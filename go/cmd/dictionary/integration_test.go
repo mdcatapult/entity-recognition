@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	grpc_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/cmd/recognition-api/grpc-recogniser"
 	"io"
 	"net"
 	"strings"
@@ -22,7 +23,6 @@ import (
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache/remote"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/dict"
 	recogniser_client "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
-	grpc_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser/grpc-recogniser"
 	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 )
@@ -82,7 +82,7 @@ func addToRedis(client remote.Client, entry dict.Entry) error {
 		tokens := strings.Fields(synonym)
 		normalizedTokens := make([]string, 0, len(tokens))
 		for _, token := range tokens {
-			normalizedToken, _, _ := text.NormalizeAndLowercaseString(token)
+			normalizedToken, _ := text.NormalizeAndLowercaseString(token)
 			if len(normalizedToken) > 0 {
 				normalizedTokens = append(normalizedTokens, normalizedToken)
 			}
@@ -122,9 +122,9 @@ func addToRedis(client remote.Client, entry dict.Entry) error {
 // a grpc_recogniser. Blocks until lookup is complete.
 func readFromRedis(recogniser recogniser_client.Client, synonym string) (entities []*pb.Entity, err error) {
 
-	wg := &sync.WaitGroup{}
+	waitGroup := &sync.WaitGroup{}
 	snippetChannel := make(chan snippet_reader.Value)
-	if err := recogniser.Recognise(snippetChannel, lib.RecogniserOptions{}, wg); err != nil {
+	if err := recogniser.Recognise(snippetChannel, waitGroup, lib.HttpOptions{}); err != nil {
 		return nil, err
 	}
 
@@ -142,7 +142,7 @@ func readFromRedis(recogniser recogniser_client.Client, synonym string) (entitie
 		Err:     io.EOF,
 	}
 
-	wg.Wait()
+	waitGroup.Wait()
 
 	return recogniser.Result(), recogniser.Err()
 }

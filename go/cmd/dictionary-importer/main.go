@@ -67,7 +67,7 @@ func main() {
 			tokens := strings.Fields(synonym)
 			normalizedTokens := make([]string, 0, len(tokens))
 			for _, token := range tokens {
-				normalizedToken, _, _ := text.NormalizeAndLowercaseString(token)
+				normalizedToken, _ := text.NormalizeAndLowercaseString(token)
 				if len(normalizedToken) > 0 {
 					normalizedTokens = append(normalizedTokens, normalizedToken)
 				}

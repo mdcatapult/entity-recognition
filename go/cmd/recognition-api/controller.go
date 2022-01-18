@@ -85,23 +85,27 @@ func (c controller) ListRecognisers() []string {
 	return recognisers
 }
 
-func (c controller) Recognize(reader io.Reader, contentType AllowedContentType, opts map[string]lib.RecogniserOptions) ([]*pb.Entity, error) {
+// Recognize performs entity recognition by calling recognise() on each recogniser in recogniserToOpts.
+func (controller controller) Recognize(reader io.Reader, contentType AllowedContentType, requestedRecognisers []lib.RecogniserOptions) ([]*pb.Entity, error) {
 
-	wg := &sync.WaitGroup{}
+	waitGroup := &sync.WaitGroup{}
 	channels := make(map[string]chan snippet_reader.Value)
-	for recogniserName, recogniserOptions := range opts {
-		validRecogniser, ok := c.recognisers[recogniserName]
+
+	for _, recogniser := range requestedRecognisers {
+
+		// check that requested recogniser has been configured on controller
+		validRecogniser, ok := controller.recognisers[recogniser.Name]
 		if !ok {
 			return nil, HttpError{
 				code:  400,
-				error: fmt.Errorf("no such recogniser '%s'", recogniserName),
+				error: fmt.Errorf("no such recogniser '%s'", recogniser.Name),
 			}
 		}
 
-		validRecogniser.SetExactMatch(c.exactMatch)
+		validRecogniser.SetExactMatch(controller.exactMatch)
 
-		channels[recogniserName] = make(chan snippet_reader.Value)
-		err := validRecogniser.Recognise(channels[recogniserName], recogniserOptions, wg)
+		channels[recogniser.Name] = make(chan snippet_reader.Value)
+		err := validRecogniser.Recognise(channels[recogniser.Name], waitGroup , recogniser.HttpOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -110,33 +114,33 @@ func (c controller) Recognize(reader io.Reader, contentType AllowedContentType, 
 	var snippetReaderValues <-chan snippet_reader.Value
 	switch contentType {
 	case contentTypeHTML:
-		snippetReaderValues = c.htmlReader.ReadSnippets(reader)
+		snippetReaderValues = controller.htmlReader.ReadSnippets(reader)
 	case contentTypeRawtext:
-		snippetReaderValues = c.textReader.ReadSnippets(reader)
+		snippetReaderValues = controller.textReader.ReadSnippets(reader)
 	}
 
+	// all the bits of text as snippets (with an error)
 	for snippetReaderValue := range snippetReaderValues {
-		SendToAll(snippetReaderValue, channels)
+		// TODO could the snippetReaderValue.Err value be an actual error here?
+		SendToAll(snippetReaderValue, channels) // every value goes to every channel (recogniser) which is defined above
 		if snippetReaderValue.Err != nil {
 			break
 		}
 	}
 
-	wg.Wait()
-	length := 0
-	for recogniserName := range opts {
-		if err := c.recognisers[recogniserName].Err(); err != nil {
+	waitGroup.Wait()
+	for _, recogniser := range requestedRecognisers {
+		if err := controller.recognisers[recogniser.Name].Err(); err != nil {
 			return nil, err
 		}
-		length += len(c.recognisers[recogniserName].Result())
 	}
 
-	allowedEntities := make([]*pb.Entity, 0, length)
-	for recogniserName := range opts {
-		recognisedEntities := c.recognisers[recogniserName].Result()
+	allowedEntities := make([]*pb.Entity, 0)
+	for _, recogniser := range requestedRecognisers {
+		recognisedEntities := controller.recognisers[recogniser.Name].Result()
 
 		// apply global blacklist
-		allowedEntities = append(allowedEntities, c.blacklist.FilterEntities(recognisedEntities)...)
+		allowedEntities = append(allowedEntities, controller.blacklist.FilterEntities(recognisedEntities)...)
 
 	}
 

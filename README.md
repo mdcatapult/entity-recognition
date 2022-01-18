@@ -8,6 +8,17 @@ There are currently 4 primary applications:
 2. **The regexer recognizer**. This simple gRPC recognizer service receives a stream of tokens and returns a stream of entities based on a regex match.
 3. **The dictionary recognizer**. This gRPC recognizer service recieves a stream of tokens and looks them up in a backend database, returning a stream of entities based on the result. (This can be complicated by a number of things, see the [diagram](#diagrams))
 4. **The dictionary importer**. This app reads a file line by line, parses it, and upserts it to a backend database that the dictionary recognizer is compatible with.
+
+## Documentation
+To see documentation around endpoints and types, `make docs` from project root. This requires go-swagger which can be installed from source:
+
+```
+dir=$(mktemp -d) 
+git clone https://github.com/go-swagger/go-swagger "$dir" 
+cd "$dir"
+go install ./cmd/swagger
+```
+
 ## Diagrams
 * [Overview of the architecture](https://lucid.app/lucidchart/1598c66b-ddb5-486c-a706-5d8a44f07220/edit?page=0_0#).
 * [Dictionary recognizer workflow](https://lucid.app/lucidchart/899a175a-a933-4f8d-9b4f-ff6d93f72896/edit?beaconFlowId=CD8D681A5455AD49&page=0_0#)

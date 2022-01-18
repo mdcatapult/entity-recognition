@@ -158,8 +158,8 @@ func createSnippetAndSendToCallback(
 	snippetOffset uint32,
 ) error {
 
-	newSnippet := createSnippet(snippet, snippetOffset, string(textBytes))
-	if err := onToken(newSnippet); err != nil {
+	token := createToken(snippet, snippetOffset, string(textBytes))
+	if err := onToken(token); err != nil {
 		return err
 	}
 
@@ -177,8 +177,8 @@ func sendSnippetAndResetBuilder(
 	onToken func(*pb.Snippet) error) error {
 
 	if builder.Len() > 0 {
-		newSnippet := createSnippet(snippet, snippetOffset, builder.String())
-		if err := onToken(newSnippet); err != nil {
+		token := createToken(snippet, snippetOffset, builder.String())
+		if err := onToken(token); err != nil {
 			return err
 		}
 		builder.Reset()
@@ -191,7 +191,7 @@ func isWhitespace(b byte) bool {
 	return b <= whitespaceBoundary
 }
 
-func createSnippet(
+func createToken(
 	snippet *pb.Snippet,
 	snippetOffset uint32,
 	text string,

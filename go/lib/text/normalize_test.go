@@ -88,9 +88,8 @@ func TestNormalizeAndLowercaseString(t *testing.T) {
 	for _, tt := range tests {
 		t.Log(tt.name)
 
-		actualToken, actualSentenceEnd, actualOffset := NormalizeAndLowercaseString(tt.inputToken)
+		actualToken, actualSentenceEnd := NormalizeAndLowercaseString(tt.inputToken)
 		assert.Equal(t, tt.expectedToken, actualToken)
 		assert.Equal(t, tt.expectedSentenceEnd, actualSentenceEnd)
-		assert.Equal(t, tt.expectedOffset, actualOffset)
 	}
 }

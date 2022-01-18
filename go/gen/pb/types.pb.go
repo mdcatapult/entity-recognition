@@ -20,14 +20,28 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Snippet
+// Snippet represents a piece of text found in a HTML or text document.
+// This is the type used while text is being processed. As snippets are read from the source document by the HTMLReader
+// or TextReader, they are sent to the Tokeniser. This creates tokens based on the snippet's text and sends them to
+// recognisers to find entities.
+//
+// swagger:model Snippet
 type Snippet struct {
+	//swagger:ignore
 	state         protoimpl.MessageState
+	//swagger:ignore
 	sizeCache     protoimpl.SizeCache
+	//swagger:ignore
 	unknownFields protoimpl.UnknownFields
 
+	// The text of the snippet. This is usually either the contents of a HTML text node or a line of a text document.
 	Text           string `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
+	// The text after being normalised
 	NormalisedText string `protobuf:"bytes,2,opt,name=normalisedText,proto3" json:"normalisedText,omitempty"`
+	// Offset indicates the number of chars into the document the snippet appears
 	Offset         uint32 `protobuf:"varint,3,opt,name=offset,proto3" json:"offset,omitempty"`
+	// Xpath refers to the HTML element containing the snippet's text, if applicable.
 	Xpath          string `protobuf:"bytes,4,opt,name=xpath,proto3" json:"xpath,omitempty"`
 }
 
@@ -91,15 +105,27 @@ func (x *Snippet) GetXpath() string {
 	return ""
 }
 
+// Entity
+// An entity recognised in a piece of text.
+// swagger:model Entity
 type Entity struct {
+	//swagger:ignore
 	state         protoimpl.MessageState
+	//swagger:ignore
 	sizeCache     protoimpl.SizeCache
+	// swagger:ignore
 	unknownFields protoimpl.UnknownFields
 
+	// The entity's text
 	Name        string            `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// Position within the enclosing text
 	Position    uint32            `protobuf:"varint,2,opt,name=position,proto3" json:"position,omitempty"`
+	// Xpath of the HTML element in which the text was found
 	Xpath       string            `protobuf:"bytes,3,opt,name=xpath,proto3" json:"xpath,omitempty"`
+	// Which recogniser was used to find the entity
 	Recogniser  string            `protobuf:"bytes,4,opt,name=recogniser,proto3" json:"recogniser,omitempty"`
+	// swagger:ignore
+	// ?? what is this ??
 	Identifiers map[string]string `protobuf:"bytes,5,rep,name=identifiers,proto3" json:"identifiers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	Metadata    []byte            `protobuf:"bytes,6,opt,name=metadata,proto3" json:"metadata,omitempty"`
 }

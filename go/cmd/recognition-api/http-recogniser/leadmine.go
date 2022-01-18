@@ -1,3 +1,7 @@
+/*
+	http_recogniser provides a client which uses HTTP to communicate with an HTTP server which can perform entity recognition.
+	Currently, the only such server is Leadmine Web Service, hence the references to Leadmine.
+*/
 package http_recogniser
 
 import (
@@ -6,6 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"sync"
@@ -53,8 +58,8 @@ func (l *leadmine) Result() []*pb.Entity {
 	return l.entities
 }
 
-func (l *leadmine) urlWithOpts(opts lib.RecogniserOptions) string {
-	if len(opts.QueryParameters) == 0 {
+func (l *leadmine) urlWithParams(params url.Values) string {
+	if len(params) == 0 {
 		return l.Url
 	}
 
@@ -63,7 +68,7 @@ func (l *leadmine) urlWithOpts(opts lib.RecogniserOptions) string {
 	}
 
 	paramStr := ""
-	for key, values := range opts.QueryParameters {
+	for key, values := range params {
 		paramStr += sep(key) + strings.Join(values, sep(key))
 	}
 
@@ -74,15 +79,17 @@ func (l *leadmine) handleError(err error) {
 	l.err = err
 }
 
-func (l *leadmine) Recognise(snipReaderValues <-chan snippet_reader.Value, opts lib.RecogniserOptions, wg *sync.WaitGroup) error {
+// Recognise calls the helper method l.recognise to call Leadmine Web Service to perform entity recognition.
+// Found entities are put into l.entities, and errors into l.err.
+func (l *leadmine) Recognise(snipReaderValues <-chan snippet_reader.Value, waitGroup *sync.WaitGroup, httpOptions lib.HttpOptions) error {
 	l.reset()
-	go l.recognise(snipReaderValues, opts, wg)
+	go l.recognise(snipReaderValues, waitGroup , httpOptions)
 	return nil
 }
 
-func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, opts lib.RecogniserOptions, wg *sync.WaitGroup) {
-	wg.Add(1)
-	defer wg.Done()
+func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, waitGroup *sync.WaitGroup, httpOptions lib.HttpOptions) {
+	waitGroup.Add(1)
+	defer waitGroup.Done()
 
 	snips := make(map[int]*pb.Snippet)
 	var text string
@@ -98,7 +105,7 @@ func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, opts 
 		return
 	}
 
-	leadmineResponse, err := l.callLeadmineWebService(opts, text)
+	leadmineResponse, err := l.callLeadmineWebService(httpOptions.QueryParameters, text)
 	if err != nil {
 		l.handleError(err)
 		return
@@ -205,8 +212,8 @@ func correctLeadmineEntityOffsets(leadmineResponse *LeadmineResponse, text strin
 	return correctedLeadmineEntities, nil
 }
 
-func (l *leadmine) callLeadmineWebService(opts lib.RecogniserOptions, text string) (*LeadmineResponse, error) {
-	req, err := http.NewRequest(http.MethodPost, l.urlWithOpts(opts), strings.NewReader(text))
+func (l *leadmine) callLeadmineWebService(httpParams url.Values, text string) (*LeadmineResponse, error) {
+	req, err := http.NewRequest(http.MethodPost, l.urlWithParams(httpParams), strings.NewReader(text))
 	if err != nil {
 		return nil, err
 	}

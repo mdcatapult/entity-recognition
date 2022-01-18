@@ -21,6 +21,7 @@ test:
     - go test ./go/... -coverpkg=./... -coverprofile=cover.out
     - go install github.com/onsi/ginkgo/ginkgo@latest
     - ginkgo go/lib/text
+    - ginkgo go/cmd/recognition-api
     - sed -i "/\/gen\//d" cover.out
     - go tool cover -func cover.out
   services:
