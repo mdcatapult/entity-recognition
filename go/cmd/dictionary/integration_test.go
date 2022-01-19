@@ -67,7 +67,7 @@ func Test_Redis_Recogniser(t *testing.T) {
 	assert.Equal(t, 1, len(entities))
 
 	var actualMetadata map[string]interface{}
-	err = json.Unmarshal(entities[0].Metadata, &actualMetadata)
+	err = json.Unmarshal([]byte(entities[0].Metadata), &actualMetadata)
 
 	assert.NoError(t, err)
 	assert.Equal(t, data.Metadata, actualMetadata)
