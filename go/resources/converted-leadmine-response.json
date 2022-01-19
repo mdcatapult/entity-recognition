@@ -1067,15 +1067,6 @@
     "metadata": "{\"entityGroup\":\"Chemical\",\"RecognisingDict\":{\"enforceBracketing\":false,\"entityType\":\"DictMol\",\"htmlColor\":\"pink\",\"maxCorrectionDistance\":0,\"minimumCorrectedEntityLength\":8,\"minimumEntityLength\":0,\"source\":\"/srv/config/common/leadmine/2018-11-06/dictionary/CFDictChembl.cfx\"}}"
   },
   {
-    "name": "AF-DX 250",
-    "xpath": "/html/*[2]/*[3]/*[5]/*[7]/*[1]/*[25]/*[1]/*[1]/*[2]/*[1]/*[1]/*[1]/*[1]/*[1]/*[2]/*[2]/*[2]/*[1]/*[2]/*[2]/*[1]/*[1]/*[5]",
-    "recogniser": "test-leadmine",
-    "identifiers": {
-      "resolvedEntity": "RLUNJKJUFRFYJM-UHFFFAOYSA-N"
-    },
-    "metadata": "{\"entityGroup\":\"Chemical\",\"RecognisingDict\":{\"enforceBracketing\":false,\"entityType\":\"DictMol\",\"htmlColor\":\"pink\",\"maxCorrectionDistance\":0,\"minimumCorrectedEntityLength\":8,\"minimumEntityLength\":0,\"source\":\"/srv/config/common/leadmine/2018-11-06/dictionary/CFDictPubChem.cfx\"}}"
-  },
-  {
     "name": "Ambutonium bromide",
     "xpath": "/html/*[2]/*[3]/*[5]/*[7]/*[1]/*[25]/*[1]/*[1]/*[2]/*[1]/*[1]/*[1]/*[1]/*[1]/*[2]/*[2]/*[2]/*[1]/*[2]/*[2]/*[1]/*[1]/*[7]",
     "recogniser": "test-leadmine",
