@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"io"
 	"io/ioutil"
 	"os"
@@ -105,14 +106,22 @@ func (s *ControllerSuite) Test_controller_TokenizeHTML() {
 }
 
 func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
-	foundEntities := []*pb.Entity{
-		{
-			Name:        "found entity",
-			Position:    2312,
-			Recogniser:  "test",
-			Identifiers: map[string]string{"many": "", "things": ""},
-		},
+	entity := &pb.Entity{
+		Name:        "found entity",
+		Position:    2312,
+		Recogniser:  "test",
+		Identifiers: map[string]string{"many": "", "things": ""},
 	}
+
+	blacklistedEntityName := "blacklisted entity"
+	blacklistedEntity := &pb.Entity{
+		Name:        blacklistedEntityName,
+		Position:    1234,
+		Recogniser:  "test",
+		Identifiers: map[string]string{"blacklisted": "blacklisted"},
+	}
+
+	foundEntities := []*pb.Entity{entity, blacklistedEntity}
 
 	sentSnippet := &pb.Snippet{
 		Text:   "found entity\n",
@@ -121,6 +130,14 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 	}
 
 	reader := strings.NewReader("<p>found entity</p>")
+
+	//setup global blacklist on controller
+	s.controller.blacklist = blacklist.Blacklist{
+		CaseSensitive: map[string]bool{},
+		CaseInsensitive: map[string]bool{
+			blacklistedEntityName: true,
+		},
+	}
 
 	// The mock recogniser is a little complicated so read carefully!
 	mockRecogniser := &mock_recogniser.Client{}
@@ -158,6 +175,11 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 
 	opts := []lib.RecogniserOptions{{Name: "mock"}}
 	entities, err := s.controller.Recognize(reader, contentTypeHTML, opts)
-	s.ElementsMatch(foundEntities, entities)
+
+	// entity should have been found
+	s.Equal(foundEntities[0], entities[0])
+
+	// entities should only contain the found entity, not the blacklisted entity
+	s.Len(entities, 1)
 	s.Nil(err)
 }

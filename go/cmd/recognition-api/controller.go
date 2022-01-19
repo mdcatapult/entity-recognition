@@ -105,7 +105,7 @@ func (controller controller) Recognize(reader io.Reader, contentType AllowedCont
 		validRecogniser.SetExactMatch(controller.exactMatch)
 
 		channels[recogniser.Name] = make(chan snippet_reader.Value)
-		err := validRecogniser.Recognise(channels[recogniser.Name], waitGroup , recogniser.HttpOptions)
+		err := validRecogniser.Recognise(channels[recogniser.Name], waitGroup, recogniser.HttpOptions)
 		if err != nil {
 			return nil, err
 		}

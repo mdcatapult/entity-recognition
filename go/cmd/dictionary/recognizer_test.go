@@ -203,6 +203,7 @@ func (s *RecognizerSuite) Test_recogniser_getCompoundTokens() {
 			},
 		},
 		{
+
 			name: "detect end of sentence (for current token)",
 			args: args{
 				vars: &requestVars{
