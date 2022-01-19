@@ -14,5 +14,5 @@ message Entity {
     string xpath = 3;
     string recogniser = 4;
     map<string,string> identifiers = 5;
-    bytes metadata = 6;
+    string metadata = 6;
 }
