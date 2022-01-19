@@ -83,7 +83,7 @@ func (l *leadmine) handleError(err error) {
 // Found entities are put into l.entities, and errors into l.err.
 func (l *leadmine) Recognise(snipReaderValues <-chan snippet_reader.Value, waitGroup *sync.WaitGroup, httpOptions lib.HttpOptions) error {
 	l.reset()
-	go l.recognise(snipReaderValues, waitGroup , httpOptions)
+	go l.recognise(snipReaderValues, waitGroup, httpOptions)
 	return nil
 }
 
@@ -176,7 +176,7 @@ func (l *leadmine) convertLeadmineEntities(correctedLeadmineEntities []LeadmineE
 			Identifiers: map[string]string{
 				"resolvedEntity": entity.ResolvedEntity,
 			},
-			Metadata: metadata,
+			Metadata: string(metadata),
 		})
 	}
 	return recognisedEntities, nil

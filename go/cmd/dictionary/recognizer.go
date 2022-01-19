@@ -34,7 +34,7 @@ func newEntityWithNormalisedText(snippet *pb.Snippet, lookup *cache.Lookup) *pb.
 		Recogniser:  lookup.Dictionary,
 		Identifiers: lookup.Identifiers,
 		Xpath:       snippet.GetXpath(),
-		Metadata:    lookup.Metadata,
+		Metadata:    string(lookup.Metadata),
 	}
 }
 
