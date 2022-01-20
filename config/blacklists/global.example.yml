@@ -1,4 +1,29 @@
 # global blacklist includes terms to blacklist across all recognisers
 
-case_insensitive: []
 case_sensitive: []
+case_insensitive:
+  - and
+  - this
+  - gene
+  - max
+  - hit
+  - link
+  - sec
+  - you
+  - full
+  - are
+  - note
+  - sep
+  - can
+  - for
+  - not
+  - skip
+  - add
+  - set
+  - out
+  - top
+  - map
+  - key
+  - has
+  - fit
+  - main
