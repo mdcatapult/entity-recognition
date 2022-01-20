@@ -9,4 +9,4 @@ FROM alpine
 
 WORKDIR /app
 COPY --from=builder /build/recognition-api /app/recognition-api
-ENTRYPOINT [ "/app/recognition-api" ]
+ENTRYPOINT [ "/app/recognition-api/recognition-api" ]
