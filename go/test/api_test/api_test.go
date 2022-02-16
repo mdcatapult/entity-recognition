@@ -20,7 +20,8 @@ const envVar = "NER_API_TEST"
 func TestMain(m *testing.M) {
 
 	if os.Getenv(envVar) == "" {
-		fmt.Println("SKIPPING API TESTS: set NER_API_TEST to run API tests")
+		fmt.Printf("SKIPPING API TESTS: set %s to run API tests", envVar)
+		return
 	}
 
 	os.Exit(m.Run())
