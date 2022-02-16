@@ -64,10 +64,9 @@ var _ = Describe("Entity Recognition API", func() {
 			Expect(len(entities)).Should(Equal(0))
 		})
 
-		It("entity needing normalization", func() {
+		It("entity needing normalization - ", func() {
 
 			html := "<html>calcium)</html>"
-
 			entities := getEntities(html)
 
 			Expect(len(entities)).Should(Equal(1))

@@ -67,6 +67,6 @@ docs:
 	swagger generate spec -o ./swagger.json --scan-models; \
 	swagger serve -F=swagger swagger.json
 
-.PHONY: test
-test:
+.PHONY: api-test
+api-test:
 	@./scripts/test.sh
