@@ -86,6 +86,8 @@ func getEntities(html string) []pb.Entity {
 	Expect(err).Should(BeNil())
 
 	var entities []pb.Entity
-	json.Unmarshal(body, &entities)
+	err = json.Unmarshal(body, &entities)
+	Expect(err).Should(BeNil())
+
 	return entities
 }

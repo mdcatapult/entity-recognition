@@ -1,7 +1,7 @@
 log_level: info
 dictionary:
   name: "pubchem_synonyms"
-  path: ./go/cmd/dictionary-importer/dictionaries/test.tsv # this should be pubchem.tsv for the existing tests!!
-  format: "leadmine" # this should be pubchem for the existing tests!!!!
+  path: ./go/cmd/dictionary-importer/dictionaries/pubchem.tsv
+  format: "pubchem"
 backend_database: redis
 pipeline_size: 10000
