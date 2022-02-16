@@ -59,7 +59,7 @@ func (s *leadmineSuite) TestRecognise() {
 	waitGroup := &sync.WaitGroup{}
 
 	// Call the function we're testing!
-	err = testLeadmine.Recognise(snipChan, waitGroup , testOptions.HttpOptions)
+	err = testLeadmine.Recognise(snipChan, waitGroup, testOptions.HttpOptions)
 	s.Nil(err)
 
 	// Get the expected response from resources.
