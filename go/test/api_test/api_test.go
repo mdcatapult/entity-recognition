@@ -39,11 +39,29 @@ var _ = Describe("Entity Recognition API", func() {
 		It("plain entity", func() {
 
 			html := "<html>calcium</html>"
-
 			entities := getEntities(html)
 
 			Expect(len(entities)).Should(Equal(1))
 			Expect(entities[0].Name).Should(Equal("calcium"))
+		})
+
+		It("multiple entities", func() {
+
+			html := "<html>calcium entity</html>"
+			entities := getEntities(html)
+
+			Expect(len(entities)).Should(Equal(2))
+			Expect(entities[0].Name).Should(Equal("calcium"))
+			Expect(entities[1].Name).Should(Equal("entity"))
+
+		})
+
+		It("no recognised entities", func() {
+
+			html := "<html>nonsense</html>"
+			entities := getEntities(html)
+
+			Expect(len(entities)).Should(Equal(0))
 		})
 
 		It("entity needing normalization", func() {
