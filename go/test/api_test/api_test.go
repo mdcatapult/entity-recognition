@@ -66,7 +66,7 @@ var _ = Describe("Entity Recognition API", func() {
 			Expect(res.StatusCode).Should(Equal(400))
 		})
 
-		It("should return bad request for missing html", func() {
+		It("should return bad request for missing source text", func() {
 
 			htmlReader := strings.NewReader("")
 			res, err := http.Post(fmt.Sprintf("http://%s:%s/entities?recogniser=dictionary", addr, port), "text/html", htmlReader)
