@@ -14,8 +14,11 @@ import (
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 )
 
-// This must be set for these tests to run
-const envVar = "NER_API_TEST"
+const (
+	envVar = "NER_API_TEST" // This must be set for these tests to run
+	addr   = "localhost"
+	port   = "8080"
+)
 
 func TestMain(m *testing.M) {
 
@@ -34,50 +37,131 @@ func TestAPI(t *testing.T) {
 
 var _ = Describe("Entity Recognition API", func() {
 
+	var _ = Describe("bad requests", func() {
+
+		It("should return bad request for invalid recogniser", func() {
+			htmlReader := strings.NewReader("<html>calcium</html>")
+			res, err := http.Post(fmt.Sprintf("http://%s:%s/entities?recogniser=invalid-recogniser", addr, port), "text/html", htmlReader)
+
+			Expect(err).Should(BeNil())
+			Expect(res.StatusCode).Should(Equal(400))
+
+		})
+
+		It("should return bad request for missing recogniser", func() {
+			htmlReader := strings.NewReader("<html>calcium</html>")
+			res, err := http.Post(fmt.Sprintf("http://%s:%s/entities?recogniser", addr, port), "text/html", htmlReader)
+
+			Expect(err).Should(BeNil())
+			Expect(res.StatusCode).Should(Equal(400))
+		})
+
+		It("should return bad request for invalid content type", func() {
+
+			contentType := "nonsense"
+			htmlReader := strings.NewReader("<html>calcium</html>")
+			res, err := http.Post(fmt.Sprintf("http://%s:%s/entities?recogniser=dictionary", addr, port), contentType, htmlReader)
+
+			Expect(err).Should(BeNil())
+			Expect(res.StatusCode).Should(Equal(400))
+		})
+
+		It("should return bad request for missing html", func() {
+
+			htmlReader := strings.NewReader("")
+			res, err := http.Post(fmt.Sprintf("http://%s:%s/entities?recogniser=dictionary", addr, port), "text/html", htmlReader)
+
+			Expect(err).Should(BeNil())
+			Expect(res.StatusCode).Should(Equal(400))
+		})
+	})
+
 	var _ = Describe("should recognise in html", func() {
 
 		It("plain entity", func() {
 
 			html := "<html>calcium</html>"
-			entities := getEntities(html)
+			entities := getEntities(html, "text/html")
 
 			Expect(len(entities)).Should(Equal(1))
 			Expect(entities[0].Name).Should(Equal("calcium"))
+			Expect(hasIdentifier(&entities[0], "ca")).Should(BeTrue())
 		})
 
 		It("multiple entities", func() {
 
 			html := "<html>calcium entity</html>"
-			entities := getEntities(html)
+			entities := getEntities(html, "text/html")
 
 			Expect(len(entities)).Should(Equal(2))
-			Expect(entities[0].Name).Should(Equal("calcium"))
-			Expect(entities[1].Name).Should(Equal("entity"))
 
+			for _, entity := range []string{
+				"calcium",
+				"entity",
+			} {
+				Expect(hasEntity(entities, entity)).Should(BeTrue())
+			}
 		})
 
 		It("no recognised entities", func() {
 
 			html := "<html>nonsense</html>"
-			entities := getEntities(html)
+			entities := getEntities(html, "text/html")
 
 			Expect(len(entities)).Should(Equal(0))
 		})
 
-		It("entity needing normalization - ", func() {
+		It("entity needing normalization", func() {
 
 			html := "<html>calcium)</html>"
-			entities := getEntities(html)
+			entities := getEntities(html, "text/html")
 
 			Expect(len(entities)).Should(Equal(1))
 			Expect(entities[0].Name).Should(Equal("calcium"))
 		})
+
+		It("nested xpath", func() {
+			html := "<html><div>nonsense</div><div><span>calcium</span></div></html>"
+			entities := getEntities(html, "text/html")
+
+			Expect(len(entities)).Should(Equal(1))
+			Expect(entities[0].GetXpath()).Should(Equal("/html/*[2]"))
+		})
+	})
+
+	var _ = Describe("should recognise in plaintext", func() {
+
+		It("plain entity", func() {
+
+			text := "calcium"
+			entities := getEntities(text, "text/plain")
+
+			Expect(len(entities)).Should(Equal(1))
+			Expect(entities[0].Name).Should(Equal("calcium"))
+			Expect(hasIdentifier(&entities[0], "ca")).Should(BeTrue())
+		})
+
+		It("multiple entities", func() {
+
+			text := "calcium entity"
+			entities := getEntities(text, "text/plain")
+
+			Expect(len(entities)).Should(Equal(2))
+
+			for _, entity := range []string{
+				"calcium",
+				"entity",
+			} {
+				Expect(hasEntity(entities, entity)).Should(BeTrue())
+			}
+		})
+
 	})
 })
 
-func getEntities(html string) []pb.Entity {
-	htmlReader := strings.NewReader(html)
-	res, err := http.Post("http://localhost:8080/entities?recogniser=dictionary", "text/html", htmlReader)
+func getEntities(source, contentType string) []pb.Entity {
+	reader := strings.NewReader(source)
+	res, err := http.Post(fmt.Sprintf("http://%s:%s/entities?recogniser=dictionary", addr, port), contentType, reader)
 
 	Expect(err).Should(BeNil())
 	Expect(res.StatusCode).Should(Equal(200))
@@ -90,4 +174,22 @@ func getEntities(html string) []pb.Entity {
 	Expect(err).Should(BeNil())
 
 	return entities
+}
+
+func hasEntity(entities []pb.Entity, entity string) bool {
+	for i := range entities {
+		if entities[i].GetName() == entity {
+			return true
+		}
+	}
+	return false
+}
+
+func hasIdentifier(entity *pb.Entity, identifier string) bool {
+	for k := range entity.GetIdentifiers() {
+		if k == identifier {
+			return true
+		}
+	}
+	return false
 }

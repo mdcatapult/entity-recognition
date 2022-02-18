@@ -11,6 +11,5 @@ package apitest
 
 	go build gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/test/api_test: no non-test Go files in /builds/informatics/software-engineering/entity-recognition/go/test/api_test
 
-
 	See https://github.com/golang/go/issues/27333.
 **/

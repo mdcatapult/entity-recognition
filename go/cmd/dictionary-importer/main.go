@@ -46,10 +46,13 @@ func main() {
 	}
 
 	for _, arg := range os.Args {
-		k := strings.Split(arg, "=")[0]
-		v := strings.Split(arg, "=")[1]
-		if k == "dictionaryPath" {
-			config.Dictionary.Path = v
+
+		if strings.Contains(arg, "=") {
+			k := strings.Split(arg, "=")[0]
+			v := strings.Split(arg, "=")[1]
+			if k == "dictionaryPath" {
+				config.Dictionary.Path = v
+			}
 		}
 	}
 

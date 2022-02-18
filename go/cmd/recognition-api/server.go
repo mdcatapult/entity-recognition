@@ -144,7 +144,7 @@ func (s server) GetRecognisers(c *gin.Context) {
 //
 //	responses:
 //      200: []Entity
-//  	400: description: Bad request - invalid content type.
+//  	400: description: Bad request - invalid content type or missing / invalid recogniser
 func (s server) Recognize(c *gin.Context) {
 	requestedRecognisers, ok := c.Get(recognisersKey)
 	if !ok {
