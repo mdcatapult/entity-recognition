@@ -1,6 +1,9 @@
 #! /bin/bash
 
-go run go/cmd/dictionary-importer/main.go dictionaryPath=./go/cmd/dictionary-importer/dictionaries/test.tsv &
+echo "LS'ing!"
+ls
+
+bin/dictionary-importer dictionaryPath=./go/cmd/dictionary-importer/dictionaries/test.tsv &
 
 bin/dictionary &
 bin/recognition-api > /dev/null 2>&1 & disown

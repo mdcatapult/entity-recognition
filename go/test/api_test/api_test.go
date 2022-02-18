@@ -163,6 +163,13 @@ func getEntities(source, contentType string) []pb.Entity {
 	reader := strings.NewReader(source)
 	res, err := http.Post(fmt.Sprintf("http://%s:%s/entities?recogniser=dictionary", addr, port), contentType, reader)
 
+	fmt.Println(err)
+	var b []byte
+	_, err = res.Body.Read(b)
+	fmt.Println("read err: ", err)
+
+	fmt.Println(string(b))
+
 	Expect(err).Should(BeNil())
 	Expect(res.StatusCode).Should(Equal(200))
 
