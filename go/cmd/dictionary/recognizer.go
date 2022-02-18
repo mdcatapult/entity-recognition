@@ -45,7 +45,6 @@ func (recogniser *recogniser) newResultHandler(vars *requestVars) func(snippet *
 			return nil
 		}
 		entity := newEntityWithNormalisedText(snippet, lookup)
-
 		if err := vars.stream.Send(entity); err != nil {
 			return err
 		}
@@ -66,7 +65,7 @@ func getCompoundSnippets(vars *requestVars, snippet *pb.Snippet) (snippets []*pb
 	// normalise the token (remove enclosing punctuation and enforce NFKC encoding).
 	// compoundTokenEnd is true if the last byte in the token is one of '.', '?', or '!'.
 	compoundTokenEnd := text.NormalizeAndLowercaseSnippet(snippet)
-	if len(snippet.Text) == 0 {
+	if len(snippet.NormalisedText) == 0 {
 		return nil, true
 	}
 

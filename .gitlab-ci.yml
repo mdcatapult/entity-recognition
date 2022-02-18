@@ -25,6 +25,7 @@ test:
   - go install github.com/onsi/ginkgo/ginkgo@latest
   - ginkgo go/lib/text
   - ginkgo go/cmd/recognition-api
+  - make build && make api-test
   - sed -i "/\/gen\//d" cover.out
   - go tool cover -func cover.out
   services:

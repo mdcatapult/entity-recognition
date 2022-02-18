@@ -45,6 +45,17 @@ func main() {
 		log.Fatal().Err(err).Send()
 	}
 
+	for _, arg := range os.Args {
+
+		if strings.Contains(arg, "=") {
+			k := strings.Split(arg, "=")[0]
+			v := strings.Split(arg, "=")[1]
+			if k == "dictionaryPath" {
+				config.Dictionary.Path = v
+			}
+		}
+	}
+
 	// Get a redis client
 	var redisClient = remote.NewRedisClient(config.Redis)
 	var err error
