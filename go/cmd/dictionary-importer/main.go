@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -69,8 +68,6 @@ func main() {
 	if err != nil {
 		log.Fatal().Str("path", config.Dictionary.Path).Err(err).Send()
 	}
-
-	log.Info().Msg(fmt.Sprint("importing", config.Dictionary.Format, "from", config.Dictionary.Path))
 
 	entries := 0
 	pipeline := redisClient.NewSetPipeline(config.PipelineSize)

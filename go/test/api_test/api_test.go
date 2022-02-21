@@ -92,9 +92,6 @@ var _ = Describe("Entity Recognition API", func() {
 			html := "<html>calcium entity</html>"
 			entities := getEntities(html, "text/html")
 
-			fmt.Println("first entity:", entities[0].GetName())
-			fmt.Println(entities)
-
 			Expect(len(entities)).Should(Equal(2))
 
 			for _, entity := range []string{
