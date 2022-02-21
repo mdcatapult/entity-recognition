@@ -15,12 +15,20 @@ import (
 )
 
 const (
-	envVar = "NER_API_TEST" // This must be set for these tests to run
-	addr   = "localhost"
-	port   = "8080"
+	envVar     = "NER_API_TEST" // This must be set for these tests to run
+	hostEnvVar = "HTTP_HOST"
+	port       = "8080"
 )
 
+var host = "localhost"
+
 func TestMain(m *testing.M) {
+
+	fmt.Println("HOST:::", os.Getenv(hostEnvVar))
+
+	if os.Getenv(hostEnvVar) != "" {
+		host = os.Getenv(hostEnvVar)
+	}
 
 	if os.Getenv(envVar) == "" {
 		fmt.Printf("SKIPPING API TESTS: set %s to run API tests", envVar)
@@ -41,8 +49,10 @@ var _ = Describe("Entity Recognition API", func() {
 
 		It("should return bad request for invalid recogniser", func() {
 			htmlReader := strings.NewReader("<html>calcium</html>")
-			res, err := http.Post(fmt.Sprintf("http://%s:%s/entities?recogniser=invalid-recogniser", addr, port), "text/html", htmlReader)
+			res, err := http.Post(fmt.Sprintf("http://%s:%s/entities?recogniser=invalid-recogniser", host, port), "text/html", htmlReader)
 
+			fmt.Println("ERRRRR:")
+			fmt.Println(err.Error())
 			Expect(err).Should(BeNil())
 			Expect(res.StatusCode).Should(Equal(400))
 
@@ -50,7 +60,7 @@ var _ = Describe("Entity Recognition API", func() {
 
 		It("should return bad request for missing recogniser", func() {
 			htmlReader := strings.NewReader("<html>calcium</html>")
-			res, err := http.Post(fmt.Sprintf("http://%s:%s/entities?recogniser", addr, port), "text/html", htmlReader)
+			res, err := http.Post(fmt.Sprintf("http://%s:%s/entities?recogniser", host, port), "text/html", htmlReader)
 
 			Expect(err).Should(BeNil())
 			Expect(res.StatusCode).Should(Equal(400))
@@ -60,7 +70,7 @@ var _ = Describe("Entity Recognition API", func() {
 
 			contentType := "nonsense"
 			htmlReader := strings.NewReader("<html>calcium</html>")
-			res, err := http.Post(fmt.Sprintf("http://%s:%s/entities?recogniser=dictionary", addr, port), contentType, htmlReader)
+			res, err := http.Post(fmt.Sprintf("http://%s:%s/entities?recogniser=dictionary", host, port), contentType, htmlReader)
 
 			Expect(err).Should(BeNil())
 			Expect(res.StatusCode).Should(Equal(400))
@@ -69,7 +79,7 @@ var _ = Describe("Entity Recognition API", func() {
 		It("should return bad request for missing source text", func() {
 
 			htmlReader := strings.NewReader("")
-			res, err := http.Post(fmt.Sprintf("http://%s:%s/entities?recogniser=dictionary", addr, port), "text/html", htmlReader)
+			res, err := http.Post(fmt.Sprintf("http://%s:%s/entities?recogniser=dictionary", host, port), "text/html", htmlReader)
 
 			Expect(err).Should(BeNil())
 			Expect(res.StatusCode).Should(Equal(400))
@@ -161,7 +171,7 @@ var _ = Describe("Entity Recognition API", func() {
 
 func getEntities(source, contentType string) []pb.Entity {
 	reader := strings.NewReader(source)
-	res, err := http.Post(fmt.Sprintf("http://%s:%s/entities?recogniser=dictionary", addr, port), contentType, reader)
+	res, err := http.Post(fmt.Sprintf("http://%s:%s/entities?recogniser=dictionary", host, port), contentType, reader)
 
 	fmt.Println(err)
 	var b []byte

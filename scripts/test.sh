@@ -1,8 +1,4 @@
 #! /bin/bash
-
-echo "LS'ing!"
-ls
-
 bin/dictionary-importer dictionaryPath=./go/cmd/dictionary-importer/dictionaries/test.tsv &
 
 bin/dictionary &
