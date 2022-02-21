@@ -15,21 +15,12 @@ import (
 )
 
 const (
-	envVar     = "NER_API_TEST" // This must be set for these tests to run
-	hostEnvVar = "HTTP_HOST"
-	port       = "8080"
+	envVar = "NER_API_TEST" // This must be set for these tests to run
+	host   = "localhost"
+	port   = "8080"
 )
 
-var host = "localhost"
-
 func TestMain(m *testing.M) {
-
-	fmt.Println("HOST:::", os.Getenv(hostEnvVar))
-
-	if os.Getenv(hostEnvVar) != "" {
-		host = os.Getenv(hostEnvVar)
-	}
-
 	if os.Getenv(envVar) == "" {
 		fmt.Printf("SKIPPING API TESTS: set %s to run API tests", envVar)
 		return
