@@ -51,8 +51,6 @@ var _ = Describe("Entity Recognition API", func() {
 			htmlReader := strings.NewReader("<html>calcium</html>")
 			res, err := http.Post(fmt.Sprintf("http://%s:%s/entities?recogniser=invalid-recogniser", host, port), "text/html", htmlReader)
 
-			fmt.Println("ERRRRR:")
-			fmt.Println(err.Error())
 			Expect(err).Should(BeNil())
 			Expect(res.StatusCode).Should(Equal(400))
 
@@ -173,12 +171,10 @@ func getEntities(source, contentType string) []pb.Entity {
 	reader := strings.NewReader(source)
 	res, err := http.Post(fmt.Sprintf("http://%s:%s/entities?recogniser=dictionary", host, port), contentType, reader)
 
-	fmt.Println(err)
+	Expect(err).Should(BeNil())
+
 	var b []byte
 	_, err = res.Body.Read(b)
-	fmt.Println("read err: ", err)
-
-	fmt.Println(string(b))
 
 	Expect(err).Should(BeNil())
 	Expect(res.StatusCode).Should(Equal(200))

@@ -50,9 +50,13 @@ func main() {
 		if strings.Contains(arg, "=") {
 			k := strings.Split(arg, "=")[0]
 			v := strings.Split(arg, "=")[1]
-			if k == "dictionaryPath" {
+			switch k {
+			case "dictionaryPath":
 				config.Dictionary.Path = v
+			case "dictionaryFormat":
+				config.Dictionary.Format = dict.Format(v)
 			}
+
 		}
 	}
 

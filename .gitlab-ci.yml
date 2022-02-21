@@ -26,7 +26,7 @@ test:
   - ginkgo go/lib/text
   - ginkgo go/cmd/recognition-api
   - ls ./go/cmd
-  - export HTTP_HOST=docker
+  - export HTTP_HOST=localhost
   - make config && make build && make api-test
   - sed -i "/\/gen\//d" cover.out
   - go tool cover -func cover.out
