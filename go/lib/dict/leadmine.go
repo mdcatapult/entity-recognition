@@ -2,8 +2,11 @@ package dict
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"strings"
+
+	"github.com/rs/zerolog/log"
 )
 
 func NewLeadmineReader() Reader {
@@ -13,6 +16,7 @@ func NewLeadmineReader() Reader {
 type leadmineReader struct{}
 
 func (l leadmineReader) Read(dict *os.File) (chan Entry, chan error) {
+	log.Info().Msg("leadminer reader active!")
 	entries := make(chan Entry)
 	errors := make(chan error)
 	go l.read(dict, entries, errors)
@@ -27,6 +31,7 @@ func (l leadmineReader) read(dict *os.File, entries chan Entry, errors chan erro
 	for scn.Scan() {
 		line := scn.Text()
 
+		log.Info().Msg(fmt.Sprint("reading", line))
 		// skip empty lines and commented out lines.
 		if len(line) == 0 || line[0] == '#' {
 			continue
