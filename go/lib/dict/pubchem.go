@@ -17,14 +17,14 @@ func NewPubchemReader() Reader {
 
 type pubchemReader struct{}
 
-func (p pubchemReader) Read(file *os.File) (chan Entry, chan error) {
-	entries := make(chan Entry)
+func (p pubchemReader) Read(file *os.File) (chan NerEntry, chan error) {
+	entries := make(chan NerEntry)
 	errors := make(chan error)
 	go p.read(file, entries, errors)
 	return entries, errors
 }
 
-func (p pubchemReader) read(dict *os.File, entries chan Entry, errors chan error) {
+func (p pubchemReader) read(dict *os.File, entries chan NerEntry, errors chan error) {
 
 	// Instantiate variables we need to keep track of across lines.
 	scn := bufio.NewScanner(dict)
@@ -59,7 +59,7 @@ func (p pubchemReader) read(dict *os.File, entries chan Entry, errors chan error
 			for _, id := range identifiers {
 				ids[id] = ""
 			}
-			entries <- Entry{
+			entries <- NerEntry{
 				Synonyms:    synonyms,
 				Identifiers: ids,
 			}

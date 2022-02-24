@@ -36,7 +36,7 @@ func Test_Redis_Recogniser(t *testing.T) {
 		Port: 6379,
 	})
 
-	data := dict.Entry{
+	data := dict.NerEntry{
 		Synonyms:    []string{"entity"},
 		Identifiers: map[string]string{"id key": "id value"},
 		Metadata: map[string]interface{}{
@@ -75,7 +75,7 @@ func Test_Redis_Recogniser(t *testing.T) {
 }
 
 // addToRedis inserts entry into client's pipeline.
-func addToRedis(client remote.Client, entry dict.Entry) error {
+func addToRedis(client remote.Client, entry dict.NerEntry) error {
 	pipe := client.NewSetPipeline(config.PipelineSize)
 
 	for i, synonym := range entry.Synonyms {

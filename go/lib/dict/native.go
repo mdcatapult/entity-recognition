@@ -12,17 +12,17 @@ func NewNativeReader() Reader {
 
 type nativeReader struct{}
 
-func (p nativeReader) Read(file *os.File) (chan Entry, chan error) {
-	entries := make(chan Entry)
+func (p nativeReader) Read(file *os.File) (chan NerEntry, chan error) {
+	entries := make(chan NerEntry)
 	errors := make(chan error)
 	go p.read(file, entries, errors)
 	return entries, errors
 }
 
-func (p nativeReader) read(dict *os.File, entries chan Entry, errors chan error) {
+func (p nativeReader) read(dict *os.File, entries chan NerEntry, errors chan error) {
 	scn := bufio.NewScanner(dict)
 	for scn.Scan() {
-		var e Entry
+		var e NerEntry
 		if err := json.Unmarshal(scn.Bytes(), &e); err != nil {
 			errors <- err
 			return

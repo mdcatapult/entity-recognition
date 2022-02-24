@@ -56,7 +56,7 @@ func main() {
 
 	entries := 0
 	pipeline := redisClient.NewSetPipeline(config.PipelineSize)
-	onEntry := func(entry dict.Entry) error {
+	onEntry := func(entry dict.NerEntry) error {
 		entries++
 
 		if entries%50000 == 0 {
@@ -104,7 +104,7 @@ func main() {
 	}
 }
 
-func addToPipe(entry dict.Entry, pipe remote.SetPipeline) error {
+func addToPipe(entry dict.NerEntry, pipe remote.SetPipeline) error {
 	// Mid process, some stuff to do
 	for _, synonym := range entry.Synonyms {
 
