@@ -1,10 +1,11 @@
 package text
 
 import (
-	"github.com/blevesearch/segment"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/blevesearch/segment"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 )
 
 const NonAlphaNumericChar = 0
