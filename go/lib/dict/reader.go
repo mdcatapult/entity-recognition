@@ -11,6 +11,13 @@ type DictConfig struct {
 	Format Format
 }
 
+type Entry interface {
+	ReplaceSynonymAt(synonym string, index int)
+	GetSynonyms() []string
+	GetIdentifiers() map[string]interface{}
+	GetMetadata() map[string]interface{}
+}
+
 type NerEntry struct {
 	Synonyms    []string
 	Identifiers map[string]string
@@ -23,6 +30,54 @@ type SwissProtEntry struct {
 	Metadata    map[string]map[string]string
 }
 
+func (ne *NerEntry) ReplaceSynonymAt(synonym string, index int) {
+	ne.Synonyms[index] = synonym
+}
+
+func (ne NerEntry) GetSynonyms() []string {
+	return ne.Synonyms
+}
+
+func (ne NerEntry) GetIdentifiers() map[string]interface{} {
+	res := make(map[string]interface{}, len(ne.Identifiers))
+	for k, v := range ne.Identifiers {
+		var identiferValue interface{} = v
+		res[k] = identiferValue
+	}
+	return res
+
+}
+
+func (ne NerEntry) GetMetadata() map[string]interface{} {
+	return ne.Metadata
+}
+
+func (spe *SwissProtEntry) ReplaceSynonymAt(synonym string, index int) {
+	spe.Synonyms[index] = synonym
+}
+
+func (spe SwissProtEntry) GetSynonyms() []string {
+	return spe.Synonyms
+}
+
+func (spe SwissProtEntry) GetIdentifiers() map[string]interface{} {
+	res := make(map[string]interface{}, len(spe.Identifiers))
+	for k, v := range spe.Identifiers {
+		var identiferValue interface{} = v
+		res[k] = identiferValue
+	}
+	return res
+}
+
+func (spe SwissProtEntry) GetMetadata() map[string]interface{} {
+	res := make(map[string]interface{}, len(spe.Metadata))
+	for k, v := range spe.Metadata {
+		var metadataValue interface{} = v
+		res[k] = metadataValue
+	}
+	return res
+}
+
 type Format string
 
 const (
@@ -33,10 +88,10 @@ const (
 )
 
 type Reader interface {
-	Read(file *os.File) (chan NerEntry, chan error)
+	Read(file *os.File) (chan Entry, chan error)
 }
 
-func Read(format Format, file *os.File) (chan NerEntry, chan error, error) {
+func Read(format Format, file *os.File) (chan Entry, chan error, error) {
 	switch format {
 	case PubchemDictionaryFormat:
 		entries, errors := NewPubchemReader().Read(file)
@@ -57,7 +112,7 @@ func Read(format Format, file *os.File) (chan NerEntry, chan error, error) {
 
 // ReadWithCallback reads the dictionary file according to its format and executes the onEntry callback for each NerEntry.
 // The onEOF callback is executed when there are no more entries in the file.
-func ReadWithCallback(file *os.File, format Format, onEntry func(entry NerEntry) error, onEOF func() error) error {
+func ReadWithCallback(file *os.File, format Format, onEntry func(entry Entry) error, onEOF func() error) error {
 	entries, errors, err := Read(format, file)
 	if err != nil {
 		return err

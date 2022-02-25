@@ -12,14 +12,14 @@ func NewSwissProtReader() Reader {
 
 type swissProtReader struct{}
 
-func (p swissProtReader) Read(file *os.File) (chan SwissProtEntry, chan error) {
-	entries := make(chan SwissProtEntry)
+func (p swissProtReader) Read(file *os.File) (chan Entry, chan error) {
+	entries := make(chan Entry)
 	errors := make(chan error)
 	go p.read(file, entries, errors)
 	return entries, errors
 }
 
-func (p swissProtReader) read(dict *os.File, entries chan SwissProtEntry, errors chan error) {
+func (p swissProtReader) read(dict *os.File, entries chan Entry, errors chan error) {
 	scn := bufio.NewScanner(dict)
 	for scn.Scan() {
 		var e SwissProtEntry
@@ -27,6 +27,6 @@ func (p swissProtReader) read(dict *os.File, entries chan SwissProtEntry, errors
 			errors <- err
 			return
 		}
-		entries <- e
+		entries <- &e
 	}
 }

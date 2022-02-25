@@ -32,7 +32,7 @@ func newEntityWithNormalisedText(snippet *pb.Snippet, lookup *cache.Lookup) *pb.
 		Name:        normalisedText,
 		Position:    snippet.GetOffset(),
 		Recogniser:  lookup.Dictionary,
-		Identifiers: lookup.Identifiers,
+		Identifiers: convertIdentifiers(lookup.Identifiers),
 		Xpath:       snippet.GetXpath(),
 		Metadata:    string(lookup.Metadata),
 	}
@@ -193,4 +193,12 @@ func (recogniser *recogniser) GetStream(stream pb.Recognizer_GetStreamServer) er
 	}
 
 	return recogniser.retryCacheMisses(vars)
+}
+
+func convertIdentifiers(identifiers map[string]interface{}) map[string]string {
+	res := make(map[string]string, len(identifiers))
+	for k, v := range identifiers {
+		res[k] = v.(string)
+	}
+	return res
 }

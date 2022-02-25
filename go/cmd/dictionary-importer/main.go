@@ -56,14 +56,14 @@ func main() {
 
 	entries := 0
 	pipeline := redisClient.NewSetPipeline(config.PipelineSize)
-	onEntry := func(entry dict.NerEntry) error {
+	onEntry := func(entry dict.Entry) error {
 		entries++
 
 		if entries%50000 == 0 {
 			log.Info().Int("entries", entries).Msg("importing")
 		}
 
-		for i, synonym := range entry.Synonyms {
+		for i, synonym := range entry.GetSynonyms() {
 			tokens := strings.Fields(synonym)
 			normalizedTokens := make([]string, 0, len(tokens))
 			for _, token := range tokens {
@@ -72,7 +72,7 @@ func main() {
 					normalizedTokens = append(normalizedTokens, normalizedToken)
 				}
 			}
-			entry.Synonyms[i] = strings.Join(normalizedTokens, " ")
+			entry.ReplaceSynonymAt(strings.Join(normalizedTokens, " "), i)
 		}
 
 		if err := addToPipe(entry, pipeline); err != nil {
@@ -104,18 +104,18 @@ func main() {
 	}
 }
 
-func addToPipe(entry dict.NerEntry, pipe remote.SetPipeline) error {
+func addToPipe(entry dict.Entry, pipe remote.SetPipeline) error {
 	// Mid process, some stuff to do
-	for _, synonym := range entry.Synonyms {
+	for _, synonym := range entry.GetSynonyms() {
 
-		metadata, err := json.Marshal(entry.Metadata)
+		metadata, err := json.Marshal(entry.GetMetadata())
 		if err != nil {
 			return err
 		}
 
 		bytes, err := json.Marshal(cache.Lookup{
 			Dictionary:  config.Dictionary.Name,
-			Identifiers: entry.Identifiers,
+			Identifiers: entry.GetIdentifiers(),
 			Metadata:    metadata,
 		})
 		if err != nil {
