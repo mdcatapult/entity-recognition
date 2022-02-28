@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -95,14 +96,15 @@ func main() {
 			return err
 		}
 
-		if pipeline.Size() > config.PipelineSize {
-			awaitDB(redisClient)
-			if err := pipeline.ExecSet(); err != nil {
-				return err
-			}
-
-			pipeline = redisClient.NewSetPipeline(config.PipelineSize)
+		fmt.Println("pipe size:", pipeline.Size())
+		// if pipeline.Size() > config.PipelineSize {
+		awaitDB(redisClient)
+		if err := pipeline.ExecSet(); err != nil {
+			return err
 		}
+
+		pipeline = redisClient.NewSetPipeline(config.PipelineSize)
+		// }
 
 		return nil
 	}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"strings"
 
@@ -195,16 +196,16 @@ func (recogniser *recogniser) GetStream(stream pb.Recognizer_GetStreamServer) er
 	return recogniser.retryCacheMisses(vars)
 }
 
-func convertIdentifiers(identifiers map[string]interface{}) (map[string]string, error) {
+func convertIdentifiers(identifiers map[string]interface{}) map[string]string {
 	res := make(map[string]string, len(identifiers))
 	for k := range identifiers {
-		jsonIdentifierBytes, err := json.Marshal(res[k])
-		if err != nil {
-			return nil, err
-		}
+		jsonIdentifierBytes, err := json.Marshal(identifiers[k])
 
+		if err != nil {
+			fmt.Println("failed to serialize entry", identifiers[k], err)
+		}
 		res[k] = string(jsonIdentifierBytes)
 	}
 
-	return res, nil
+	return res
 }
