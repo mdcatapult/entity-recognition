@@ -97,7 +97,7 @@ func addToRedis(client remote.Client, entry dict.NerEntry) error {
 
 		bytes, err := json.Marshal(cache.Lookup{
 			Dictionary:  config.Dictionary.Name,
-			Identifiers: entry.Identifiers,
+			Identifiers: entry.GetIdentifiers(),
 			Metadata:    metadata,
 		})
 		if err != nil {

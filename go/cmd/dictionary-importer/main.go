@@ -72,6 +72,7 @@ func main() {
 	entries := 0
 	pipeline := redisClient.NewSetPipeline(config.PipelineSize)
 	onEntry := func(entry dict.Entry) error {
+
 		entries++
 
 		if entries%50000 == 0 {

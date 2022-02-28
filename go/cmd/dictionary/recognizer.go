@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"io"
 	"strings"
 
@@ -194,10 +195,16 @@ func (recogniser *recogniser) GetStream(stream pb.Recognizer_GetStreamServer) er
 	return recogniser.retryCacheMisses(vars)
 }
 
-func convertIdentifiers(identifiers map[string]interface{}) map[string]string {
+func convertIdentifiers(identifiers map[string]interface{}) (map[string]string, error) {
 	res := make(map[string]string, len(identifiers))
-	for k, v := range identifiers {
-		res[k] = v.(string)
+	for k := range identifiers {
+		jsonIdentifierBytes, err := json.Marshal(res[k])
+		if err != nil {
+			return nil, err
+		}
+
+		res[k] = string(jsonIdentifierBytes)
 	}
-	return res
+
+	return res, nil
 }
