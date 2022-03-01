@@ -3,15 +3,13 @@ package swissprot_test
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os"
-	"strings"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/test/api_test/util"
 )
 
 const (
@@ -41,7 +39,7 @@ var _ = Describe("Swissprot", func() {
 
 	BeforeEach(func() {
 		html := "<html>Q540X7</html>"
-		entities = getEntities(html, "text/html")
+		entities = util.GetEntities(host, port, html, "text/html")
 
 	})
 
@@ -79,25 +77,3 @@ var _ = Describe("Swissprot", func() {
 
 	})
 })
-
-func getEntities(source, contentType string) []pb.Entity {
-	reader := strings.NewReader(source)
-	res, err := http.Post(fmt.Sprintf("http://%s:%s/entities?recogniser=dictionary", host, port), contentType, reader)
-
-	Expect(err).Should(BeNil())
-
-	var b []byte
-	_, err = res.Body.Read(b)
-
-	Expect(err).Should(BeNil())
-	Expect(res.StatusCode).Should(Equal(200))
-
-	body, err := ioutil.ReadAll(res.Body)
-	Expect(err).Should(BeNil())
-
-	var entities []pb.Entity
-	err = json.Unmarshal(body, &entities)
-	Expect(err).Should(BeNil())
-
-	return entities
-}
