@@ -25,7 +25,9 @@ test:
   - go install github.com/onsi/ginkgo/ginkgo@latest
   - ginkgo go/lib/text
   - ginkgo go/cmd/recognition-api
-  - make config && make build && ./scripts/test.sh
+  - make config && make build
+  - ./scripts/test.sh TestAPI ./go/cmd/dictionary-importer/dictionaries/test.tsv leadmine
+  - ./scripts/test.sh TestSwissprot ./go/cmd/dictionary-importer/dictionaries/swissprot.jsonl swissprot
   - sed -i "/\/gen\//d" cover.out
   - go tool cover -func cover.out
   services:
