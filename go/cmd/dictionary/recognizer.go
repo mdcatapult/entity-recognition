@@ -204,7 +204,8 @@ func convertIdentifiers(identifiers map[string]interface{}) map[string]string {
 		if err != nil {
 			fmt.Println("failed to serialize entry", identifiers[k], err)
 		}
-		res[k] = string(jsonIdentifierBytes)
+		res[k] = strings.Trim(string(jsonIdentifierBytes), "\"")
+
 	}
 
 	return res
