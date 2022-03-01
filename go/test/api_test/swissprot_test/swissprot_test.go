@@ -1,4 +1,4 @@
-package swissprot_test
+package swissprot
 
 import (
 	"encoding/json"
