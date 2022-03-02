@@ -11,6 +11,12 @@ type DictConfig struct {
 	Format Format
 }
 
+/**
+	Entry provides an interface for readers which may have different formats for identifiers and metadata.
+
+	For examaple, NerEntry and SwissProtEntry have different types for Identifiers because of the different formats of Leadmine and Swissprot dictionaries,
+	but by implementing this interface they can be converted to a common type.
+**/
 type Entry interface {
 	ReplaceSynonymAt(synonym string, index int)
 	GetSynonyms() []string

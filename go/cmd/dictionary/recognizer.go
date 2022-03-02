@@ -34,7 +34,7 @@ func newEntityWithNormalisedText(snippet *pb.Snippet, lookup *cache.Lookup) *pb.
 		Name:        normalisedText,
 		Position:    snippet.GetOffset(),
 		Recogniser:  lookup.Dictionary,
-		Identifiers: convertIdentifiers(lookup.Identifiers),
+		Identifiers: convertIdentifiers(lookup.Identifiers), // convert identifiers from map[string]interface{} to map[string]string
 		Xpath:       snippet.GetXpath(),
 		Metadata:    string(lookup.Metadata),
 	}
@@ -196,6 +196,9 @@ func (recogniser *recogniser) GetStream(stream pb.Recognizer_GetStreamServer) er
 	return recogniser.retryCacheMisses(vars)
 }
 
+// convertIdentifiers converts a map[string]interface{} into map[string]string.
+// This is useful for when we want to create pb.Entity, because the Entity expects identifiers
+// to be map[string]string, whereas the Entry used to create the Entity has map[string]interface{}.
 func convertIdentifiers(identifiers map[string]interface{}) map[string]string {
 	res := make(map[string]string, len(identifiers))
 	for k := range identifiers {
@@ -204,7 +207,7 @@ func convertIdentifiers(identifiers map[string]interface{}) map[string]string {
 		if err != nil {
 			fmt.Println("failed to serialize entry", identifiers[k], err)
 		}
-		res[k] = strings.Trim(string(jsonIdentifierBytes), "\"")
+		res[k] = strings.Trim(string(jsonIdentifierBytes), "\"") // remove any " added by string conversions.
 
 	}
 

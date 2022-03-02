@@ -33,5 +33,6 @@ e.g.`gene_protein.jsonl`
 {"synonyms": ["P0C090"], "identifiers": {"swissprot_accession": "P0C090","swissprot_id": "1","gene_name": "dave"}, "metadata": {"length": 824084084084}}
 {...}
 ```
-* [Leadmine format](../../cmd/dictionary-importer/dictionaries/henry.tsv).
+* [Leadmine format](../../cmd/dictionary-importer/dictionaries/leadmine.tsv).
 * [Pubchem format](../../cmd/dictionary-importer/dictionaries/pubchem.tsv).
+* [Swissprot format](../../cmd/dictionary-importer/dictionaries/swissprot.jsonl).
