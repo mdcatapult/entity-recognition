@@ -3,6 +3,7 @@ testSuite=$1
 dict=$2
 format=$3
 
+export PIPELINE_SIZE=1 # pipeline can be kept small for tests
 bin/dictionary-importer dictionaryPath=$dict dictionaryFormat=$format &&
 bin/regexer & 
 bin/dictionary &
