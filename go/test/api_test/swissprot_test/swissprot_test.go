@@ -1,9 +1,9 @@
 package swissprot
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -20,7 +20,7 @@ const (
 
 func TestMain(m *testing.M) {
 	if os.Getenv(envVar) == "" {
-		fmt.Printf("SKIPPING API TESTS: set %s to run API tests", envVar)
+		fmt.Printf("SKIPPING SWISSPROT API TESTS: set %s to run API tests", envVar)
 		return
 	}
 
@@ -35,7 +35,6 @@ func TestSwissprot(t *testing.T) {
 var _ = Describe("Swissprot", func() {
 
 	var entities []pb.Entity
-	const species = "Drosophila melanogaster"
 
 	BeforeEach(func() {
 		html := "<html>Q540X7</html>"
@@ -45,35 +44,20 @@ var _ = Describe("Swissprot", func() {
 
 	It("should return entities", func() {
 		Expect(len(entities)).Should(Equal(1))
-	})
 
-	It("should populate entity identifiers by species", func() {
+		expectedEntity := pb.Entity{
+			Name:       "Q540X7",
+			Position:   6,
+			Xpath:      "/html",
+			Recogniser: "dictionary",
+			Identifiers: map[string]string{
+				"Drosophila melanogaster": "{\"Accession\":\"P02574\",\"BioGRID\":\"65684\",\"ExpressionAtlas\":\"P02574\",\"GeneTree\":\"ENSGT00940000175284\",\"IntAct\":\"P02574\",\"InterPro\":\"IPR004000, IPR020902, IPR004001, IPR043129\",\"KEGG\":\"dme:Dmel_CG7478\",\"Pfam\":\"PF00022\",\"PrimaryGeneName\":\"Act79B\",\"RefSeq\":\"NP_001262200.1, NP_524210.1\"}",
+			},
+			Metadata: `{"Drosophila melanogaster":{"Accessions":"P02574, Q540X7, Q9VNW5","Primary Gene Name":"Act79B","Protein Name":"Actin, larval muscle","Scientific Organism Name":"Drosophila melanogaster","sequence":"MCDEEASALVVDNGSGMCKAGFAGDDAPRAVFPSIVGRPRHQGVMVGMGQKDCYVGDEAQSKRGILSLKYPIEHGIITNWDDMEKVWHHTFYNELRVAPEEHPVLLTEAPLNPKANREKMTQIMFETFNSPAMYVAIQAVLSLYASGRTTGIVLDSGDGVSHTVPIYEGYALPHAILRLDLAGRDLTDYLMKILTERGYSFTTTAEREIVRDIKEKLCYVALDFEQEMATAAASTSLEKSYELPDGQVITIGNERFRTPEALFQPSFLGMESCGIHETVYQSIMKCDVDIRKDLYANNVLSGGTTMYPGIADRMQKEITALAPSTIKIKIIAPPERKYSVWIGGSILASLSTFQQMWISKQEYDESGPGIVHRKCF","sequence length":"376","sequence mass":"41787","subcellular location":"Cytoplasm, Cytoskeleton"}}`,
+		}
 
-		identifiers := entities[0].GetIdentifiers()
-		Expect(identifiers).ShouldNot(BeEmpty())
-		Expect(identifiers[species]).ShouldNot(BeNil())
-
-		var speciesIdentifiers map[string]string
-		err := json.Unmarshal([]byte(identifiers[species]), &speciesIdentifiers)
-		Expect(err).Should(BeNil())
-
-		accession := speciesIdentifiers["Accession"]
-		Expect(accession).Should(Equal("P02574"))
-
-	})
-
-	It("should populate entity metadata by species", func() {
-
-		jsonMetadata := entities[0].GetMetadata()
-		Expect(jsonMetadata).ShouldNot(BeEmpty())
-
-		var metadata map[string]map[string]string
-		err := json.Unmarshal([]byte(jsonMetadata), &metadata)
-		Expect(err).Should(BeNil())
-
-		speciesMetadata := metadata[species]
-		Expect(speciesMetadata).ShouldNot(BeNil())
-		Expect(speciesMetadata["Accessions"]).Should(Equal("P02574, Q540X7, Q9VNW5"))
+		Expect(reflect.DeepEqual(&entities[0], &expectedEntity)).Should(BeTrue())
 
 	})
+
 })

@@ -32,8 +32,8 @@ type NerEntry struct {
 
 type SwissProtEntry struct {
 	Synonyms    []string
-	Identifiers map[string]map[string]string
-	Metadata    map[string]map[string]string
+	Identifiers map[string]map[string]string // map of species name to map of identifier keys and values for that species
+	Metadata    map[string]map[string]string // map of species name to map of metadata keys and values for that species
 }
 
 func (ne *NerEntry) ReplaceSynonymAt(synonym string, index int) {
