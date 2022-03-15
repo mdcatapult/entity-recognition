@@ -136,7 +136,6 @@ func (controller controller) Recognize(reader io.Reader, contentType AllowedCont
 	}
 
 	allowedEntities := make([]*pb.Entity, 0)
-	// uniqueEntities := make([]*pb.Entity, 0)
 
 	for _, recogniser := range requestedRecognisers {
 		recognisedEntities := controller.recognisers[recogniser.Name].Result()
