@@ -123,7 +123,7 @@ var _ = Describe("Entity Recognition API", func() {
 			entities := util.GetEntities(host, port, html, "text/html")
 
 			Expect(len(entities)).Should(Equal(1))
-			Expect(entities[0].GetXpath()).Should(Equal("/html/*[2]"))
+			Expect(entities[0].GetPositions()[0].GetXpath()).Should(Equal("/html/*[2]"))
 		})
 	})
 
