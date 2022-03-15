@@ -136,15 +136,57 @@ func (controller controller) Recognize(reader io.Reader, contentType AllowedCont
 	}
 
 	allowedEntities := make([]*pb.Entity, 0)
+	// uniqueEntities := make([]*pb.Entity, 0)
+
 	for _, recogniser := range requestedRecognisers {
 		recognisedEntities := controller.recognisers[recogniser.Name].Result()
 
+		recogniserUniqueEntities := filterUniqueEntities(recognisedEntities)
+
 		// apply global blacklist
-		allowedEntities = append(allowedEntities, controller.blacklist.FilterEntities(recognisedEntities)...)
+		allowedEntities = append(allowedEntities, controller.blacklist.FilterEntities(recogniserUniqueEntities)...)
 
 	}
 
 	return allowedEntities, nil
+}
+
+func filterUniqueEntities(input []*pb.Entity) []*pb.Entity {
+	uniqueEntities := make([]*pb.Entity, 0)
+
+	for _, entity := range input {
+		isInUnique := false
+		uniqueIndex := 0
+
+		for i, uniqueEntity := range uniqueEntities {
+			if entity.Name == uniqueEntity.Name {
+				isInUnique = true
+				uniqueIndex = i
+				break
+			}
+		}
+
+		if !isInUnique {
+			entity.Positions = []*pb.Position{
+				&pb.Position{
+					Xpath:    entity.Xpath,
+					Position: entity.Position,
+				},
+			}
+			entity.Xpath = ""
+			entity.Position = 0
+			uniqueEntities = append(uniqueEntities, entity)
+		} else {
+			uniqueEntity := uniqueEntities[uniqueIndex]
+			positions := uniqueEntity.Positions
+			uniqueEntity.Positions = append(positions, &pb.Position{
+				Xpath:    entity.Xpath,
+				Position: entity.Position,
+			})
+		}
+	}
+
+	return uniqueEntities
 }
 
 func SendToAll(snipReaderValue snippet_reader.Value, channels map[string]chan snippet_reader.Value) {

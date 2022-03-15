@@ -3,13 +3,15 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"io"
 	"io/ioutil"
 	"os"
 	"strings"
 	"sync"
 	"testing"
+
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
+	"gopkg.in/go-playground/assert.v1"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
@@ -182,4 +184,55 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 	// entities should only contain the found entity, not the blacklisted entity
 	s.Len(entities, 1)
 	s.Nil(err)
+}
+
+func TestFilterUniqueEntities(t *testing.T) {
+
+	input := []*pb.Entity{
+		&pb.Entity{
+			Name:     "A",
+			Position: 1,
+			Xpath:    "<html>",
+		},
+		&pb.Entity{
+			Name:     "A",
+			Position: 2,
+			Xpath:    "<html>",
+		},
+		&pb.Entity{
+			Name:     "B",
+			Position: 3,
+			Xpath:    "<html>",
+		},
+	}
+
+	expected := []*pb.Entity{
+		&pb.Entity{
+			Name: "A",
+			Positions: []*pb.Position{
+				&pb.Position{
+					Position: 1,
+					Xpath:    "<html>",
+				},
+				&pb.Position{
+					Position: 2,
+					Xpath:    "<html>",
+				},
+			},
+		},
+		&pb.Entity{
+			Name: "B",
+			Positions: []*pb.Position{
+				&pb.Position{
+					Position: 3,
+					Xpath:    "<html>",
+				},
+			},
+		},
+	}
+
+	actual := filterUniqueEntities(input)
+
+	assert.Equal(t, expected, actual)
+
 }

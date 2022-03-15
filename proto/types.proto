@@ -8,6 +8,11 @@ message Snippet {
     string xpath = 4;
 }
 
+message Position {
+    string xpath = 1;
+    uint32 position = 2;
+}
+
 message Entity {
     string name = 1;
     uint32 position = 2;
@@ -15,4 +20,9 @@ message Entity {
     string recogniser = 4;
     map<string,string> identifiers = 5;
     string metadata = 6;
+    repeated Position positions = 7;
+
 }
+
+
+
