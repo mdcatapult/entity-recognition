@@ -150,24 +150,28 @@ func (controller controller) Recognize(reader io.Reader, contentType AllowedCont
 	return allowedEntities, nil
 }
 
-func filterUniqueEntities(input []*pb.Entity) []*pb.Entity {
+func filterUniqueEntities(entities []*pb.Entity) []*pb.Entity {
 	uniqueEntities := make([]*pb.Entity, 0)
 
-	for _, entity := range input {
-		isInUnique := false
-		uniqueIndex := 0
+	for _, entity := range entities {
+		isUniqueEntity := true
 
-		for i, uniqueEntity := range uniqueEntities {
+		for _, uniqueEntity := range uniqueEntities {
+
 			if entity.Name == uniqueEntity.Name {
-				isInUnique = true
-				uniqueIndex = i
+				isUniqueEntity = false
+				positions := uniqueEntity.Positions
+				uniqueEntity.Positions = append(positions, &pb.Position{
+					Xpath:    entity.Xpath,
+					Position: entity.Position,
+				})
 				break
 			}
 		}
 
-		if !isInUnique {
+		if isUniqueEntity {
 			entity.Positions = []*pb.Position{
-				&pb.Position{
+				{
 					Xpath:    entity.Xpath,
 					Position: entity.Position,
 				},
@@ -175,13 +179,6 @@ func filterUniqueEntities(input []*pb.Entity) []*pb.Entity {
 			entity.Xpath = ""
 			entity.Position = 0
 			uniqueEntities = append(uniqueEntities, entity)
-		} else {
-			uniqueEntity := uniqueEntities[uniqueIndex]
-			positions := uniqueEntity.Positions
-			uniqueEntity.Positions = append(positions, &pb.Position{
-				Xpath:    entity.Xpath,
-				Position: entity.Position,
-			})
 		}
 	}
 
