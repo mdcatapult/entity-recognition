@@ -197,7 +197,7 @@ func TestFilterUniqueEntities(t *testing.T) {
 		&pb.Entity{
 			Name:     "A",
 			Position: 2,
-			Xpath:    "<html>",
+			Xpath:    "<html>[1]",
 		},
 		&pb.Entity{
 			Name:     "B",
@@ -216,7 +216,7 @@ func TestFilterUniqueEntities(t *testing.T) {
 				},
 				&pb.Position{
 					Position: 2,
-					Xpath:    "<html>",
+					Xpath:    "<html>[1]",
 				},
 			},
 		},
