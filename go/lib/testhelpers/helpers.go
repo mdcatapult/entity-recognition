@@ -1,6 +1,7 @@
 package testhelpers
 
 import (
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"io"
 
 	mocks "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks/gen/pb"
@@ -40,4 +41,17 @@ func NewMockRecognizeClientStream(snippets ...*pb.Snippet) *mocks.Recognizer_Get
 	}
 	stream.On("CloseSend").Return(nil).Once()
 	return stream
+}
+
+func APIEntityFromEntity(entity *pb.Entity) lib.APIEntity {
+	return lib.APIEntity{
+		Name:        entity.Name,
+		Recogniser:  entity.Recogniser,
+		Identifiers: entity.Identifiers,
+		Metadata:    entity.Metadata,
+		Positions: []lib.Position{
+			{Xpath: entity.Xpath,
+				Position: entity.Position},
+		},
+	}
 }

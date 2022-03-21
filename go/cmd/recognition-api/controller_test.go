@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/testhelpers"
 	"io"
 	"io/ioutil"
 	"os"
@@ -179,7 +180,7 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 	entities, err := s.controller.Recognize(reader, contentTypeHTML, opts)
 
 	// entity should have been found
-	s.Equal(foundEntities[0], entities[0])
+	s.Equal(testhelpers.APIEntityFromEntity(foundEntities[0]), entities[0])
 
 	// entities should only contain the found entity, not the blacklisted entity
 	s.Len(entities, 1)
@@ -189,43 +190,42 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 func TestFilterUniqueEntities(t *testing.T) {
 
 	input := []*pb.Entity{
-		&pb.Entity{
+		{
 			Name:     "A",
 			Position: 1,
 			Xpath:    "<html>",
 		},
-		&pb.Entity{
+		{
 			Name:     "A",
 			Position: 2,
 			Xpath:    "<html>[1]",
 		},
-		&pb.Entity{
+		{
 			Name:     "B",
 			Position: 3,
 			Xpath:    "<html>",
 		},
 	}
 
-	expected := []*pb.Entity{
-		&pb.Entity{
+	expected := []lib.APIEntity{
+		{
 			Name: "A",
-			Positions: []*pb.Position{
-				&pb.Position{
+			Positions: []lib.Position{
+				{
 					Position: 1,
 					Xpath:    "<html>",
 				},
-				&pb.Position{
+				{
 					Position: 2,
 					Xpath:    "<html>[1]",
 				},
 			},
 		},
-		&pb.Entity{
+		{
 			Name: "B",
-			Positions: []*pb.Position{
-				&pb.Position{
-					Position: 3,
-					Xpath:    "<html>",
+			Positions: []lib.Position{
+				{Position: 3,
+					Xpath: "<html>",
 				},
 			},
 		},

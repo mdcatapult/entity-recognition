@@ -3,16 +3,15 @@ package util
 import (
 	"encoding/json"
 	"fmt"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"io/ioutil"
 	"net/http"
 	"strings"
 
 	. "github.com/onsi/gomega"
-
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 )
 
-func GetEntities(host, port, source, contentType string) []pb.Entity {
+func GetEntities(host, port, source, contentType string) []lib.APIEntity {
 	reader := strings.NewReader(source)
 	res, err := http.Post(fmt.Sprintf("http://%s:%s/entities?recogniser=dictionary", host, port), contentType, reader)
 
@@ -27,7 +26,7 @@ func GetEntities(host, port, source, contentType string) []pb.Entity {
 	body, err := ioutil.ReadAll(res.Body)
 	Expect(err).Should(BeNil())
 
-	var entities []pb.Entity
+	var entities []lib.APIEntity
 	err = json.Unmarshal(body, &entities)
 	Expect(err).Should(BeNil())
 
