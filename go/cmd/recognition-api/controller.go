@@ -155,15 +155,15 @@ func filterUniqueEntities(entities []*pb.Entity) []lib.APIEntity {
 	for _, entity := range entities {
 		isUniqueEntity := true
 
-		for _, uniqueEntity := range uniqueEntities {
+		for i, uniqueEntity := range uniqueEntities {
 
 			if entity.Name == uniqueEntity.Name {
 				isUniqueEntity = false
-				positions := uniqueEntity.Positions
-				uniqueEntity.Positions = append(positions, lib.Position{
+				newPosition := lib.Position{
 					Xpath:    entity.Xpath,
 					Position: entity.Position,
-				})
+				}
+				uniqueEntities[i].Positions = append(uniqueEntity.Positions, newPosition)
 				break
 			}
 		}
@@ -175,8 +175,10 @@ func filterUniqueEntities(entities []*pb.Entity) []lib.APIEntity {
 				Identifiers: entity.Identifiers,
 				Metadata:    entity.Metadata,
 				Positions: []lib.Position{
-					{Xpath: entity.Xpath,
-						Position: entity.Position},
+					{
+						Xpath:    entity.Xpath,
+						Position: entity.Position,
+					},
 				},
 			}
 
