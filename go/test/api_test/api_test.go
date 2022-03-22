@@ -2,6 +2,7 @@ package apitest
 
 import (
 	"fmt"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"net/http"
 	"os"
 	"strings"
@@ -9,7 +10,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/test/api_test/util"
 )
 
@@ -83,7 +83,7 @@ var _ = Describe("Entity Recognition API", func() {
 
 			Expect(len(entities)).Should(Equal(1))
 			Expect(entities[0].Name).Should(Equal("calcium"))
-			Expect(hasIdentifier(&entities[0], "ca")).Should(BeTrue())
+			Expect(hasIdentifier(entities[0], "ca")).Should(BeTrue())
 		})
 
 		It("multiple entities", func() {
@@ -123,7 +123,7 @@ var _ = Describe("Entity Recognition API", func() {
 			entities := util.GetEntities(host, port, html, "text/html")
 
 			Expect(len(entities)).Should(Equal(1))
-			Expect(entities[0].GetXpath()).Should(Equal("/html/*[2]"))
+			Expect(entities[0].Positions[0].Xpath).Should(Equal("/html/*[2]"))
 		})
 	})
 
@@ -136,7 +136,7 @@ var _ = Describe("Entity Recognition API", func() {
 
 			Expect(len(entities)).Should(Equal(1))
 			Expect(entities[0].Name).Should(Equal("calcium"))
-			Expect(hasIdentifier(&entities[0], "ca")).Should(BeTrue())
+			Expect(hasIdentifier(entities[0], "ca")).Should(BeTrue())
 		})
 
 		It("multiple entities", func() {
@@ -157,17 +157,17 @@ var _ = Describe("Entity Recognition API", func() {
 	})
 })
 
-func hasEntity(entities []pb.Entity, entity string) bool {
+func hasEntity(entities []lib.APIEntity, entity string) bool {
 	for i := range entities {
-		if entities[i].GetName() == entity {
+		if entities[i].Name == entity {
 			return true
 		}
 	}
 	return false
 }
 
-func hasIdentifier(entity *pb.Entity, identifier string) bool {
-	for k := range entity.GetIdentifiers() {
+func hasIdentifier(entity lib.APIEntity, identifier string) bool {
+	for k := range entity.Identifiers {
 		if k == identifier {
 			return true
 		}

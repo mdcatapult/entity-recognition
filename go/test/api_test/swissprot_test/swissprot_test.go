@@ -2,13 +2,13 @@ package swissprot
 
 import (
 	"fmt"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"os"
 	"reflect"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/test/api_test/util"
 )
 
@@ -34,7 +34,7 @@ func TestSwissprot(t *testing.T) {
 
 var _ = Describe("Swissprot", func() {
 
-	var entities []pb.Entity
+	var entities []lib.APIEntity
 
 	BeforeEach(func() {
 		html := "<html>Q540X7</html>"
@@ -45,10 +45,12 @@ var _ = Describe("Swissprot", func() {
 	It("should return entities", func() {
 		Expect(len(entities)).Should(Equal(1))
 
-		expectedEntity := pb.Entity{
-			Name:       "Q540X7",
-			Position:   6,
-			Xpath:      "/html",
+		expectedEntity := lib.APIEntity{
+			Name: "Q540X7",
+			Positions: []lib.Position{{
+				Position: 6,
+				Xpath:    "/html",
+			}},
 			Recogniser: "dictionary",
 			Identifiers: map[string]string{
 				"Drosophila melanogaster": "{\"Accession\":\"P02574\",\"BioGRID\":\"65684\",\"ExpressionAtlas\":\"P02574\",\"GeneTree\":\"ENSGT00940000175284\",\"IntAct\":\"P02574\",\"InterPro\":\"IPR004000, IPR020902, IPR004001, IPR043129\",\"KEGG\":\"dme:Dmel_CG7478\",\"Pfam\":\"PF00022\",\"PrimaryGeneName\":\"Act79B\",\"RefSeq\":\"NP_001262200.1, NP_524210.1\"}",
