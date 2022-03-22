@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -116,7 +117,8 @@ func main() {
 	}
 
 	if err := dict.ReadWithCallback(dictFile, config.Dictionary.Format, onEntry, onEOF); err != nil {
-		log.Fatal().Err(err).Send()
+		msg := fmt.Sprintf("Could not read source file into %s. Are you sure this format is correct?", config.Dictionary.Format)
+		log.Fatal().Err(err).Msg(msg)
 	}
 }
 
