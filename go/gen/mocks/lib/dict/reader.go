@@ -15,15 +15,15 @@ type Reader struct {
 }
 
 // Read provides a mock function with given fields: file
-func (_m *Reader) Read(file *os.File) (chan dict.Entry, chan error) {
+func (_m *Reader) Read(file *os.File) (chan dict.NerEntry, chan error) {
 	ret := _m.Called(file)
 
-	var r0 chan dict.Entry
-	if rf, ok := ret.Get(0).(func(*os.File) chan dict.Entry); ok {
+	var r0 chan dict.NerEntry
+	if rf, ok := ret.Get(0).(func(*os.File) chan dict.NerEntry); ok {
 		r0 = rf(file)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(chan dict.Entry)
+			r0 = ret.Get(0).(chan dict.NerEntry)
 		}
 	}
 

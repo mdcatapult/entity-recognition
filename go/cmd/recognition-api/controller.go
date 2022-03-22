@@ -9,7 +9,7 @@ import (
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
-	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
+	snippetReader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 )
 
@@ -27,26 +27,26 @@ var allowedContentTypeEnumMap = map[string]AllowedContentType{
 
 type controller struct {
 	recognisers map[string]recogniser.Client
-	htmlReader  snippet_reader.Client
-	textReader  snippet_reader.Client
+	htmlReader  snippetReader.Client
+	textReader  snippetReader.Client
 	blacklist   blacklist.Blacklist // a global blacklist to apply against all recognisers
 	exactMatch  bool
 }
 
-func (c controller) HTMLToText(reader io.Reader) ([]byte, error) {
+func (controller controller) HTMLToText(reader io.Reader) ([]byte, error) {
 	var data []byte
 	onSnippet := func(snippet *pb.Snippet) error {
 		data = append(data, snippet.GetText()...)
 		return nil
 	}
-	if err := c.htmlReader.ReadSnippetsWithCallback(reader, onSnippet); err != nil {
+	if err := controller.htmlReader.ReadSnippetsWithCallback(reader, onSnippet); err != nil {
 		return nil, err
 	}
 
 	return data, nil
 }
 
-func (c controller) Tokenize(reader io.Reader, contentType AllowedContentType) ([]*pb.Snippet, error) {
+func (controller controller) Tokenize(reader io.Reader, contentType AllowedContentType) ([]*pb.Snippet, error) {
 	// This is a callback which is executed when the lib.ReadSnippets function reaches some kind
 	// of delimiter, e.g. </br>. Here we tokenize the output and append that to our token slice.
 	var tokens []*pb.Snippet
@@ -57,16 +57,16 @@ func (c controller) Tokenize(reader io.Reader, contentType AllowedContentType) (
 				tokens = append(tokens, snippet)
 			}
 			return nil
-		}, c.exactMatch)
+		}, controller.exactMatch)
 	}
 
 	// Call htmlToText with our callback
 	var err error
 	switch contentType {
 	case contentTypeHTML:
-		err = c.htmlReader.ReadSnippetsWithCallback(reader, onSnippet)
+		err = controller.htmlReader.ReadSnippetsWithCallback(reader, onSnippet)
 	case contentTypeRawtext:
-		err = c.textReader.ReadSnippetsWithCallback(reader, onSnippet)
+		err = controller.textReader.ReadSnippetsWithCallback(reader, onSnippet)
 	}
 	if err != nil {
 		return nil, err
@@ -75,10 +75,10 @@ func (c controller) Tokenize(reader io.Reader, contentType AllowedContentType) (
 	return tokens, nil
 }
 
-func (c controller) ListRecognisers() []string {
-	recognisers := make([]string, len(c.recognisers))
+func (controller controller) ListRecognisers() []string {
+	recognisers := make([]string, len(controller.recognisers))
 	i := 0
-	for r := range c.recognisers {
+	for r := range controller.recognisers {
 		recognisers[i] = r
 		i++
 	}
@@ -86,10 +86,10 @@ func (c controller) ListRecognisers() []string {
 }
 
 // Recognize performs entity recognition by calling recognise() on each recogniser in recogniserToOpts.
-func (controller controller) Recognize(reader io.Reader, contentType AllowedContentType, requestedRecognisers []lib.RecogniserOptions) ([]*pb.Entity, error) {
+func (controller controller) Recognize(reader io.Reader, contentType AllowedContentType, requestedRecognisers []lib.RecogniserOptions) ([]lib.APIEntity, error) {
 
 	waitGroup := &sync.WaitGroup{}
-	channels := make(map[string]chan snippet_reader.Value)
+	channels := make(map[string]chan snippetReader.Value)
 
 	for _, recogniser := range requestedRecognisers {
 
@@ -104,14 +104,14 @@ func (controller controller) Recognize(reader io.Reader, contentType AllowedCont
 
 		validRecogniser.SetExactMatch(controller.exactMatch)
 
-		channels[recogniser.Name] = make(chan snippet_reader.Value)
+		channels[recogniser.Name] = make(chan snippetReader.Value)
 		err := validRecogniser.Recognise(channels[recogniser.Name], waitGroup, recogniser.HttpOptions)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	var snippetReaderValues <-chan snippet_reader.Value
+	var snippetReaderValues <-chan snippetReader.Value
 	switch contentType {
 	case contentTypeHTML:
 		snippetReaderValues = controller.htmlReader.ReadSnippets(reader)
@@ -135,19 +135,61 @@ func (controller controller) Recognize(reader io.Reader, contentType AllowedCont
 		}
 	}
 
-	allowedEntities := make([]*pb.Entity, 0)
+	APIEntities := make([]lib.APIEntity, 0)
+
 	for _, recogniser := range requestedRecognisers {
 		recognisedEntities := controller.recognisers[recogniser.Name].Result()
 
 		// apply global blacklist
-		allowedEntities = append(allowedEntities, controller.blacklist.FilterEntities(recognisedEntities)...)
+		allowedEntities := controller.blacklist.FilterEntities(recognisedEntities)
 
+		APIEntities = append(APIEntities, filterUniqueEntities(allowedEntities)...)
 	}
 
-	return allowedEntities, nil
+	return APIEntities, nil
 }
 
-func SendToAll(snipReaderValue snippet_reader.Value, channels map[string]chan snippet_reader.Value) {
+func filterUniqueEntities(entities []*pb.Entity) []lib.APIEntity {
+	uniqueEntities := make([]lib.APIEntity, 0)
+
+	for _, entity := range entities {
+		isUniqueEntity := true
+
+		for i, uniqueEntity := range uniqueEntities {
+
+			if entity.Name == uniqueEntity.Name {
+				isUniqueEntity = false
+				newPosition := lib.Position{
+					Xpath:    entity.Xpath,
+					Position: entity.Position,
+				}
+				uniqueEntities[i].Positions = append(uniqueEntity.Positions, newPosition)
+				break
+			}
+		}
+
+		if isUniqueEntity {
+			APIEntity := lib.APIEntity{
+				Name:        entity.Name,
+				Recogniser:  entity.Recogniser,
+				Identifiers: entity.Identifiers,
+				Metadata:    entity.Metadata,
+				Positions: []lib.Position{
+					{
+						Xpath:    entity.Xpath,
+						Position: entity.Position,
+					},
+				},
+			}
+
+			uniqueEntities = append(uniqueEntities, APIEntity)
+		}
+	}
+
+	return uniqueEntities
+}
+
+func SendToAll(snipReaderValue snippetReader.Value, channels map[string]chan snippetReader.Value) {
 	for _, channel := range channels {
 		channel <- snipReaderValue
 	}

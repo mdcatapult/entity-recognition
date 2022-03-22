@@ -59,7 +59,7 @@ func (p pubchemReader) read(dict *os.File, entries chan Entry, errors chan error
 			for _, id := range identifiers {
 				ids[id] = ""
 			}
-			entries <- Entry{
+			entries <- &NerEntry{
 				Synonyms:    synonyms,
 				Identifiers: ids,
 			}

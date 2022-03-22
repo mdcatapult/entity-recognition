@@ -1,9 +1,8 @@
 package apitest
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
 	"net/http"
 	"os"
 	"strings"
@@ -11,7 +10,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/test/api_test/util"
 )
 
 const (
@@ -80,17 +79,17 @@ var _ = Describe("Entity Recognition API", func() {
 		It("plain entity", func() {
 
 			html := "<html>calcium</html>"
-			entities := getEntities(html, "text/html")
+			entities := util.GetEntities(host, port, html, "text/html")
 
 			Expect(len(entities)).Should(Equal(1))
 			Expect(entities[0].Name).Should(Equal("calcium"))
-			Expect(hasIdentifier(&entities[0], "ca")).Should(BeTrue())
+			Expect(hasIdentifier(entities[0], "ca")).Should(BeTrue())
 		})
 
 		It("multiple entities", func() {
 
 			html := "<html>calcium entity</html>"
-			entities := getEntities(html, "text/html")
+			entities := util.GetEntities(host, port, html, "text/html")
 
 			Expect(len(entities)).Should(Equal(2))
 
@@ -105,7 +104,7 @@ var _ = Describe("Entity Recognition API", func() {
 		It("no recognised entities", func() {
 
 			html := "<html>nonsense</html>"
-			entities := getEntities(html, "text/html")
+			entities := util.GetEntities(host, port, html, "text/html")
 
 			Expect(len(entities)).Should(Equal(0))
 		})
@@ -113,7 +112,7 @@ var _ = Describe("Entity Recognition API", func() {
 		It("entity needing normalization", func() {
 
 			html := "<html>calcium)</html>"
-			entities := getEntities(html, "text/html")
+			entities := util.GetEntities(host, port, html, "text/html")
 
 			Expect(len(entities)).Should(Equal(1))
 			Expect(entities[0].Name).Should(Equal("calcium"))
@@ -121,10 +120,10 @@ var _ = Describe("Entity Recognition API", func() {
 
 		It("nested xpath", func() {
 			html := "<html><div>nonsense</div><div><span>calcium</span></div></html>"
-			entities := getEntities(html, "text/html")
+			entities := util.GetEntities(host, port, html, "text/html")
 
 			Expect(len(entities)).Should(Equal(1))
-			Expect(entities[0].GetXpath()).Should(Equal("/html/*[2]"))
+			Expect(entities[0].Positions[0].Xpath).Should(Equal("/html/*[2]"))
 		})
 	})
 
@@ -133,17 +132,17 @@ var _ = Describe("Entity Recognition API", func() {
 		It("plain entity", func() {
 
 			text := "calcium"
-			entities := getEntities(text, "text/plain")
+			entities := util.GetEntities(host, port, text, "text/plain")
 
 			Expect(len(entities)).Should(Equal(1))
 			Expect(entities[0].Name).Should(Equal("calcium"))
-			Expect(hasIdentifier(&entities[0], "ca")).Should(BeTrue())
+			Expect(hasIdentifier(entities[0], "ca")).Should(BeTrue())
 		})
 
 		It("multiple entities", func() {
 
 			text := "calcium entity"
-			entities := getEntities(text, "text/plain")
+			entities := util.GetEntities(host, port, text, "text/plain")
 
 			Expect(len(entities)).Should(Equal(2))
 
@@ -158,39 +157,17 @@ var _ = Describe("Entity Recognition API", func() {
 	})
 })
 
-func getEntities(source, contentType string) []pb.Entity {
-	reader := strings.NewReader(source)
-	res, err := http.Post(fmt.Sprintf("http://%s:%s/entities?recogniser=dictionary", host, port), contentType, reader)
-
-	Expect(err).Should(BeNil())
-
-	var b []byte
-	_, err = res.Body.Read(b)
-
-	Expect(err).Should(BeNil())
-	Expect(res.StatusCode).Should(Equal(200))
-
-	body, err := ioutil.ReadAll(res.Body)
-	Expect(err).Should(BeNil())
-
-	var entities []pb.Entity
-	err = json.Unmarshal(body, &entities)
-	Expect(err).Should(BeNil())
-
-	return entities
-}
-
-func hasEntity(entities []pb.Entity, entity string) bool {
+func hasEntity(entities []lib.APIEntity, entity string) bool {
 	for i := range entities {
-		if entities[i].GetName() == entity {
+		if entities[i].Name == entity {
 			return true
 		}
 	}
 	return false
 }
 
-func hasIdentifier(entity *pb.Entity, identifier string) bool {
-	for k := range entity.GetIdentifiers() {
+func hasIdentifier(entity lib.APIEntity, identifier string) bool {
+	for k := range entity.Identifiers {
 		if k == identifier {
 			return true
 		}

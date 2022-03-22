@@ -1,11 +1,11 @@
 package text
 
 import (
-	"fmt"
+	"testing"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
-	"testing"
 )
 
 func TestTokeniser(t *testing.T) {
@@ -263,7 +263,6 @@ var _ = Describe("Tokenise", func() {
 })
 
 func assertTokenize(tokens []*pb.Snippet, expectedTexts []string, expectedOffsets []uint32) {
-	fmt.Println(tokens, expectedTexts, expectedOffsets)
 	Expect(len(tokens)).Should(Equal(len(expectedTexts)))
 	Expect(hasTokens(expectedTexts, tokens)).Should(BeTrue())
 	Expect(hasOffsets(expectedOffsets, tokens)).Should(BeTrue())

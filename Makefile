@@ -69,4 +69,4 @@ docs:
 
 .PHONY: api-test
 api-test:
-	@./scripts/test.sh
+	@./scripts/test.sh TestAPI ./go/cmd/dictionary-importer/dictionaries/test.tsv leadmine

@@ -6,23 +6,23 @@ import (
 	"os"
 )
 
-func NewNativeReader() Reader {
-	return nativeReader{}
+func NewSwissProtReader() Reader {
+	return swissProtReader{}
 }
 
-type nativeReader struct{}
+type swissProtReader struct{}
 
-func (p nativeReader) Read(file *os.File) (chan Entry, chan error) {
+func (p swissProtReader) Read(file *os.File) (chan Entry, chan error) {
 	entries := make(chan Entry)
 	errors := make(chan error)
 	go p.read(file, entries, errors)
 	return entries, errors
 }
 
-func (p nativeReader) read(dict *os.File, entries chan Entry, errors chan error) {
+func (p swissProtReader) read(dict *os.File, entries chan Entry, errors chan error) {
 	scn := bufio.NewScanner(dict)
 	for scn.Scan() {
-		var e NerEntry
+		var e SwissProtEntry
 		if err := json.Unmarshal(scn.Bytes(), &e); err != nil {
 			errors <- err
 			return

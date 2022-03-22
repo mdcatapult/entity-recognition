@@ -11,18 +11,86 @@ type DictConfig struct {
 	Format Format
 }
 
-type Entry struct {
+/**
+	Entry provides an interface for readers which may have different formats for identifiers and metadata.
+
+	For examaple, NerEntry and SwissProtEntry have different types for Identifiers because of the different formats of Leadmine and Swissprot dictionaries,
+	but by implementing this interface they can be converted to a common type.
+**/
+type Entry interface {
+	ReplaceSynonymAt(synonym string, index int)
+	GetSynonyms() []string
+	GetIdentifiers() map[string]interface{}
+	GetMetadata() map[string]interface{}
+}
+
+type NerEntry struct {
 	Synonyms    []string
 	Identifiers map[string]string
 	Metadata    map[string]interface{}
 }
 
+type SwissProtEntry struct {
+	Synonyms    []string
+	Identifiers map[string]map[string]string // map of species name to map of identifier keys and values for that species
+	Metadata    map[string]map[string]string // map of species name to map of metadata keys and values for that species
+}
+
+func (ne *NerEntry) ReplaceSynonymAt(synonym string, index int) {
+	ne.Synonyms[index] = synonym
+}
+
+func (ne NerEntry) GetSynonyms() []string {
+	return ne.Synonyms
+}
+
+func (ne NerEntry) GetIdentifiers() map[string]interface{} {
+	res := make(map[string]interface{}, len(ne.Identifiers))
+	for k, v := range ne.Identifiers {
+		var identiferValue interface{} = v
+		res[k] = identiferValue
+	}
+	return res
+
+}
+
+func (ne NerEntry) GetMetadata() map[string]interface{} {
+	return ne.Metadata
+}
+
+func (spe *SwissProtEntry) ReplaceSynonymAt(synonym string, index int) {
+	spe.Synonyms[index] = synonym
+}
+
+func (spe SwissProtEntry) GetSynonyms() []string {
+	return spe.Synonyms
+}
+
+func (spe SwissProtEntry) GetIdentifiers() map[string]interface{} {
+	res := make(map[string]interface{}, len(spe.Identifiers))
+	for k, v := range spe.Identifiers {
+		var identiferValue interface{} = v
+		res[k] = identiferValue
+	}
+	return res
+}
+
+func (spe SwissProtEntry) GetMetadata() map[string]interface{} {
+	res := make(map[string]interface{}, len(spe.Metadata))
+	for k, v := range spe.Metadata {
+		var metadataValue interface{} = v
+		res[k] = metadataValue
+	}
+	return res
+}
+
 type Format string
 
 const (
-	PubchemDictionaryFormat  Format = "pubchem"
-	LeadmineDictionaryFormat Format = "leadmine"
-	NativeDictionaryFormat   Format = "native"
+	PubchemDictionaryFormat   Format = "pubchem"
+	LeadmineDictionaryFormat  Format = "leadmine"
+	NativeDictionaryFormat    Format = "native"
+	SwissProtDictionaryFormat Format = "swissprot"
 )
 
 type Reader interface {
@@ -40,12 +108,15 @@ func Read(format Format, file *os.File) (chan Entry, chan error, error) {
 	case NativeDictionaryFormat:
 		entries, errors := NewNativeReader().Read(file)
 		return entries, errors, nil
+	case SwissProtDictionaryFormat:
+		entries, errors := NewSwissProtReader().Read(file)
+		return entries, errors, nil
 	default:
 		return nil, nil, fmt.Errorf("unsupported dictionary format %v", format)
 	}
 }
 
-// ReadWithCallback reads the dictionary file according to its format and executes the onEntry callback for each Entry.
+// ReadWithCallback reads the dictionary file according to its format and executes the onEntry callback for each NerEntry.
 // The onEOF callback is executed when there are no more entries in the file.
 func ReadWithCallback(file *os.File, format Format, onEntry func(entry Entry) error, onEOF func() error) error {
 	entries, errors, err := Read(format, file)

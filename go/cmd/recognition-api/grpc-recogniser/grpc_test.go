@@ -64,7 +64,7 @@ func Test_grpcRecogniser_recognise(t *testing.T) {
 	}
 
 	waitGroup := &sync.WaitGroup{}
-	testRecogniser.recognise(snipChan, waitGroup )
+	testRecogniser.recognise(snipChan, waitGroup)
 
 	waitGroup.Wait()
 

@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	grpc_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/cmd/recognition-api/grpc-recogniser"
 	"io"
 	"net"
 	"strings"
 	"sync"
 	"testing"
 	"time"
+
+	grpc_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/cmd/recognition-api/grpc-recogniser"
 
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
@@ -36,7 +37,7 @@ func Test_Redis_Recogniser(t *testing.T) {
 		Port: 6379,
 	})
 
-	data := dict.Entry{
+	data := dict.NerEntry{
 		Synonyms:    []string{"entity"},
 		Identifiers: map[string]string{"id key": "id value"},
 		Metadata: map[string]interface{}{
@@ -75,7 +76,7 @@ func Test_Redis_Recogniser(t *testing.T) {
 }
 
 // addToRedis inserts entry into client's pipeline.
-func addToRedis(client remote.Client, entry dict.Entry) error {
+func addToRedis(client remote.Client, entry dict.NerEntry) error {
 	pipe := client.NewSetPipeline(config.PipelineSize)
 
 	for i, synonym := range entry.Synonyms {
@@ -96,7 +97,7 @@ func addToRedis(client remote.Client, entry dict.Entry) error {
 
 		bytes, err := json.Marshal(cache.Lookup{
 			Dictionary:  config.Dictionary.Name,
-			Identifiers: entry.Identifiers,
+			Identifiers: entry.GetIdentifiers(),
 			Metadata:    metadata,
 		})
 		if err != nil {

@@ -13,6 +13,9 @@ message Entity {
     uint32 position = 2;
     string xpath = 3;
     string recogniser = 4;
-    map<string,string> identifiers = 5;
+    map<string, string> identifiers = 5;
     string metadata = 6;
 }
+
+
+

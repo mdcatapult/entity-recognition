@@ -36,7 +36,7 @@ make run
 
 
 You can also just press the play button next to a main function in intellij :smiley:.
-### Test
+### Manual Test
 Grab some html from a website (ctrl+U in chrome). Make a post request to `localhost:8080/text`, `localhost:8080/tokens`, or `localhost:8080/entities` with the html in the body of the request.
 
 For example:
@@ -54,6 +54,13 @@ nginx.ingress.kubernetes.io/cors-allow-methods: PUT, GET, POST, OPTIONS
 nginx.ingress.kubernetes.io/cors-allow-origin: '*'
 nginx.ingress.kubernetes.io/enable-cors: "true"
 ```
+
+### Automated Testing
+
+Unit and integration test can be run with `go test ./...`.
+
+API tests require the env var `NER_API_TEST` to be set (the value doesn't matter). Running `go test ./...` with this set will run all unit, integration, and API tests *but* API
+tests require the regexer, recognition-api and redis to be running, as well as the dictionaries with imported data. See `scripts/test.sh` for how this works.
 
 
 ### Code Generation
