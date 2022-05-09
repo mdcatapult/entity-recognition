@@ -1,4 +1,4 @@
-package blacklist
+package blocklist
 
 import (
 	"fmt"
@@ -10,56 +10,56 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type Blacklist struct {
+type Blocklist struct {
 	CaseSensitive   map[string]bool
 	CaseInsensitive map[string]bool
 }
 
-// Allowed returns true if entity is not blacklisted.
-func (blacklist Blacklist) Allowed(entity string) bool {
-	if _, ok := blacklist.CaseSensitive[entity]; ok {
+// Allowed returns true if entity is not blocklisted.
+func (blocklist Blocklist) Allowed(entity string) bool {
+	if _, ok := blocklist.CaseSensitive[entity]; ok {
 		return false
 	}
 
-	if _, ok := blacklist.CaseInsensitive[strings.ToLower(entity)]; ok {
+	if _, ok := blocklist.CaseInsensitive[strings.ToLower(entity)]; ok {
 		return false
 	}
 
 	return true
 }
 
-// FilterEntities filters []*pb.Entity based on blacklist.
-func (blacklist Blacklist) FilterEntities(entities []*pb.Entity) []*pb.Entity {
+// FilterEntities filters []*pb.Entity based on blocklist.
+func (blocklist Blocklist) FilterEntities(entities []*pb.Entity) []*pb.Entity {
 	res := make([]*pb.Entity, 0, len(entities))
 	for _, entity := range entities {
-		if blacklist.Allowed(entity.Name) {
+		if blocklist.Allowed(entity.Name) {
 			res = append(res, entity)
 		}
 	}
 	return res
 }
 
-// Load returns an unmarshalled blacklist from a YAML file at the given path.
-func Load(path string) (*Blacklist, error) {
+// Load returns an unmarshalled blocklist from a YAML file at the given path.
+func Load(path string) (*Blocklist, error) {
 
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
-		log.Error().Msg(fmt.Sprintf("could not find blacklist at %v", path))
+		log.Error().Msg(fmt.Sprintf("could not find blocklist at %v", path))
 		return nil, err
 	}
 
-	type yamlBlacklist struct {
+	type yamlBlocklist struct {
 		CaseSensitive   []string `yaml:"case_sensitive"`
 		CaseInsensitive []string `yaml:"case_insensitive"`
 	}
 
-	yamlBl := yamlBlacklist{}
+	yamlBl := yamlBlocklist{}
 	if err := yaml.Unmarshal(bytes, &yamlBl); err != nil {
-		log.Error().Msg(fmt.Sprintf("could not load blacklist from %v", path))
+		log.Error().Msg(fmt.Sprintf("could not load blocklist from %v", path))
 		return nil, err
 	}
 
-	res := Blacklist{
+	res := Blocklist{
 		CaseSensitive:   map[string]bool{},
 		CaseInsensitive: map[string]bool{},
 	}
@@ -71,7 +71,7 @@ func Load(path string) (*Blacklist, error) {
 		res.CaseInsensitive[v] = true
 	}
 
-	log.Info().Msg(fmt.Sprintf("blacklist set from %v", path))
+	log.Info().Msg(fmt.Sprintf("blocklist set from %v", path))
 
 	return &res, nil
 }
