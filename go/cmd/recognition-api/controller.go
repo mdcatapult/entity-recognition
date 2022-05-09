@@ -7,7 +7,7 @@ import (
 
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blocklist"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
 	snippetReader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
@@ -29,7 +29,7 @@ type controller struct {
 	recognisers map[string]recogniser.Client
 	htmlReader  snippetReader.Client
 	textReader  snippetReader.Client
-	blacklist   blacklist.Blacklist // a global blacklist to apply against all recognisers
+	blocklist   blocklist.Blocklist // a global blocklist to apply against all recognisers
 	exactMatch  bool
 }
 
@@ -140,8 +140,8 @@ func (controller controller) Recognize(reader io.Reader, contentType AllowedCont
 	for _, recogniser := range requestedRecognisers {
 		recognisedEntities := controller.recognisers[recogniser.Name].Result()
 
-		// apply global blacklist
-		allowedEntities := controller.blacklist.FilterEntities(recognisedEntities)
+		// apply global blocklist
+		allowedEntities := controller.blocklist.FilterEntities(recognisedEntities)
 
 		APIEntities = append(APIEntities, filterUniqueEntities(allowedEntities)...)
 	}

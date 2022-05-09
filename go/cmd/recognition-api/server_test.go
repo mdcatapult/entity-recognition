@@ -13,7 +13,7 @@ import (
 
 	http_recogniser "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/cmd/recognition-api/http-recogniser"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blocklist"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
 )
 
@@ -67,7 +67,7 @@ var _ = Describe("GetRecognisers", func() {
 			controller: &controller{
 				// recogniser3 on the controller will be used to test that the allRecognisers flag causes recogniser3 to be used.
 				recognisers: map[string]recogniser.Client{
-					recogniser3: http_recogniser.NewLeadmineClient(recogniser3, "", blacklist.Blacklist{}),
+					recogniser3: http_recogniser.NewLeadmineClient(recogniser3, "", blocklist.Blocklist{}),
 				},
 			},
 		}

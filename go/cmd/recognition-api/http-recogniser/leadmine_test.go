@@ -15,7 +15,7 @@ import (
 	mocks "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/mocks/lib"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blocklist"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/html"
 )
 
@@ -45,7 +45,7 @@ func (s *leadmineSuite) TestRecognise() {
 		Name:       "test-leadmine",
 		Url:        "https://leadmine.wopr.inf.mdc/chemical-entities/entities",
 		httpClient: mockHttpClient,
-		blacklist: blacklist.Blacklist{
+		blocklist: blocklist.Blocklist{
 			CaseSensitive: map[string]bool{
 				"AF-DX 250": true,
 			},

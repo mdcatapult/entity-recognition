@@ -17,17 +17,17 @@ import (
 
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blocklist"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
 	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
 )
 
-func NewLeadmineClient(name, url string, blacklist blacklist.Blacklist) recogniser.Client {
+func NewLeadmineClient(name, url string, blocklist blocklist.Blocklist) recogniser.Client {
 	return &leadmine{
 		Name:       name,
 		Url:        url,
 		httpClient: http.DefaultClient,
-		blacklist:  blacklist,
+		blocklist:  blocklist,
 	}
 }
 
@@ -37,7 +37,7 @@ type leadmine struct {
 	httpClient lib.HttpClient
 	err        error
 	entities   []*pb.Entity
-	blacklist  blacklist.Blacklist
+	blocklist  blocklist.Blocklist
 	exactMatch bool
 }
 
@@ -111,7 +111,7 @@ func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, waitG
 		return
 	}
 
-	leadmineResponse.Entities = l.blacklistEntities(leadmineResponse.Entities)
+	leadmineResponse.Entities = l.blocklistEntities(leadmineResponse.Entities)
 
 	correctedLeadmineEntities, err := correctLeadmineEntityOffsets(leadmineResponse, text)
 	if err != nil {
@@ -130,10 +130,10 @@ func (l *leadmine) recognise(snipReaderValues <-chan snippet_reader.Value, waitG
 	l.entities = filteredEntities
 }
 
-func (l *leadmine) blacklistEntities(entities []*LeadmineEntity) []*LeadmineEntity {
+func (l *leadmine) blocklistEntities(entities []*LeadmineEntity) []*LeadmineEntity {
 	res := make([]*LeadmineEntity, 0, len(entities))
 	for _, entity := range entities {
-		if l.blacklist.Allowed(entity.EntityText) {
+		if l.blocklist.Allowed(entity.EntityText) {
 			res = append(res, entity)
 		}
 	}
