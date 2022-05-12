@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blocklist"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/html"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/testhelpers"
 )
@@ -21,7 +21,7 @@ func Test_grpcRecogniser_recognise(t *testing.T) {
 		Xpath:       "/p",
 		Identifiers: map[string]string{"many": "", "things": ""},
 	}
-	blacklistedEntity := &pb.Entity{
+	blocklistedEntity := &pb.Entity{
 		Name:        "protein",
 		Position:    99999,
 		Recogniser:  "test",
@@ -41,13 +41,13 @@ func Test_grpcRecogniser_recognise(t *testing.T) {
 		testhelpers.CreateSnippet("found", "", 3, "/p"),
 		testhelpers.CreateSnippet("entity", "", 9, "/p"),
 
-		// this should be blacklisted and therefore does not feature in expectedRecognisedEntities
+		// this should be blocklisted and therefore does not feature in expectedRecognisedEntities
 		testhelpers.CreateSnippet("protein", "", 23, "/p"),
 	)
 
 	// mock the grpc server's response
 	mockRecognizer_RecognizeClient.On("Recv").Return(foundEntity, nil).Once()
-	mockRecognizer_RecognizeClient.On("Recv").Return(blacklistedEntity, nil).Once()
+	mockRecognizer_RecognizeClient.On("Recv").Return(blocklistedEntity, nil).Once()
 	mockRecognizer_RecognizeClient.On("Recv").Return(nil, io.EOF).Once()
 
 	testRecogniser := grpcRecogniser{
@@ -55,7 +55,7 @@ func Test_grpcRecogniser_recognise(t *testing.T) {
 		err:      nil,
 		entities: nil,
 		stream:   mockRecognizer_RecognizeClient,
-		blacklist: blacklist.Blacklist{
+		blocklist: blocklist.Blocklist{
 			CaseSensitive: map[string]bool{},
 			CaseInsensitive: map[string]bool{
 				"protein": true,
