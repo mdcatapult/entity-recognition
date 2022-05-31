@@ -1,6 +1,6 @@
 # Entity recognition
 
-This is intended to be a monorepo [*monorepo*](https://www.atlassian.com/git/tutorials/monorepos) containing all MDC entity recognition software, configuration, documentation, and so on.
+This is intended to be a [*monorepo*](https://www.atlassian.com/git/tutorials/monorepos) containing all MDC entity recognition software, configuration, documentation, and so on.
 
 ## Overview
 There are currently 4 primary applications:
@@ -77,3 +77,6 @@ To summarise:
 2. Ensure the recogniser is accessible over the network.
 3. Create a key in a configmap with the `recognition-api.yml` as the value.
 4. Deploy the recognition api with the config map key mounted in `/app/config` with the path `recognition-api.yml`.
+
+### License
+This project is licensed under the terms of the Apache 2 license, which can be found in the repository as `LICENSE.txt`
