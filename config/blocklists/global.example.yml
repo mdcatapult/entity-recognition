@@ -1,4 +1,4 @@
-# global blacklist includes terms to blacklist across all recognisers
+# global blocklist includes terms to blocklist across all recognisers
 
 case_sensitive: []
 case_insensitive:

@@ -24,7 +24,7 @@ import (
 	"sync"
 	"testing"
 
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blocklist"
 	"gopkg.in/go-playground/assert.v1"
 
 	"github.com/stretchr/testify/mock"
@@ -129,15 +129,15 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 		Identifiers: map[string]string{"many": "", "things": ""},
 	}
 
-	blacklistedEntityName := "blacklisted entity"
-	blacklistedEntity := &pb.Entity{
-		Name:        blacklistedEntityName,
+	blocklistedEntityName := "blocklisted entity"
+	blocklistedEntity := &pb.Entity{
+		Name:        blocklistedEntityName,
 		Position:    1234,
 		Recogniser:  "test",
-		Identifiers: map[string]string{"blacklisted": "blacklisted"},
+		Identifiers: map[string]string{"blocklisted": "blocklisted"},
 	}
 
-	foundEntities := []*pb.Entity{entity, blacklistedEntity}
+	foundEntities := []*pb.Entity{entity, blocklistedEntity}
 
 	sentSnippet := &pb.Snippet{
 		Text:   "found entity\n",
@@ -147,11 +147,11 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 
 	reader := strings.NewReader("<p>found entity</p>")
 
-	//setup global blacklist on controller
-	s.controller.blacklist = blacklist.Blacklist{
+	//setup global blocklist on controller
+	s.controller.blocklist = blocklist.Blocklist{
 		CaseSensitive: map[string]bool{},
 		CaseInsensitive: map[string]bool{
-			blacklistedEntityName: true,
+			blocklistedEntityName: true,
 		},
 	}
 
@@ -195,7 +195,7 @@ func (s *ControllerSuite) Test_controller_RecognizeInHTML() {
 	// entity should have been found
 	s.Equal(testhelpers.APIEntityFromEntity(foundEntities[0]), entities[0])
 
-	// entities should only contain the found entity, not the blacklisted entity
+	// entities should only contain the found entity, not the blocklisted entity
 	s.Len(entities, 1)
 	s.Nil(err)
 }

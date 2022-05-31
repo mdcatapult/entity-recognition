@@ -1,7 +1,7 @@
 server:
   http_port: 8080
 
-blacklist: config/blacklists/global.yml
+blocklist: config/blocklists/global.yml
 
 grpc_recognisers:
   # The keys in this object will become recognition api query parameters.
@@ -20,12 +20,12 @@ http_recognisers:
   leadmine-chemical-entities:
     type: leadmine
     url: https://leadmine.wopr.inf.mdc/chemical-entities/entities
-    blacklist: config/blacklists/leadmine-chemical-entities.yml
+    blocklist: config/blocklists/leadmine-chemical-entities.yml
 
   leadmine-proteins:
     type: leadmine
     url: https://leadmine.wopr.inf.mdc/proteins/entities
-    blacklist: config/blacklists/leadmine-proteins.yml
+    blocklist: config/blocklists/leadmine-proteins.yml
 
   leadmine-disease:
     type: leadmine

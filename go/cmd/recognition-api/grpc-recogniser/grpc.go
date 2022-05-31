@@ -20,20 +20,20 @@ import (
 
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blocklist"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
 	snippet_reader "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/text"
 )
 
-func New(name string, client pb.RecognizerClient, blacklist blacklist.Blacklist) recogniser.Client {
+func New(name string, client pb.RecognizerClient, blocklist blocklist.Blocklist) recogniser.Client {
 	return &grpcRecogniser{
 		Name:      name,
 		client:    client,
 		err:       nil,
 		entities:  nil,
 		stream:    nil,
-		blacklist: blacklist,
+		blocklist: blocklist,
 	}
 }
 
@@ -43,7 +43,7 @@ type grpcRecogniser struct {
 	err        error
 	entities   []*pb.Entity
 	stream     pb.Recognizer_GetStreamClient
-	blacklist  blacklist.Blacklist
+	blocklist  blocklist.Blocklist
 	exactMatch bool
 }
 
@@ -90,7 +90,7 @@ func (g *grpcRecogniser) recognise(snipReaderValues <-chan snippet_reader.Value,
 				return
 			}
 
-			if !g.blacklist.Allowed(entity.Name) {
+			if !g.blocklist.Allowed(entity.Name) {
 				continue
 			}
 

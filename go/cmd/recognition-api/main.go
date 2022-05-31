@@ -26,7 +26,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blocklist"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/html"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/snippet-reader/text"
@@ -39,16 +39,16 @@ type recognitionAPIConfig struct {
 	Server   struct {
 		HttpPort int `mapstructure:"http_port"`
 	}
-	Blacklist       string `mapstructure:"blacklist"` // global blacklist
+	Blocklist       string `mapstructure:"blocklist"` // global blocklist
 	GrpcRecognizers map[string]struct {
 		Host      string
 		Port      int
-		Blacklist string
+		Blocklist string
 	} `mapstructure:"grpc_recognisers"`
 	HttpRecognisers map[string]struct {
 		Type      http_recogniser.Type
 		Url       string
-		Blacklist string
+		Blocklist string
 	} `mapstructure:"http_recognisers"`
 }
 
@@ -82,13 +82,13 @@ func main() {
 		}
 		cancel()
 
-		recogniserClients[name] = grpc_recogniser.New(name, pb.NewRecognizerClient(conn), loadBlacklist(conf.Blacklist))
+		recogniserClients[name] = grpc_recogniser.New(name, pb.NewRecognizerClient(conn), loadBlocklist(conf.Blocklist))
 	}
 
 	for name, conf := range config.HttpRecognisers {
 		switch conf.Type {
 		case http_recogniser.LeadmineType:
-			recogniserClients[name] = http_recogniser.NewLeadmineClient(name, conf.Url, loadBlacklist(conf.Blacklist))
+			recogniserClients[name] = http_recogniser.NewLeadmineClient(name, conf.Url, loadBlocklist(conf.Blocklist))
 		}
 	}
 
@@ -108,7 +108,7 @@ func main() {
 		recognisers: recogniserClients,
 		htmlReader:  html.SnippetReader{},
 		textReader:  text.SnippetReader{},
-		blacklist:   loadBlacklist(config.Blacklist),
+		blocklist:   loadBlocklist(config.Blocklist),
 	}
 
 	s := server{controller: &c}
@@ -118,14 +118,14 @@ func main() {
 	}
 }
 
-func loadBlacklist(path string) blacklist.Blacklist {
-	var bl = blacklist.Blacklist{}
+func loadBlocklist(path string) blocklist.Blocklist {
+	var bl = blocklist.Blocklist{}
 	if path != "" {
-		loadedBlacklist, err := blacklist.Load(path)
+		loadedBlocklist, err := blocklist.Load(path)
 		if err != nil {
 			log.Fatal().Err(err).Send()
 		}
-		bl = *loadedBlacklist
+		bl = *loadedBlocklist
 	}
 	return bl
 }

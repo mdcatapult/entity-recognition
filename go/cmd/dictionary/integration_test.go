@@ -32,7 +32,7 @@ import (
 
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib"
-	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blacklist"
+	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/blocklist"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/cache/remote"
 	"gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/dict"
@@ -72,7 +72,7 @@ func Test_Redis_Recogniser(t *testing.T) {
 	// set up grpc client
 	conn, err := getReadConnection(redisClient)
 	assert.NoError(t, err)
-	recogniser := grpc_recogniser.New("my recogniser", pb.NewRecognizerClient(conn), blacklist.Blacklist{})
+	recogniser := grpc_recogniser.New("my recogniser", pb.NewRecognizerClient(conn), blocklist.Blocklist{})
 
 	// perform the read
 	entities, err := readFromRedis(recogniser, synonym)

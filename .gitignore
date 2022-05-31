@@ -3,7 +3,7 @@ bin
 cover.out
 config/*.yml
 !config/*.example.yml
-config/blacklists/*.yml
-!config/blacklists/*.example.yml:
+config/blocklists/*.yml
+!config/blocklists/*.example.yml:
 *.iml
 go/cmd/dictionary-importer/dictionary-importer
