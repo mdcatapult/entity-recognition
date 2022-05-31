@@ -6,3 +6,4 @@ config/*.yml
 config/blacklists/*.yml
 !config/blacklists/*.example.yml:
 *.iml
+go/cmd/dictionary-importer/dictionary-importer
