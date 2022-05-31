@@ -15,8 +15,9 @@ lint:
   stage: test
   image: registry.mdcatapult.io/informatics/docker-images/ci/golang
   script:
+  - go mod tidy
   - go vet ./...
-  - golangci-lint run
+#  - golangci-lint run
 test:
   stage: test
   image: registry.mdcatapult.io/informatics/docker-images/ci/golang
