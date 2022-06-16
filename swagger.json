@@ -1,0 +1,202 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "Documentation of NER API.",
+    "title": "NER API.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/entities": {
+      "post": {
+        "description": "The recognisers to use can be specified in query params.\n\nThe workflow is as follows:\n1) \tWork out the recognisers to use based on query params.\n2)\tAsk the controller to perform recognition with the specified recognisers.\n3)  Read the body of the HTTP request into snippets. This involves either the HTMLReader or TextReader depending on Content-Type header. The end result of this is many snippet containing parts of the document's text, for example the contents of a \\\u003cp\\\u003e tag.\n4)  Send the snippets to Tokenise(). This will further break down the snippets into tokens (also of type *pb.Snippet). The exact-match query paramater controls how fine-grained tokenising is.\n5)\tSend tokens to each recogniser. If a token matches a key in the recogniser's dictionary, an entity will be returned from this step.\n6)  The previous 3 steps are done in parallel, so wait for them all to complete.\n7)  Collect all the entities returned from all the recognisers and return them in the HTTP response.",
+        "consumes": [
+          "text/html",
+          "text/plain"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Endpoints"
+        ],
+        "summary": "entities takes an HTML or text document and returns entities in the document by communicating with recoginsers via HTTP or GRPC.",
+        "operationId": "entities",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "a recogniser to use for entity recognition. May be specified more than once with different values. Hit /recognisers for a list of all configured recognisers.",
+            "name": "recogniser",
+            "in": "query",
+            "required": true
+          },
+          {
+            "type": "boolean",
+            "description": "Boolean value of whether to perform exact matching during tokenising.  With exact matching, \"some-text\" is a single token - \"some-text\". Without exact matching, tokenising is more fine grained. \"some-text\" would be three tokens: \"some\", \"-\", \"text\".",
+            "name": "exact-match",
+            "in": "query"
+          },
+          {
+            "description": "The HTML document to scan for entities",
+            "name": "Body",
+            "in": "body",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Entity",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Entity"
+              }
+            }
+          },
+          "400": {
+            "description": " Bad request - invalid content type or missing / invalid recogniser"
+          }
+        }
+      }
+    },
+    "/recognisers": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Endpoints"
+        ],
+        "summary": "GetRecognisers returns a list of all configured recognisers.",
+        "operationId": "recognisers",
+        "responses": {
+          "200": {
+            "description": " A list of the names of all configured recognisers"
+          }
+        }
+      }
+    },
+    "/text": {
+      "post": {
+        "consumes": [
+          "text/html"
+        ],
+        "produces": [
+          "text/plain"
+        ],
+        "tags": [
+          "Endpoints"
+        ],
+        "summary": "HTMLToText converts an HTML document into plain text.",
+        "operationId": "text",
+        "parameters": [
+          {
+            "description": "The HTML document to convert",
+            "name": "Body",
+            "in": "body",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": " OK"
+          },
+          "400": {
+            "description": " Bad request - invalid content type."
+          }
+        }
+      }
+    },
+    "/tokens": {
+      "post": {
+        "description": "Tokens are the segments of text from the source document which can be used to query\na recogniser.",
+        "consumes": [
+          "text/html",
+          "text/plain"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Endpoints"
+        ],
+        "summary": "tokens splits an HTML or plain text document into tokens.",
+        "operationId": "tokens",
+        "parameters": [
+          {
+            "type": "boolean",
+            "description": "Boolean value of whether to perform exact matching during tokenising.  With exact matching, \"some-text\" is a single token - \"some-text\". Without exact matching, tokenising is more fine grained. \"some-text\" would be three tokens: \"some\", \"-\", \"text\".",
+            "name": "exact-match",
+            "in": "query"
+          },
+          {
+            "description": "The text document to tokenise",
+            "name": "Body",
+            "in": "body",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/Snippet"
+          },
+          "400": {
+            "description": " Bad request - invalid content type."
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Entity": {
+      "type": "object",
+      "properties": {
+        "identifiers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "x-go-name": "Identifiers"
+        },
+        "metadata": {
+          "type": "string",
+          "x-go-name": "Metadata"
+        },
+        "name": {
+          "type": "string",
+          "x-go-name": "Name"
+        },
+        "position": {
+          "type": "integer",
+          "format": "uint32",
+          "x-go-name": "Position"
+        },
+        "recogniser": {
+          "type": "string",
+          "x-go-name": "Recogniser"
+        },
+        "xpath": {
+          "type": "string",
+          "x-go-name": "Xpath"
+        }
+      },
+      "x-go-package": "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/gen/pb"
+    },
+    "RecogniserClient": {
+      "description": "Client\nrepresents a recogniser client, i.e. a struct which implements functions to\nuse a recogniser via HTTP or gRPC. Recognise() must receive snippet_reader.Values, tokenise them, and send them to a configured recogniser.\nIt must then either populate result or err depending on what happened.",
+      "type": "object",
+      "properties": {
+        "Err": {
+          "type": "string"
+        },
+        "Result": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Entity"
+          }
+        }
+      },
+      "x-go-name": "Client",
+      "x-go-package": "gitlab.mdcatapult.io/informatics/software-engineering/entity-recognition/go/lib/recogniser"
+    }
+  }
+}
