@@ -127,7 +127,7 @@ type Entity struct {
 	// swagger:ignore
 	// ?? what is this ??
 	Identifiers map[string]string `protobuf:"bytes,5,rep,name=identifiers,proto3" json:"identifiers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	Metadata    []byte            `protobuf:"bytes,6,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	Metadata   	string            `protobuf:"bytes,6,opt,name=metadata,proto3" json:"metadata,omitempty"`
 }
 
 func (x *Entity) Reset() {
@@ -197,11 +197,11 @@ func (x *Entity) GetIdentifiers() map[string]string {
 	return nil
 }
 
-func (x *Entity) GetMetadata() []byte {
+func (x *Entity) GetMetadata() string {
 	if x != nil {
 		return x.Metadata
 	}
-	return nil
+	return ""
 }
 
 var File_types_proto protoreflect.FileDescriptor
