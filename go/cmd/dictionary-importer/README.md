@@ -14,4 +14,4 @@ The dictionary filepath and format can be given as program arguments, for exampl
 
 `go run main.go dictionaryPath=dictionaries/pubchem.tsv dictionaryFormat=pubchem`
 
-Other config e.g. redi port is located in `./config/dictionary.yml`, relative from the NER project root. See the existing config for examples. 
+Other config e.g. redis port is located in `./config/dictionary.yml`, relative from the NER project root. See the existing config for examples. 
